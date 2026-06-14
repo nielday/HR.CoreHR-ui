@@ -25,6 +25,16 @@ import { RouterLink } from 'vue-router'
         <span class="font-sans font-medium text-sm">Departments</span>
       </RouterLink>
 
+      <RouterLink to="/positions" class="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+        <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
+        <span class="font-sans font-medium text-sm">Positions</span>
+      </RouterLink>
+
+      <RouterLink to="/contracts" class="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+        <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
+        <span class="font-sans font-medium text-sm">Contract Types</span>
+      </RouterLink>
+
       <RouterLink to="/about" class="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
         <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
         <span class="font-sans font-medium text-sm">About System</span>
