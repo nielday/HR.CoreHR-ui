@@ -11,7 +11,7 @@ const isLoading = ref(false)
 const error = ref('')
 
 const username = ref('admin')
-const password = ref('admin')
+const password = ref('123456')
 
 async function handleLogin() {
   isLoading.value = true
@@ -20,7 +20,7 @@ async function handleLogin() {
     await authStore.testLogin(username.value, password.value)
     router.push('/employees') // After login, go to Employees instead of departments
   } catch (err: any) {
-    error.value = err.response?.data?.message || 'Login failed. System requires an active API token to proceed.'
+    error.value = err.response?.data?.message || err.response?.data?.Message || 'Login failed. System requires an active API token to proceed.'
   } finally {
     isLoading.value = false
   }
@@ -61,7 +61,7 @@ async function handleLogin() {
         </form>
         
         <p class="text-center text-xs text-muted-foreground mt-6 font-serif italic">
-          Try login with: admin/admin, hr/hr, manager/manager
+          Try login with: admin/123456, hr/123456, manager/123456
         </p>
       </div>
     </div>
