@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { PlusIcon, PencilIcon, TrashIcon } from 'lucide-vue-next'
 import { useContractStore } from '../stores/contract'
+import { useAuthStore } from '../stores/auth'
 import Button from '../components/ui/Button.vue'
 import Modal from '../components/ui/Modal.vue'
+
+const authStore = useAuthStore()
+const canManageSystem = computed(() => ['Admin', 'HR'].includes(authStore.userRole || ''))
 
 const store = useContractStore()
 const isModalOpen = ref(false)
@@ -86,8 +90,8 @@ function confirmDelete(item: any) {
 
 async function executeDelete() {
   if (selectedContract.value) {
-    await store.deleteContract(selectedContract.value.id)
-    isConfirmDeleteOpen.value = false
+    const success = await store.deleteContract(selectedContract.value.id)
+    if (success) isConfirmDeleteOpen.value = false
   }
 }
 </script>
@@ -100,7 +104,7 @@ async function executeDelete() {
         <h1 class="font-display text-4xl mb-2 text-foreground">Contract Types</h1>
         <p class="text-muted-foreground font-serif text-lg">Manage employment agreements and durations.</p>
       </div>
-      <Button @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
+      <Button v-if="canManageSystem" @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
         <PlusIcon class="w-4 h-4 mr-2" />
         New Contract Type
       </Button>
@@ -121,27 +125,27 @@ async function executeDelete() {
         class="bg-transparent font-sans"
         hover
       >
-        <template v-slot:item.contractTypeCode="{ item }">
+        <template #[`item.contractTypeCode`]="{ item }">
           <span class="font-mono text-sm font-medium text-muted-foreground">{{ item.contractTypeCode }}</span>
         </template>
         
-        <template v-slot:item.contractTypeName="{ item }">
+        <template #[`item.contractTypeName`]="{ item }">
           <span class="font-sans font-medium text-foreground">{{ item.contractTypeName }}</span>
         </template>
 
-        <template v-slot:item.defaultDurationMonths="{ item }">
+        <template #[`item.defaultDurationMonths`]="{ item }">
           <span v-if="item.defaultDurationMonths" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-foreground border border-border">
             {{ item.defaultDurationMonths }} Mo
           </span>
           <span v-else class="text-muted-foreground italic">—</span>
         </template>
 
-        <template v-slot:item.description="{ item }">
+        <template #[`item.description`]="{ item }">
           <span class="font-sans text-sm text-muted-foreground">{{ item.description || '—' }}</span>
         </template>
 
-        <template v-slot:item.actions="{ item }">
-          <div class="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
+        <template #[`item.actions`]="{ item }">
+          <div v-if="canManageSystem" class="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
             <button @click="openEditModal(item)" class="p-2 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Edit">
               <PencilIcon class="w-4 h-4" />
             </button>

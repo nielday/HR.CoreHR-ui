@@ -112,8 +112,8 @@ function confirmDelete(item: any) {
 
 async function executeDelete() {
   if (selectedEmp.value) {
-    await store.deleteEmployee(selectedEmp.value.id)
-    isConfirmDeleteOpen.value = false
+    const success = await store.deleteEmployee(selectedEmp.value.id)
+    if (success) isConfirmDeleteOpen.value = false
   }
 }
 
@@ -169,12 +169,12 @@ const canManageSystem = computed(() => ['Admin', 'HR'].includes(authStore.userRo
         hover
       >
         <!-- Custom Code Column -->
-        <template v-slot:item.employeeCode="{ item }">
+        <template #[`item.employeeCode`]="{ item }">
           <span class="font-mono text-sm font-medium text-foreground">{{ item.employeeCode }}</span>
         </template>
 
         <!-- Custom Employee Column -->
-        <template v-slot:item.fullName="{ item }">
+        <template #[`item.fullName`]="{ item }">
           <div class="py-2">
             <div class="font-semibold text-foreground">{{ item.fullName }}</div>
             <div class="text-xs text-muted-foreground">{{ item.email }}</div>
@@ -182,7 +182,7 @@ const canManageSystem = computed(() => ['Admin', 'HR'].includes(authStore.userRo
         </template>
 
         <!-- Custom Status Column -->
-        <template v-slot:item.workingStatus="{ item }">
+        <template #[`item.workingStatus`]="{ item }">
           <span v-if="item.workingStatus === 'Active' || item.workingStatus === 'Probation'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-green-50 text-green-600 border border-green-200">
             {{ item.workingStatus === 'Probation' ? 'Probation' : 'Active' }}
           </span>
@@ -192,7 +192,7 @@ const canManageSystem = computed(() => ['Admin', 'HR'].includes(authStore.userRo
         </template>
 
         <!-- Custom Actions Column -->
-        <template v-slot:item.actions="{ item }">
+        <template #[`item.actions`]="{ item }">
           <div v-if="canManageSystem" class="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
             <button @click="openEditModal(item)" class="p-2 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Edit">
               <PencilIcon class="w-4 h-4" />

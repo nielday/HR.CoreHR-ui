@@ -3,11 +3,15 @@ import { ref, onMounted, computed } from 'vue'
 import { PlusIcon, PencilIcon, TrashIcon, CornerDownRightIcon } from 'lucide-vue-next'
 import { useDepartmentStore } from '../stores/department'
 import { useEmployeeStore } from '../stores/employee'
+import { useAuthStore } from '../stores/auth'
 import Button from '../components/ui/Button.vue'
 import Modal from '../components/ui/Modal.vue'
 
 const store = useDepartmentStore()
 const employeeStore = useEmployeeStore()
+const authStore = useAuthStore()
+
+const canManageSystem = computed(() => ['Admin', 'HR'].includes(authStore.userRole || ''))
 
 const isModalOpen = ref(false)
 const isEditMode = ref(false)
@@ -105,8 +109,8 @@ function confirmDelete(item: any) {
 
 async function executeDelete() {
   if (selectedDept.value) {
-    await store.deleteDepartment(selectedDept.value.id)
-    isConfirmDeleteOpen.value = false
+    const success = await store.deleteDepartment(selectedDept.value.id)
+    if (success) isConfirmDeleteOpen.value = false
   }
 }
 </script>
@@ -119,7 +123,7 @@ async function executeDelete() {
         <h1 class="font-display text-4xl mb-2 text-foreground">Departments</h1>
         <p class="text-muted-foreground font-serif text-lg">Manage organizational structure and hierarchy.</p>
       </div>
-      <Button @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
+      <Button v-if="canManageSystem" @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
         <PlusIcon class="w-4 h-4 mr-2" />
         New Department
       </Button>
@@ -144,7 +148,7 @@ async function executeDelete() {
         :items-per-page="-1"
       >
         <!-- Custom Department Name Column (Tree indentation) -->
-        <template v-slot:item.departmentName="{ item }">
+        <template #[`item.departmentName`]="{ item }">
           <div class="flex items-center" :style="{ paddingLeft: `${item.level * 2}rem` }">
             <CornerDownRightIcon v-if="item.level > 0" class="w-4 h-4 text-muted-foreground/40 mr-2 shrink-0" />
             <div class="py-3">
@@ -159,12 +163,12 @@ async function executeDelete() {
         </template>
 
         <!-- Custom Code Column -->
-        <template v-slot:item.departmentCode="{ item }">
+        <template #[`item.departmentCode`]="{ item }">
           <span class="font-mono text-sm font-medium text-muted-foreground">{{ item.departmentCode }}</span>
         </template>
 
         <!-- Custom Status Column -->
-        <template v-slot:item.isActive="{ item }">
+        <template #[`item.isActive`]="{ item }">
           <span v-if="item.isActive" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-green-50 text-green-600 border border-green-200">
             Active
           </span>
@@ -174,8 +178,8 @@ async function executeDelete() {
         </template>
 
         <!-- Custom Actions Column -->
-        <template v-slot:item.actions="{ item }">
-          <div class="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
+        <template #[`item.actions`]="{ item }">
+          <div v-if="canManageSystem" class="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
             <button @click="openEditModal(item)" class="p-2 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Edit">
               <PencilIcon class="w-4 h-4" />
             </button>

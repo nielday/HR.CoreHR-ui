@@ -20,7 +20,7 @@ async function handleLogin() {
     await authStore.testLogin(username.value, password.value)
     router.push('/employees') // After login, go to Employees instead of departments
   } catch (err: any) {
-    error.value = err.response?.data?.message || err.response?.data?.Message || 'Login failed. System requires an active API token to proceed.'
+    error.value = err.response?.data?.message || err.response?.data?.Message || err.message || 'Login failed. System requires an active API token to proceed.'
   } finally {
     isLoading.value = false
   }

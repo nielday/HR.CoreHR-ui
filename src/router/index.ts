@@ -1,10 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import MainLayout from '../components/layout/MainLayout.vue'
-import LoginView from '../views/LoginView.vue'
-import DepartmentsView from '../views/DepartmentsView.vue'
-import PositionsView from '../views/PositionsView.vue'
-import ContractsView from '../views/ContractsView.vue'
-import EmployeesView from '../views/EmployeesView.vue'
 import { useAuthStore } from '../stores/auth'
 
 const router = createRouter({
@@ -13,7 +8,7 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: LoginView,
+      component: () => import('../views/LoginView.vue'),
     },
     {
       path: '/',
@@ -27,25 +22,25 @@ const router = createRouter({
         {
           path: 'employees',
           name: 'employees',
-          component: EmployeesView,
+          component: () => import('../views/EmployeesView.vue'),
           meta: { roles: ['Admin', 'HR', 'Manager', 'Employee'] }
         },
         {
           path: 'departments',
           name: 'departments',
-          component: DepartmentsView,
+          component: () => import('../views/DepartmentsView.vue'),
           meta: { roles: ['Admin', 'HR', 'Manager'] }
         },
         {
           path: 'positions',
           name: 'positions',
-          component: PositionsView,
+          component: () => import('../views/PositionsView.vue'),
           meta: { roles: ['Admin', 'HR'] }
         },
         {
           path: 'contracts',
           name: 'contracts',
-          component: ContractsView,
+          component: () => import('../views/ContractsView.vue'),
           meta: { roles: ['Admin', 'HR'] }
         },
         {
