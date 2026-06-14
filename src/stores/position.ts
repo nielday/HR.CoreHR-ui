@@ -6,6 +6,7 @@ export interface Position {
   id?: string
   positionCode: string
   positionName: string
+  level?: number
   description?: string
   isActive?: boolean
 }

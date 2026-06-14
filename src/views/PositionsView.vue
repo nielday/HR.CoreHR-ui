@@ -19,13 +19,15 @@ const selectedPos = ref<any>(null)
 const newPos = ref({
   positionCode: '',
   positionName: '',
+  level: null as number | null,
   description: '',
   isActive: true
 })
 
 const headers = [
-  { title: 'Code', align: 'start', key: 'positionCode', width: '20%' },
-  { title: 'Name', align: 'start', key: 'positionName', width: '30%' },
+  { title: 'Code', align: 'start', key: 'positionCode', width: '15%' },
+  { title: 'Name', align: 'start', key: 'positionName', width: '25%' },
+  { title: 'Level', align: 'start', key: 'level', width: '15%' },
   { title: 'Description', align: 'start', key: 'description', width: '35%' },
   { title: '', align: 'end', key: 'actions', sortable: false },
 ] as const
@@ -40,6 +42,7 @@ function openCreateModal() {
   newPos.value = {
     positionCode: '',
     positionName: '',
+    level: null,
     description: '',
     isActive: true
   }
@@ -52,6 +55,7 @@ function openEditModal(item: any) {
   newPos.value = {
     positionCode: item.positionCode,
     positionName: item.positionName,
+    level: item.level ?? null,
     description: item.description || '',
     isActive: item.isActive !== false
   }
@@ -62,6 +66,7 @@ async function submitCreateOrUpdate() {
   const payload = {
     positionCode: newPos.value.positionCode,
     positionName: newPos.value.positionName,
+    level: newPos.value.level ?? undefined,
     description: newPos.value.description,
     isActive: newPos.value.isActive
   }
@@ -128,6 +133,13 @@ async function executeDelete() {
           <span class="font-sans font-medium text-foreground">{{ item.positionName }}</span>
         </template>
 
+        <template #[`item.level`]="{ item }">
+          <span v-if="item.level !== null && item.level !== undefined" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-foreground border border-border">
+            Level {{ item.level }}
+          </span>
+          <span v-else class="text-muted-foreground italic">—</span>
+        </template>
+
         <template #[`item.description`]="{ item }">
           <span class="font-sans text-sm text-muted-foreground">{{ item.description || '—' }}</span>
         </template>
@@ -155,6 +167,10 @@ async function executeDelete() {
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Name <span class="text-red-500">*</span></label>
           <input v-model="newPos.positionName" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Developer"/>
+        </div>
+        <div>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Level</label>
+          <input v-model="newPos.level" type="number" min="0" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="e.g. 1" />
         </div>
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Description</label>

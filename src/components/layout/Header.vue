@@ -1,20 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+
 import { useAuthStore } from '../../stores/auth'
-import { MenuIcon, BellIcon, SearchIcon, LogOutIcon } from 'lucide-vue-next'
+import { MenuIcon, LogOutIcon } from 'lucide-vue-next'
 
-const route = useRoute()
 const authStore = useAuthStore()
-
-const pageTitle = computed(() => {
-  if (route.path === '/employees') return 'Employees'
-  if (route.path === '/departments') return 'Departments'
-  if (route.path === '/positions') return 'Positions'
-  if (route.path === '/contracts') return 'Contract Types'
-  if (route.path === '/about') return 'About System'
-  return 'Dashboard'
-})
 
 defineEmits(['toggle-drawer'])
 

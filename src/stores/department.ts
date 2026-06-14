@@ -8,6 +8,7 @@ export interface Department {
   departmentName: string
   parentDepartmentId?: string | null
   managerEmployeeId?: string | null
+  description?: string
   isActive?: boolean
   subDepartments?: Department[]
 }

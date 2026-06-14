@@ -22,14 +22,16 @@ const selectedDept = ref<any>(null)
 const newDept = ref({
   departmentCode: '',
   departmentName: '',
+  description: '',
   parentDepartmentId: '',
   managerEmployeeId: '',
   isActive: true
 })
 
 const headers = [
-  { title: 'Department Name', align: 'start', key: 'departmentName', width: '40%' },
-  { title: 'Code', align: 'start', key: 'departmentCode', width: '20%' },
+  { title: 'Department Name', align: 'start', key: 'departmentName', width: '30%' },
+  { title: 'Code', align: 'start', key: 'departmentCode', width: '15%' },
+  { title: 'Description', align: 'start', key: 'description', width: '25%' },
   { title: 'Status', align: 'center', key: 'isActive', width: '15%' },
   { title: '', align: 'end', key: 'actions', sortable: false },
 ] as const
@@ -61,6 +63,7 @@ function openCreateModal() {
   newDept.value = {
     departmentCode: '',
     departmentName: '',
+    description: '',
     parentDepartmentId: '',
     managerEmployeeId: '',
     isActive: true
@@ -74,6 +77,7 @@ function openEditModal(item: any) {
   newDept.value = {
     departmentCode: item.departmentCode,
     departmentName: item.departmentName,
+    description: item.description || '',
     parentDepartmentId: item.parentDepartmentId || '',
     managerEmployeeId: item.managerEmployeeId || '',
     isActive: item.isActive
@@ -85,6 +89,7 @@ async function submitCreateOrUpdate() {
   const payload = {
     departmentCode: newDept.value.departmentCode,
     departmentName: newDept.value.departmentName,
+    description: newDept.value.description,
     parentDepartmentId: newDept.value.parentDepartmentId || null,
     managerEmployeeId: newDept.value.managerEmployeeId || null,
     isActive: newDept.value.isActive
@@ -167,6 +172,11 @@ async function executeDelete() {
           <span class="font-mono text-sm font-medium text-muted-foreground">{{ item.departmentCode }}</span>
         </template>
 
+        <!-- Custom Description Column -->
+        <template #[`item.description`]="{ item }">
+          <span class="font-sans text-sm text-muted-foreground">{{ item.description || '—' }}</span>
+        </template>
+
         <!-- Custom Status Column -->
         <template #[`item.isActive`]="{ item }">
           <span v-if="item.isActive" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-green-50 text-green-600 border border-green-200">
@@ -203,6 +213,11 @@ async function executeDelete() {
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Department Name <span class="text-red-500">*</span></label>
           <input v-model="newDept.departmentName" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Human Resources"/>
+        </div>
+
+        <div>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Description</label>
+          <textarea v-model="newDept.description" rows="2" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm resize-none" placeholder="Optional description..."></textarea>
         </div>
 
         <div>

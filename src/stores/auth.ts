@@ -21,6 +21,7 @@ export const useAuthStore = defineStore('auth', () => {
       role.value = userRoleStr
       localStorage.setItem('role', userRoleStr)
     } catch (e) {
+      console.error('Error decoding token', e)
       role.value = 'Employee'
       localStorage.setItem('role', 'Employee')
     }

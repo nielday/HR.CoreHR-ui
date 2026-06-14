@@ -8,6 +8,9 @@ export interface Employee {
   fullName: string
   email: string
   phoneNumber?: string
+  dateOfBirth?: string
+  gender?: string
+  address?: string
   departmentId: string
   departmentName?: string
   positionId: string
@@ -22,15 +25,28 @@ export interface Employee {
 
 export const useEmployeeStore = defineStore('employee', () => {
   const employees = ref<Employee[]>([])
+  const totalItems = ref<number>(0)
+  const totalPages = ref<number>(0)
+  const currentPage = ref<number>(1)
+  const pageSize = ref<number>(10)
   const isLoading = ref<boolean>(false)
   const error = ref<string | null>(null)
 
-  async function fetchEmployees() {
+  async function fetchEmployees(params: any = {}) {
     isLoading.value = true
     error.value = null
     try {
-      const response = await api.get('/Employees')
-      employees.value = response.data.items || response.data
+      const response = await api.get('/Employees', { params })
+      if (response.data.items) {
+        employees.value = response.data.items
+        totalItems.value = response.data.totalItems
+        totalPages.value = response.data.totalPages
+        currentPage.value = response.data.page
+        pageSize.value = response.data.pageSize
+      } else {
+        employees.value = response.data
+        totalItems.value = response.data.length
+      }
     } catch (err: any) {
       error.value = err.response?.data?.message || err.message || 'Failed to fetch employees'
     } finally {
@@ -101,5 +117,51 @@ export const useEmployeeStore = defineStore('employee', () => {
     }
   }
 
-  return { employees, isLoading, error, fetchEmployees, createEmployee, updateEmployee, deleteEmployee, resignEmployee }
+  async function transferEmployee(id: string, data: any) {
+    isLoading.value = true
+    error.value = null
+    try {
+      await api.post(`/Employees/${id}/transfer`, data)
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Failed to transfer employee'
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function fetchEmployeeById(id: string) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await api.get(`/Employees/${id}`)
+      return response.data
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Failed to fetch employee details'
+      return null
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function fetchDepartmentHistory(id: string) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await api.get(`/Employees/${id}/department-history`)
+      return response.data
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Failed to fetch department history'
+      return []
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  return { 
+    employees, totalItems, totalPages, currentPage, pageSize, 
+    isLoading, error, fetchEmployees, fetchEmployeeById, fetchDepartmentHistory, 
+    createEmployee, updateEmployee, deleteEmployee, resignEmployee, transferEmployee 
+  }
 })
