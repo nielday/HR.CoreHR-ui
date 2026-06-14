@@ -46,16 +46,16 @@ const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.v
       <!-- Navigation -->
       <nav class="flex-1 px-4 py-6 space-y-1 relative z-10 overflow-y-auto custom-scrollbar">
         <div class="px-4 mb-2 mt-2">
-          <span class="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70">Main Menu</span>
+          <span class="font-mono text-[10px] uppercase tracking-[0.2em] text-white/50">Main Menu</span>
         </div>
 
-        <RouterLink to="/employees" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+        <RouterLink to="/employees" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
           <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
           <span class="font-sans font-medium text-sm">Employees</span>
         </RouterLink>
 
         <template v-if="canViewAll">
-          <RouterLink to="/departments" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+          <RouterLink to="/departments" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
             <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
             <span class="font-sans font-medium text-sm">Departments</span>
           </RouterLink>
@@ -63,15 +63,15 @@ const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.v
         
         <template v-if="canManageSystem">
           <div class="px-4 mb-2 mt-8">
-            <span class="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70">Settings</span>
+            <span class="font-mono text-[10px] uppercase tracking-[0.2em] text-white/50">Settings</span>
           </div>
 
-          <RouterLink to="/positions" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+          <RouterLink to="/positions" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
             <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
             <span class="font-sans font-medium text-sm">Positions</span>
           </RouterLink>
 
-          <RouterLink to="/contracts" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+          <RouterLink to="/contracts" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
             <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
             <span class="font-sans font-medium text-sm">Contract Types</span>
           </RouterLink>
