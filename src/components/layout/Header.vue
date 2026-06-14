@@ -33,25 +33,12 @@ function logout() {
       </button>
       
       <div class="flex flex-col">
-        <h2 class="font-display text-xl md:text-2xl text-foreground">{{ pageTitle }}</h2>
+        <!-- Title removed to prevent hierarchy redundancy with page headers -->
       </div>
     </template>
 
     <template v-slot:append>
       <div class="flex items-center gap-2 md:gap-4">
-        <!-- Search -->
-        <div class="hidden md:flex items-center relative group">
-          <SearchIcon class="w-4 h-4 absolute left-3 text-muted-foreground group-focus-within:text-accent transition-colors" />
-          <input type="text" placeholder="Search anything..." class="h-10 pl-10 pr-4 rounded-xl bg-muted/50 border border-transparent focus:bg-transparent focus:border-accent/30 focus:ring-2 focus:ring-accent/10 outline-none text-sm w-64 transition-all" />
-        </div>
-
-        <button class="p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors relative">
-          <BellIcon class="w-5 h-5" />
-          <span class="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full border-2 border-background animate-pulse"></span>
-        </button>
-
-        <div class="h-8 w-[1px] bg-border mx-1 md:mx-2"></div>
-
         <button @click="logout" class="flex items-center gap-2 p-2 px-3 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
           <LogOutIcon class="w-4 h-4" />
           <span class="hidden md:inline font-medium text-sm">Logout</span>

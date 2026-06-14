@@ -26,7 +26,7 @@ const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.v
 </script>
 
 <template>
-  <v-navigation-drawer v-model="drawer" border="right" elevation="0" class="bg-foreground text-muted-foreground border-r border-border/10" :width="280">
+  <v-navigation-drawer v-model="drawer" border="right" elevation="0" class="bg-foreground text-white/70 border-r border-border/10" :width="280">
     <div class="h-full flex flex-col relative overflow-hidden bg-foreground">
       
       <!-- Background Texture (Dot pattern for dark sections) -->
@@ -87,7 +87,7 @@ const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.v
             </div>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-white truncate">{{ userRole === 'Employee' ? 'General User' : 'Administrator' }}</p>
+            <p class="text-sm font-medium text-white truncate">{{ userRole === 'Admin' ? 'Administrator' : userRole }}</p>
             <p class="text-xs text-muted-foreground truncate">{{ userRole }} Role</p>
           </div>
         </div>

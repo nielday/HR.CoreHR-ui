@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
 import { XIcon } from 'lucide-vue-next'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   title: string
   isOpen: boolean
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl'
@@ -12,6 +13,20 @@ withDefaults(defineProps<{
 const emit = defineEmits<{
   (e: 'close'): void
 }>()
+
+const handleKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && props.isOpen) {
+    emit('close')
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown)
+})
 </script>
 
 <template>
@@ -21,7 +36,10 @@ const emit = defineEmits<{
     
     <!-- Modal Content -->
     <div 
-      class="relative bg-card w-full p-8 rounded-2xl shadow-xl border border-border animate-in fade-in zoom-in-95 duration-200 max-h-[95vh] overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      class="relative bg-card w-full p-8 rounded-2xl shadow-xl border border-border motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 duration-200 max-h-[95vh] overflow-y-auto"
       :class="{
         'max-w-sm': maxWidth === 'sm',
         'max-w-md': maxWidth === 'md',
@@ -33,8 +51,8 @@ const emit = defineEmits<{
       }"
     >
       <div class="flex justify-between items-center mb-6">
-        <h3 class="font-display text-2xl text-foreground">{{ title }}</h3>
-        <button type="button" @click="emit('close')" class="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-full hover:bg-muted">
+        <h3 id="modal-title" class="font-display text-2xl text-foreground">{{ title }}</h3>
+        <button type="button" @click="emit('close')" aria-label="Close modal" class="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-full hover:bg-muted">
           <XIcon class="w-5 h-5" />
         </button>
       </div>

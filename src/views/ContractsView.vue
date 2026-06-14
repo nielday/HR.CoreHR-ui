@@ -97,12 +97,12 @@ async function executeDelete() {
 </script>
 
 <template>
-  <div class="space-y-8 animate-in fade-in duration-700 pb-12">
+  <div class="space-y-8 motion-safe:animate-in motion-safe:fade-in duration-700 pb-12">
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
       <div>
-        <h1 class="font-display text-4xl mb-2 text-foreground">Contract Types</h1>
-        <p class="text-muted-foreground font-serif text-lg">Manage employment agreements and durations.</p>
+        <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Contract Types</h1>
+        <p class="text-muted-foreground font-sans text-lg">Manage employment agreements and durations.</p>
       </div>
       <Button v-if="canManageSystem" @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
         <PlusIcon class="w-4 h-4 mr-2" />
@@ -146,10 +146,10 @@ async function executeDelete() {
 
         <template #[`item.actions`]="{ item }">
           <div v-if="canManageSystem" class="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
-            <button @click="openEditModal(item)" class="p-2 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Edit">
+            <button @click="openEditModal(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Edit">
               <PencilIcon class="w-4 h-4" />
             </button>
-            <button @click="confirmDelete(item)" class="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+            <button @click="confirmDelete(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
               <TrashIcon class="w-4 h-4" />
             </button>
           </div>
