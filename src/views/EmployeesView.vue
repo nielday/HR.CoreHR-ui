@@ -76,9 +76,9 @@ function openEditModal(item: any) {
     departmentId: item.departmentId,
     positionId: item.positionId,
     contractTypeId: item.contractTypeId || '',
-    contractStartDate: item.contractStartDate ? item.contractStartDate.split('T')[0] : '',
-    contractEndDate: item.contractEndDate ? item.contractEndDate.split('T')[0] : '',
-    hireDate: item.hireDate ? item.hireDate.split('T')[0] : new Date().toISOString().split('T')[0]
+    contractStartDate: item.contractStartDate ? item.contractStartDate.split('T')[0] as string : '',
+    contractEndDate: item.contractEndDate ? item.contractEndDate.split('T')[0] as string : '',
+    hireDate: item.hireDate ? item.hireDate.split('T')[0] as string : new Date().toISOString().split('T')[0] as string
   }
   isModalOpen.value = true
 }
