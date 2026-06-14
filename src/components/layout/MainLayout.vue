@@ -1,20 +1,38 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { ref } from 'vue'
 import Sidebar from './Sidebar.vue'
 import Header from './Header.vue'
+
+// Manage drawer state here to pass to Header and Sidebar
+const drawer = ref(null)
 </script>
 
 <template>
-  <div class="flex h-screen w-full bg-background overflow-hidden font-sans">
-    <Sidebar />
-    <div class="flex-1 flex flex-col min-w-0">
-      <Header />
-      <main class="flex-1 overflow-y-auto p-6 md:p-8 lg:p-12 relative">
-        <!-- Optional global background textures could go here -->
-        <div class="max-w-6xl mx-auto">
-          <RouterView />
-        </div>
-      </main>
-    </div>
-  </div>
+  <v-app class="bg-background font-sans text-foreground">
+    <Sidebar v-model="drawer" />
+    <Header @toggle-drawer="drawer = !drawer" />
+
+    <v-main class="bg-background min-h-screen">
+      <div class="max-w-7xl mx-auto w-full p-4 md:p-8">
+        <router-view v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </div>
+    </v-main>
+  </v-app>
 </template>
+
+<style>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+</style>

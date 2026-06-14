@@ -12,12 +12,29 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import '@mdi/font/css/materialdesignicons.css'
 
+const customTheme = {
+  dark: false,
+  colors: {
+    background: '#FAFAFA',
+    surface: '#FFFFFF',
+    primary: '#0052FF',
+    secondary: '#4D7CFF',
+    error: '#ef4444',
+    info: '#3b82f6',
+    success: '#22c55e',
+    warning: '#f59e0b',
+  },
+}
+
 const vuetify = createVuetify({
   components,
   directives,
   theme: {
-    defaultTheme: 'light'
-  }
+    defaultTheme: 'customTheme',
+    themes: {
+      customTheme,
+    },
+  },
 })
 
 const app = createApp(App)

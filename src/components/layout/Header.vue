@@ -1,46 +1,62 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthStore } from '../../stores/auth'
+import { MenuIcon, BellIcon, SearchIcon, LogOutIcon } from 'lucide-vue-next'
 
 const route = useRoute()
+const authStore = useAuthStore()
+
 const pageTitle = computed(() => {
   if (route.path === '/employees') return 'Employees'
   if (route.path === '/departments') return 'Departments'
   if (route.path === '/positions') return 'Positions'
   if (route.path === '/contracts') return 'Contract Types'
-  if (route.path === '/') return 'Overview'
   if (route.path === '/about') return 'About System'
   return 'Dashboard'
 })
+
+defineEmits(['toggle-drawer'])
+
+function logout() {
+  authStore.clearToken()
+  window.location.href = '/login'
+}
 </script>
 
 <template>
-  <header class="h-20 bg-card border-b border-border flex items-center justify-between px-8 flex-shrink-0 z-10 shadow-sm relative">
-    
-    <!-- Radial Glow for warmth (from prompt) -->
-    <div class="absolute top-0 left-0 w-64 h-20 bg-accent/5 blur-[50px] pointer-events-none"></div>
-
-    <div class="flex items-center gap-4 relative z-10">
-      <h2 class="font-display text-2xl text-foreground">{{ pageTitle }}</h2>
-      
-      <!-- Section Label pattern from design prompt -->
-      <div class="hidden md:inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 ml-4">
-        <span class="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-        <span class="font-mono text-[10px] uppercase tracking-[0.15em] text-accent">
-          Live System
-        </span>
-      </div>
-    </div>
-
-    <!-- Right side actions -->
-    <div class="flex items-center gap-4 relative z-10">
-      <!-- Notification Icon Button -->
-      <button class="h-10 w-10 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors hover:-translate-y-0.5 duration-200">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-        </svg>
+  <v-app-bar elevation="0" class="bg-background/80 backdrop-blur-xl border-b border-border px-2 md:px-6">
+    <template v-slot:prepend>
+      <!-- Mobile menu toggle -->
+      <button @click="$emit('toggle-drawer')" class="lg:hidden p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors mr-2">
+        <MenuIcon class="w-5 h-5" />
       </button>
-    </div>
-  </header>
+      
+      <div class="flex flex-col">
+        <h2 class="font-display text-xl md:text-2xl text-foreground">{{ pageTitle }}</h2>
+      </div>
+    </template>
+
+    <template v-slot:append>
+      <div class="flex items-center gap-2 md:gap-4">
+        <!-- Search -->
+        <div class="hidden md:flex items-center relative group">
+          <SearchIcon class="w-4 h-4 absolute left-3 text-muted-foreground group-focus-within:text-accent transition-colors" />
+          <input type="text" placeholder="Search anything..." class="h-10 pl-10 pr-4 rounded-xl bg-muted/50 border border-transparent focus:bg-transparent focus:border-accent/30 focus:ring-2 focus:ring-accent/10 outline-none text-sm w-64 transition-all" />
+        </div>
+
+        <button class="p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors relative">
+          <BellIcon class="w-5 h-5" />
+          <span class="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full border-2 border-background animate-pulse"></span>
+        </button>
+
+        <div class="h-8 w-[1px] bg-border mx-1 md:mx-2"></div>
+
+        <button @click="logout" class="flex items-center gap-2 p-2 px-3 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+          <LogOutIcon class="w-4 h-4" />
+          <span class="hidden md:inline font-medium text-sm">Logout</span>
+        </button>
+      </div>
+    </template>
+  </v-app-bar>
 </template>
