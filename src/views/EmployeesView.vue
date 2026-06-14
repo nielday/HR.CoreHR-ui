@@ -22,7 +22,7 @@ const isConfirmDeleteOpen = ref(false)
 const isResignModalOpen = ref(false)
 const selectedEmp = ref<any>(null)
 const resignReason = ref('')
-const resignDate = ref(new Date().toISOString().split('T')[0])
+const resignDate = ref<string>(new Date().toISOString().split('T')[0] as string)
 
 const newEmp = ref({
   employeeCode: '',

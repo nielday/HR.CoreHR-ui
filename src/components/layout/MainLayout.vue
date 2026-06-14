@@ -4,7 +4,7 @@ import Sidebar from './Sidebar.vue'
 import Header from './Header.vue'
 
 // Manage drawer state here to pass to Header and Sidebar
-const drawer = ref<boolean | null>(null)
+const drawer = ref(true)
 </script>
 
 <template>
