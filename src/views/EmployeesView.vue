@@ -5,6 +5,7 @@ import { useEmployeeStore } from '../stores/employee'
 import { useDepartmentStore } from '../stores/department'
 import { usePositionStore } from '../stores/position'
 import { useContractStore } from '../stores/contract'
+import { useAuthStore } from '../stores/auth'
 import Button from '../components/ui/Button.vue'
 import Modal from '../components/ui/Modal.vue'
 
