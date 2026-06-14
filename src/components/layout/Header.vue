@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const pageTitle = computed(() => {
+  if (route.path === '/employees') return 'Employees'
   if (route.path === '/departments') return 'Departments'
   if (route.path === '/positions') return 'Positions'
   if (route.path === '/contracts') return 'Contract Types'

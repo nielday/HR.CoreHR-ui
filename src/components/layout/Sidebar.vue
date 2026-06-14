@@ -16,9 +16,14 @@ import { RouterLink } from 'vue-router'
 
     <!-- Navigation -->
     <nav class="flex-1 px-4 space-y-2 relative z-10 overflow-y-auto">
-      <div class="mb-4 mt-2 px-4">
+      <div class="px-4 mb-2 mt-4">
         <span class="font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground">Main Menu</span>
       </div>
+
+      <RouterLink to="/employees" class="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+        <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
+        <span class="font-sans font-medium text-sm">Employees</span>
+      </RouterLink>
 
       <RouterLink to="/departments" class="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
         <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>

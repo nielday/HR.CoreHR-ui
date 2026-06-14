@@ -4,6 +4,7 @@ import LoginView from '../views/LoginView.vue'
 import DepartmentsView from '../views/DepartmentsView.vue'
 import PositionsView from '../views/PositionsView.vue'
 import ContractsView from '../views/ContractsView.vue'
+import EmployeesView from '../views/EmployeesView.vue'
 import { useAuthStore } from '../stores/auth'
 
 const router = createRouter({
@@ -22,6 +23,11 @@ const router = createRouter({
         {
           path: '',
           redirect: '/departments'
+        },
+        {
+          path: 'employees',
+          name: 'employees',
+          component: EmployeesView,
         },
         {
           path: 'departments',
