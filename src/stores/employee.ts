@@ -30,7 +30,7 @@ export const useEmployeeStore = defineStore('employee', () => {
     error.value = null
     try {
       const response = await api.get('/Employees')
-      employees.value = response.data
+      employees.value = response.data.items || response.data
     } catch (err: any) {
       error.value = err.response?.data?.message || err.message || 'Failed to fetch employees'
     } finally {
