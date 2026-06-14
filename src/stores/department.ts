@@ -6,10 +6,15 @@ export interface Department {
   id?: string
   departmentCode: string
   departmentName: string
+  parentDepartmentId?: string | null
+  managerEmployeeId?: string | null
+  isActive?: boolean
+  subDepartments?: Department[]
 }
 
 export const useDepartmentStore = defineStore('department', () => {
   const departments = ref<Department[]>([])
+  const departmentTree = ref<Department[]>([])
   const isLoading = ref<boolean>(false)
   const error = ref<string | null>(null)
 
@@ -26,16 +31,28 @@ export const useDepartmentStore = defineStore('department', () => {
     }
   }
 
+  async function fetchDepartmentTree() {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await api.get('/Departments/tree')
+      departmentTree.value = response.data
+    } catch (err: any) {
+      error.value = err.response?.data?.message || err.message || 'Failed to fetch department tree'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function createDepartment(data: Department) {
     isLoading.value = true
     error.value = null
     try {
-      const response = await api.post('/Departments', data)
-      // Append the newly created object to state
-      departments.value.push(response.data)
+      await api.post('/Departments', data)
+      await fetchDepartmentTree()
+      await fetchDepartments()
       return true
     } catch (err: any) {
-      // HR Core returns 400 Bad Request with exception string if domain fails
       error.value = err.response?.data?.message || err.response?.data || err.message || 'Failed to create department'
       return false
     } finally {
@@ -43,5 +60,41 @@ export const useDepartmentStore = defineStore('department', () => {
     }
   }
 
-  return { departments, isLoading, error, fetchDepartments, createDepartment }
+  async function updateDepartment(id: string, data: Department) {
+    isLoading.value = true
+    error.value = null
+    try {
+      await api.put(`/Departments/${id}`, data)
+      await fetchDepartmentTree()
+      await fetchDepartments()
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.message || err.response?.data || err.message || 'Failed to update department'
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function deleteDepartment(id: string) {
+    isLoading.value = true
+    error.value = null
+    try {
+      await api.delete(`/Departments/${id}`)
+      await fetchDepartmentTree()
+      await fetchDepartments()
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.message || err.message || 'Failed to delete department'
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  return { 
+    departments, departmentTree, isLoading, error, 
+    fetchDepartments, fetchDepartmentTree, 
+    createDepartment, updateDepartment, deleteDepartment 
+  }
 })

@@ -1,118 +1,290 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { PlusIcon } from 'lucide-vue-next'
+import { ref, onMounted, computed } from 'vue'
+import { PlusIcon, PencilIcon, TrashIcon, CornerDownRightIcon } from 'lucide-vue-next'
 import { useDepartmentStore } from '../stores/department'
+import { useEmployeeStore } from '../stores/employee'
 import Button from '../components/ui/Button.vue'
 import Modal from '../components/ui/Modal.vue'
 
 const store = useDepartmentStore()
+const employeeStore = useEmployeeStore()
+
 const isModalOpen = ref(false)
+const isEditMode = ref(false)
+const editingId = ref<string | null>(null)
+const isConfirmDeleteOpen = ref(false)
+const selectedDept = ref<any>(null)
 
 const newDept = ref({
   departmentCode: '',
-  departmentName: ''
+  departmentName: '',
+  parentDepartmentId: '',
+  managerEmployeeId: '',
+  isActive: true
 })
+
+const headers = [
+  { title: 'Department Name', align: 'start', key: 'departmentName', width: '40%' },
+  { title: 'Code', align: 'start', key: 'departmentCode', width: '20%' },
+  { title: 'Status', align: 'center', key: 'isActive', width: '15%' },
+  { title: '', align: 'end', key: 'actions', sortable: false },
+] as const
 
 onMounted(() => {
-  store.fetchDepartments()
+  store.fetchDepartmentTree()
+  store.fetchDepartments() // for the flat list in the dropdown
+  if (employeeStore.employees.length === 0) employeeStore.fetchEmployees()
 })
 
-async function submitCreate() {
-  const success = await store.createDepartment({ ...newDept.value })
+// Flatten the tree for v-data-table
+const flattenedTree = computed(() => {
+  const result: any[] = []
+  function flatten(nodes: any[], level: number = 0) {
+    for (const node of nodes) {
+      result.push({ ...node, level })
+      if (node.subDepartments && node.subDepartments.length > 0) {
+        flatten(node.subDepartments, level + 1)
+      }
+    }
+  }
+  flatten(store.departmentTree)
+  return result
+})
+
+function openCreateModal() {
+  isEditMode.value = false
+  editingId.value = null
+  newDept.value = {
+    departmentCode: '',
+    departmentName: '',
+    parentDepartmentId: '',
+    managerEmployeeId: '',
+    isActive: true
+  }
+  isModalOpen.value = true
+}
+
+function openEditModal(item: any) {
+  isEditMode.value = true
+  editingId.value = item.id
+  newDept.value = {
+    departmentCode: item.departmentCode,
+    departmentName: item.departmentName,
+    parentDepartmentId: item.parentDepartmentId || '',
+    managerEmployeeId: item.managerEmployeeId || '',
+    isActive: item.isActive
+  }
+  isModalOpen.value = true
+}
+
+async function submitCreateOrUpdate() {
+  const payload = {
+    departmentCode: newDept.value.departmentCode,
+    departmentName: newDept.value.departmentName,
+    parentDepartmentId: newDept.value.parentDepartmentId || null,
+    managerEmployeeId: newDept.value.managerEmployeeId || null,
+    isActive: newDept.value.isActive
+  }
+  
+  let success = false
+  if (isEditMode.value && editingId.value) {
+    success = await store.updateDepartment(editingId.value, payload)
+  } else {
+    success = await store.createDepartment(payload)
+  }
+
   if (success) {
     isModalOpen.value = false
-    newDept.value = { departmentCode: '', departmentName: '' } // reset form
+  }
+}
+
+function confirmDelete(item: any) {
+  selectedDept.value = item
+  isConfirmDeleteOpen.value = true
+}
+
+async function executeDelete() {
+  if (selectedDept.value) {
+    await store.deleteDepartment(selectedDept.value.id)
+    isConfirmDeleteOpen.value = false
   }
 }
 </script>
 
 <template>
-  <div class="space-y-8 animate-in fade-in duration-700">
-    <!-- Header Area -->
+  <div class="space-y-8 animate-in fade-in duration-700 pb-12">
+    <!-- Header Section -->
     <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
       <div>
-        <h1 class="font-display text-4xl mb-2">Departments</h1>
-        <p class="text-muted-foreground font-serif">Manage organization structure and divisions.</p>
+        <h1 class="font-display text-4xl mb-2 text-foreground">Departments</h1>
+        <p class="text-muted-foreground font-serif text-lg">Manage organizational structure and hierarchy.</p>
       </div>
-      <Button @click="isModalOpen = true">
+      <Button @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
         <PlusIcon class="w-4 h-4 mr-2" />
         New Department
       </Button>
     </div>
 
-    <!-- Error Alert -->
-    <div v-if="store.error && !isModalOpen" class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
+    <div v-if="store.error && !isModalOpen && !isConfirmDeleteOpen" class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
       {{ store.error }}
     </div>
 
-    <!-- Data Table -->
-    <div class="bg-card border border-border rounded-2xl shadow-sm overflow-hidden relative">
-      <!-- Loading Overlay -->
-      <div v-if="store.isLoading && !isModalOpen" class="absolute inset-0 bg-card/50 backdrop-blur-[2px] flex items-center justify-center z-10">
-        <span class="font-mono text-sm tracking-widest uppercase text-accent animate-pulse">Syncing...</span>
-      </div>
+    <!-- Tree View inside Minimalist Card -->
+    <div class="bg-card border border-border rounded-2xl shadow-md overflow-hidden relative group">
+      <!-- Glow effect -->
+      <div class="absolute -top-24 -right-24 w-48 h-48 bg-accent/5 rounded-full blur-[80px] pointer-events-none transition-opacity duration-1000 opacity-50 group-hover:opacity-100"></div>
 
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr class="border-b border-border bg-muted/30">
-            <th class="py-4 px-6 font-mono text-xs uppercase tracking-widest text-muted-foreground font-medium w-1/3">Code</th>
-            <th class="py-4 px-6 font-mono text-xs uppercase tracking-widest text-muted-foreground font-medium w-2/3">Name</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-border">
-          <tr v-if="store.departments.length === 0 && !store.isLoading">
-            <td colspan="2" class="py-12 text-center text-muted-foreground italic font-serif">
-              No departments found. Create one to get started.
-            </td>
-          </tr>
-          <tr v-for="dept in store.departments" :key="dept.id || dept.departmentCode" class="hover:bg-muted/30 transition-colors group">
-            <td class="py-4 px-6 font-mono text-sm text-foreground">
-              {{ dept.departmentCode }}
-            </td>
-            <td class="py-4 px-6 font-sans font-medium text-foreground">
-              {{ dept.departmentName }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <v-data-table
+        :headers="headers as any"
+        :items="flattenedTree"
+        :loading="store.isLoading"
+        class="bg-transparent font-sans"
+        hover
+        hide-default-footer
+        :items-per-page="-1"
+      >
+        <!-- Custom Department Name Column (Tree indentation) -->
+        <template v-slot:item.departmentName="{ item }">
+          <div class="flex items-center" :style="{ paddingLeft: `${item.level * 2}rem` }">
+            <CornerDownRightIcon v-if="item.level > 0" class="w-4 h-4 text-muted-foreground/40 mr-2 shrink-0" />
+            <div class="py-3">
+              <div class="font-semibold text-foreground text-[15px] flex items-center gap-2">
+                {{ item.departmentName }}
+                <span v-if="item.subDepartments?.length" class="inline-flex items-center justify-center bg-accent/10 text-accent font-mono text-[10px] rounded-full w-5 h-5">
+                  {{ item.subDepartments.length }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Custom Code Column -->
+        <template v-slot:item.departmentCode="{ item }">
+          <span class="font-mono text-sm font-medium text-muted-foreground">{{ item.departmentCode }}</span>
+        </template>
+
+        <!-- Custom Status Column -->
+        <template v-slot:item.isActive="{ item }">
+          <span v-if="item.isActive" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-green-50 text-green-600 border border-green-200">
+            Active
+          </span>
+          <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-gray-100 text-gray-500 border border-gray-200">
+            Inactive
+          </span>
+        </template>
+
+        <!-- Custom Actions Column -->
+        <template v-slot:item.actions="{ item }">
+          <div class="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
+            <button @click="openEditModal(item)" class="p-2 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Edit">
+              <PencilIcon class="w-4 h-4" />
+            </button>
+            <button @click="confirmDelete(item)" class="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete" :disabled="item.subDepartments?.length > 0">
+              <TrashIcon class="w-4 h-4" :class="{'opacity-30 cursor-not-allowed': item.subDepartments?.length > 0}" />
+            </button>
+          </div>
+        </template>
+      </v-data-table>
     </div>
 
-    <!-- Create Modal -->
-    <Modal :isOpen="isModalOpen" title="New Department" @close="isModalOpen = false">
-      <form @submit.prevent="submitCreate" class="space-y-6">
-        <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Code</label>
-          <input 
-            v-model="newDept.departmentCode" 
-            type="text" 
-            required 
-            class="w-full h-12 px-4 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent focus:ring-offset-2 outline-none transition-all font-mono text-sm"
-            placeholder="e.g. IT-01"
-          />
-        </div>
-        <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Name</label>
-          <input 
-            v-model="newDept.departmentName" 
-            type="text" 
-            required 
-            class="w-full h-12 px-4 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent focus:ring-offset-2 outline-none transition-all font-sans text-sm"
-            placeholder="Information Technology"
-          />
-        </div>
+    <!-- Create / Edit Department Modal -->
+    <Modal :isOpen="isModalOpen" :title="isEditMode ? 'Edit Department' : 'New Department'" @close="isModalOpen = false">
+      <form @submit.prevent="submitCreateOrUpdate" class="space-y-5">
         
-        <!-- Error in Modal -->
-        <div v-if="store.error && isModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm">
+        <div>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Department Code <span class="text-red-500">*</span></label>
+          <input v-model="newDept.departmentCode" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="HR-01" :disabled="isEditMode"/>
+        </div>
+
+        <div>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Department Name <span class="text-red-500">*</span></label>
+          <input v-model="newDept.departmentName" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Human Resources"/>
+        </div>
+
+        <div>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Parent Department</label>
+          <select v-model="newDept.parentDepartmentId" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
+            <option value="">-- None (Root Level) --</option>
+            <option v-for="d in store.departments" :key="d.id" :value="d.id" :disabled="d.id === editingId">
+              {{ d.departmentName }}
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Department Manager</label>
+          <select v-model="newDept.managerEmployeeId" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
+            <option value="">-- None Assigned --</option>
+            <option v-for="e in employeeStore.employees" :key="e.id" :value="e.id">
+              {{ e.fullName }} ({{ e.employeeCode }})
+            </option>
+          </select>
+        </div>
+
+        <div v-if="isEditMode" class="flex items-center gap-3 pt-2">
+          <input type="checkbox" id="isActive" v-model="newDept.isActive" class="w-4 h-4 rounded text-accent focus:ring-accent accent-accent" />
+          <label for="isActive" class="font-sans text-sm text-foreground">Active Status</label>
+        </div>
+
+        <div v-if="store.error && isModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans mt-4">
           {{ store.error }}
         </div>
 
-        <div class="pt-4 flex gap-4">
-          <Button variant="secondary" type="button" class="flex-1" @click="isModalOpen = false">Cancel</Button>
-          <Button type="submit" class="flex-1" :disabled="store.isLoading">
-            {{ store.isLoading ? 'Creating...' : 'Create' }}
+        <div class="pt-6 border-t border-border flex justify-end gap-4 mt-6">
+          <Button variant="ghost" type="button" @click="isModalOpen = false">Cancel</Button>
+          <Button type="submit" :disabled="store.isLoading" class="min-w-[150px]">
+            {{ store.isLoading ? 'Processing...' : (isEditMode ? 'Save Changes' : 'Create Department') }}
           </Button>
         </div>
       </form>
     </Modal>
+
+    <!-- Delete Confirmation Modal -->
+    <Modal :isOpen="isConfirmDeleteOpen" title="Confirm Deletion" @close="isConfirmDeleteOpen = false">
+      <div class="space-y-6">
+        <p class="text-sm text-muted-foreground font-sans">
+          Are you sure you want to delete <strong>{{ selectedDept?.departmentName }}</strong>?
+        </p>
+
+        <div v-if="store.error && isConfirmDeleteOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans">
+          {{ store.error }}
+        </div>
+
+        <div class="pt-4 flex justify-end gap-4">
+          <Button variant="ghost" @click="isConfirmDeleteOpen = false">Cancel</Button>
+          <Button @click="executeDelete" :disabled="store.isLoading" class="bg-red-500 hover:bg-red-600 border-transparent text-white shadow-md">
+            {{ store.isLoading ? 'Deleting...' : 'Delete Department' }}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+
   </div>
 </template>
+
+<style scoped>
+/* Make vuetify data table look like minimal tailwind table */
+:deep(.v-data-table) {
+  background: transparent !important;
+}
+:deep(.v-data-table__th) {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #64748B !important;
+  font-weight: 500 !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+  background: rgba(241, 245, 249, 0.3) !important;
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+}
+:deep(.v-data-table__td) {
+  border-bottom: 1px solid #E2E8F0 !important;
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+:deep(.v-data-table__tr:hover) {
+  background: rgba(241, 245, 249, 0.4) !important;
+}
+</style>
