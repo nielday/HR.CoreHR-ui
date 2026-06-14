@@ -43,5 +43,38 @@ export const usePositionStore = defineStore('position', () => {
     }
   }
 
-  return { positions, isLoading, error, fetchPositions, createPosition }
+  async function updatePosition(id: string, data: any) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await api.put(`/Positions/${id}`, data)
+      const idx = positions.value.findIndex(p => p.id === id)
+      if (idx !== -1) {
+        positions.value[idx] = response.data
+      }
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Failed to update position'
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function deletePosition(id: string) {
+    isLoading.value = true
+    error.value = null
+    try {
+      await api.delete(`/Positions/${id}`)
+      positions.value = positions.value.filter(p => p.id !== id)
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Failed to delete position'
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  return { positions, isLoading, error, fetchPositions, createPosition, updatePosition, deletePosition }
 })

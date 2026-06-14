@@ -28,26 +28,31 @@ const router = createRouter({
           path: 'employees',
           name: 'employees',
           component: EmployeesView,
+          meta: { roles: ['Admin', 'HR', 'Manager', 'Employee'] }
         },
         {
           path: 'departments',
           name: 'departments',
           component: DepartmentsView,
+          meta: { roles: ['Admin', 'HR', 'Manager'] }
         },
         {
           path: 'positions',
           name: 'positions',
           component: PositionsView,
+          meta: { roles: ['Admin', 'HR'] }
         },
         {
           path: 'contracts',
           name: 'contracts',
           component: ContractsView,
+          meta: { roles: ['Admin', 'HR'] }
         },
         {
           path: 'about',
           name: 'about',
           component: () => import('../views/AboutView.vue'),
+          meta: { roles: ['Admin', 'HR', 'Manager', 'Employee'] }
         }
       ]
     }

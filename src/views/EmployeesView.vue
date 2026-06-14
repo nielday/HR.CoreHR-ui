@@ -75,7 +75,7 @@ function openEditModal(item: any) {
     phoneNumber: item.phoneNumber || '',
     departmentId: item.departmentId,
     positionId: item.positionId,
-    contractTypeId: item.contractTypeId || '',
+    contractTypeId: item.currentContractTypeId || '',
     contractStartDate: item.contractStartDate ? item.contractStartDate.split('T')[0] as string : '',
     contractEndDate: item.contractEndDate ? item.contractEndDate.split('T')[0] as string : '',
     hireDate: item.hireDate ? item.hireDate.split('T')[0] as string : new Date().toISOString().split('T')[0] as string
@@ -131,6 +131,10 @@ async function executeResign() {
     }
   }
 }
+
+const authStore = useAuthStore()
+const canManageSystem = computed(() => ['Admin', 'HR'].includes(authStore.userRole || ''))
+
 </script>
 
 <template>
@@ -141,7 +145,7 @@ async function executeResign() {
         <h1 class="font-display text-4xl mb-2 text-foreground">Employees</h1>
         <p class="text-muted-foreground font-serif text-lg">Manage workforce, assignments, and contracts.</p>
       </div>
-      <Button @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
+      <Button v-if="canManageSystem" @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
         <PlusIcon class="w-4 h-4 mr-2" />
         New Employee
       </Button>
@@ -178,21 +182,21 @@ async function executeResign() {
 
         <!-- Custom Status Column -->
         <template v-slot:item.workingStatus="{ item }">
-          <span v-if="item.workingStatus === 'ACTIVE'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-green-50 text-green-600 border border-green-200">
-            Active
+          <span v-if="item.workingStatus === 'Active' || item.workingStatus === 'Probation'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-green-50 text-green-600 border border-green-200">
+            {{ item.workingStatus === 'Probation' ? 'Probation' : 'Active' }}
           </span>
           <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-gray-100 text-gray-500 border border-gray-200">
-            Resigned
+            {{ item.workingStatus }}
           </span>
         </template>
 
         <!-- Custom Actions Column -->
         <template v-slot:item.actions="{ item }">
-          <div class="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
+          <div v-if="canManageSystem" class="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
             <button @click="openEditModal(item)" class="p-2 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Edit">
               <PencilIcon class="w-4 h-4" />
             </button>
-            <button v-if="item.workingStatus === 'ACTIVE'" @click="openResign(item)" class="p-2 text-muted-foreground hover:text-warning hover:bg-warning/10 rounded-lg transition-colors" title="Mark Resigned">
+            <button v-if="item.workingStatus === 'Active' || item.workingStatus === 'Probation'" @click="openResign(item)" class="p-2 text-muted-foreground hover:text-warning hover:bg-warning/10 rounded-lg transition-colors" title="Mark Resigned">
               <UserMinusIcon class="w-4 h-4" />
             </button>
             <button @click="confirmDelete(item)" class="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
