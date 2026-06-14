@@ -119,7 +119,7 @@ async function executeDelete() {
 function openResign(item: any) {
   selectedEmp.value = item
   resignReason.value = ''
-  resignDate.value = new Date().toISOString().split('T')[0]
+  resignDate.value = new Date().toISOString().split('T')[0] as string
   isResignModalOpen.value = true
 }
 
