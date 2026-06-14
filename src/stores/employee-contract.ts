@@ -77,8 +77,22 @@ export const useEmployeeContractStore = defineStore('employeeContract', () => {
     }
   }
 
+  async function renewContract(id: string, data: any) {
+    isLoading.value = true
+    error.value = null
+    try {
+      await api.post(`/EmployeeContracts/${id}/renew`, data)
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Failed to renew contract'
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return { 
     contracts, isLoading, error, 
-    fetchContractsByEmployee, createContract, updateContract, terminateContract 
+    fetchContractsByEmployee, createContract, updateContract, terminateContract, renewContract 
   }
 })

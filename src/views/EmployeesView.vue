@@ -24,7 +24,6 @@ const isEditMode = ref(false)
 const editingId = ref<string | null>(null)
 
 // Modals
-const isConfirmDeleteOpen = ref(false)
 const isResignModalOpen = ref(false)
 const isTransferModalOpen = ref(false)
 const selectedEmp = ref<any>(null)
@@ -263,6 +262,7 @@ async function executeResign() {
           <option value="">All Statuses</option>
           <option value="Active">Active</option>
           <option value="Probation">Probation</option>
+          <option value="Suspended">Suspended</option>
           <option value="Resigned">Resigned</option>
         </select>
       </div>

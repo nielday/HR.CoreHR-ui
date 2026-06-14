@@ -28,6 +28,7 @@ const isContractModalOpen = ref(false)
 const isEditContractMode = ref(false)
 const editingContractId = ref<string | null>(null)
 const isTerminateModalOpen = ref(false)
+const isRenewContractMode = ref(false)
 
 const newContract = ref({
   contractTypeId: '',
@@ -61,9 +62,10 @@ async function loadEmployeeData() {
 
 function getStatusBadgeClass(status: number) {
   if (status === 1) return 'bg-green-50 text-green-600 border-green-200' // Active
-  if (status === 3) return 'bg-red-50 text-red-600 border-red-200' // Terminated
+  if (status === 4) return 'bg-red-50 text-red-600 border-red-200' // Terminated
+  if (status === 3) return 'bg-gray-100 text-gray-500 border-gray-200' // Cancelled
   if (status === 2) return 'bg-orange-50 text-orange-600 border-orange-200' // Expired
-  return 'bg-gray-100 text-gray-500 border-gray-200' // Pending = 0
+  return 'bg-blue-50 text-blue-500 border-blue-200' // Pending = 0
 }
 
 function getStatusText(status: number) {
@@ -71,7 +73,8 @@ function getStatusText(status: number) {
     case 0: return 'Pending'
     case 1: return 'Active'
     case 2: return 'Expired'
-    case 3: return 'Terminated'
+    case 3: return 'Cancelled'
+    case 4: return 'Terminated'
     default: return 'Unknown'
   }
 }
@@ -79,6 +82,7 @@ function getStatusText(status: number) {
 // Contract Functions
 function openCreateContractModal() {
   isEditContractMode.value = false
+  isRenewContractMode.value = false
   editingContractId.value = null
   newContract.value = { contractTypeId: '', contractCode: '', status: 1, startDate: '', endDate: '', note: '' }
   isContractModalOpen.value = true
@@ -86,6 +90,7 @@ function openCreateContractModal() {
 
 function openEditContractModal(contract: any) {
   isEditContractMode.value = true
+  isRenewContractMode.value = false
   editingContractId.value = contract.id
   newContract.value = {
     contractTypeId: contract.contractTypeId,
@@ -94,6 +99,21 @@ function openEditContractModal(contract: any) {
     startDate: contract.startDate ? contract.startDate.split('T')[0] : '',
     endDate: contract.endDate ? contract.endDate.split('T')[0] : '',
     note: contract.note || ''
+  }
+  isContractModalOpen.value = true
+}
+
+function openRenewContractModal(contract: any) {
+  isEditContractMode.value = false
+  isRenewContractMode.value = true
+  editingContractId.value = contract.id
+  newContract.value = {
+    contractTypeId: contract.contractTypeId,
+    contractCode: '',
+    status: 1,
+    startDate: new Date().toISOString().split('T')[0] as string,
+    endDate: '',
+    note: ''
   }
   isContractModalOpen.value = true
 }
@@ -110,7 +130,15 @@ async function submitContract() {
   }
 
   let success = false
-  if (isEditContractMode.value && editingContractId.value) {
+  if (isRenewContractMode.value && editingContractId.value) {
+    success = await empContractStore.renewContract(editingContractId.value, {
+      contractTypeId: payload.contractTypeId,
+      contractCode: payload.contractCode,
+      startDate: payload.startDate,
+      endDate: payload.endDate,
+      note: payload.note
+    })
+  } else if (isEditContractMode.value && editingContractId.value) {
     success = await empContractStore.updateContract(editingContractId.value, payload)
   } else {
     success = await empContractStore.createContract(payload)
@@ -250,7 +278,10 @@ async function executeTerminate() {
             </div>
           </div>
           <div v-if="canManageSystem" class="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card shadow-sm p-1 rounded-lg border border-border">
-            <button v-if="c.status !== 3" @click="openEditContractModal(c)" class="p-1.5 text-muted-foreground hover:text-accent rounded-md" title="Edit">
+            <button v-if="c.status === 1" @click="openRenewContractModal(c)" class="p-1.5 text-muted-foreground hover:text-green-500 rounded-md" title="Renew">
+              <PlusIcon class="w-4 h-4" />
+            </button>
+            <button v-if="c.status !== 4 && c.status !== 3" @click="openEditContractModal(c)" class="p-1.5 text-muted-foreground hover:text-accent rounded-md" title="Edit">
               <PencilIcon class="w-4 h-4" />
             </button>
             <button v-if="c.status === 1 || c.status === 0" @click="openTerminateModal(c)" class="p-1.5 text-muted-foreground hover:text-red-500 rounded-md" title="Terminate">
@@ -300,11 +331,11 @@ async function executeTerminate() {
     </div>
 
     <!-- Contract Modal -->
-    <Modal :isOpen="isContractModalOpen" :title="isEditContractMode ? 'Edit Contract' : 'New Contract'" @close="isContractModalOpen = false">
+    <Modal :isOpen="isContractModalOpen" :title="isRenewContractMode ? 'Renew Contract' : (isEditContractMode ? 'Edit Contract' : 'New Contract')" @close="isContractModalOpen = false">
       <form @submit.prevent="submitContract" class="space-y-4">
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Contract Type <span class="text-red-500">*</span></label>
-          <select v-model="newContract.contractTypeId" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
+          <select v-model="newContract.contractTypeId" :disabled="isEditContractMode" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
             <option value="" disabled>Select Type</option>
             <option v-for="c in contractTypeStore.contracts" :key="c.id" :value="c.id">{{ c.contractTypeName }}</option>
           </select>
@@ -314,20 +345,21 @@ async function executeTerminate() {
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Contract Code <span class="text-red-500">*</span></label>
             <input v-model="newContract.contractCode" type="text" :disabled="isEditContractMode" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"/>
           </div>
-          <div>
+          <div v-if="!isRenewContractMode">
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Status <span class="text-red-500">*</span></label>
             <select v-model="newContract.status" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
               <option :value="0">Pending</option>
               <option :value="1">Active</option>
               <option :value="2">Expired</option>
-              <option :value="3">Terminated</option>
+              <option :value="3">Cancelled</option>
+              <option :value="4">Terminated</option>
             </select>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Start Date <span class="text-red-500">*</span></label>
-            <input v-model="newContract.startDate" type="date" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"/>
+            <input v-model="newContract.startDate" type="date" :disabled="isEditContractMode" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"/>
           </div>
           <div>
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">End Date</label>
