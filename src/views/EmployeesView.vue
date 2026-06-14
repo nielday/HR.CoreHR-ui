@@ -1,3 +1,4 @@
+<script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { PlusIcon, PencilIcon, UserMinusIcon, ArrowRightLeftIcon, SearchIcon, EyeIcon } from 'lucide-vue-next'
 import { useEmployeeStore } from '../stores/employee'
