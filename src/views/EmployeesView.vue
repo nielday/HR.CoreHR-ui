@@ -25,7 +25,7 @@ const newEmp = ref({
   contractTypeId: '',
   contractStartDate: '',
   contractEndDate: '',
-  hireDate: new Date().toISOString().split('T')[0] // today
+  hireDate: new Date().toISOString().split('T')[0] as string // fix TS error
 })
 
 onMounted(() => {
@@ -40,9 +40,9 @@ async function submitCreate() {
   const payload = {
     ...newEmp.value,
     contractTypeId: newEmp.value.contractTypeId || null,
-    contractStartDate: newEmp.value.contractStartDate ? new Date(newEmp.value.contractStartDate).toISOString() : null,
-    contractEndDate: newEmp.value.contractEndDate ? new Date(newEmp.value.contractEndDate).toISOString() : null,
-    hireDate: new Date(newEmp.value.hireDate).toISOString()
+    contractStartDate: newEmp.value.contractStartDate ? new Date(newEmp.value.contractStartDate as string).toISOString() : null,
+    contractEndDate: newEmp.value.contractEndDate ? new Date(newEmp.value.contractEndDate as string).toISOString() : null,
+    hireDate: new Date(newEmp.value.hireDate as string).toISOString()
   }
   
   const success = await store.createEmployee(payload)
@@ -52,7 +52,7 @@ async function submitCreate() {
       employeeCode: '', fullName: '', email: '', phoneNumber: '',
       departmentId: '', positionId: '', contractTypeId: '',
       contractStartDate: '', contractEndDate: '',
-      hireDate: new Date().toISOString().split('T')[0]
+      hireDate: new Date().toISOString().split('T')[0] as string
     }
   }
 }
