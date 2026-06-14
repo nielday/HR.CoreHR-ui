@@ -1,6 +1,5 @@
-<script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
-import { PlusIcon, PencilIcon, TrashIcon, UserMinusIcon, ArrowRightLeftIcon, SearchIcon, EyeIcon } from 'lucide-vue-next'
+import { ref, onMounted, computed } from 'vue'
+import { PlusIcon, PencilIcon, UserMinusIcon, ArrowRightLeftIcon, SearchIcon, EyeIcon } from 'lucide-vue-next'
 import { useEmployeeStore } from '../stores/employee'
 import { useDepartmentStore } from '../stores/department'
 import { usePositionStore } from '../stores/position'
@@ -77,10 +76,13 @@ const headers = [
   { title: '', align: 'end', key: 'actions', sortable: false },
 ] as const
 
-onMounted(() => {
-  if (deptStore.departments.length === 0) deptStore.fetchDepartments()
-  if (posStore.positions.length === 0) posStore.fetchPositions()
-  if (contractStore.contracts.length === 0) contractStore.fetchContracts()
+onMounted(async () => {
+  if (authStore.userRole !== 'Employee') {
+    if (deptStore.departments.length === 0) await deptStore.fetchDepartments()
+    if (posStore.positions.length === 0) await posStore.fetchPositions()
+    if (contractStore.contracts.length === 0) await contractStore.fetchContracts()
+  }
+  fetchData()
 })
 
 function loadItems({ page, itemsPerPage }: any) {
@@ -215,21 +217,6 @@ async function executeResign() {
     }
   }
 }
-
-function confirmDelete(item: any) {
-  selectedEmp.value = item
-  isConfirmDeleteOpen.value = true
-}
-
-async function executeDelete() {
-  if (selectedEmp.value) {
-    const success = await store.deleteEmployee(selectedEmp.value.id)
-    if (success) {
-      isConfirmDeleteOpen.value = false
-      fetchData()
-    }
-  }
-}
 </script>
 
 <template>
@@ -280,7 +267,7 @@ async function executeDelete() {
       </div>
     </div>
 
-    <div v-if="store.error && !isModalOpen && !isConfirmDeleteOpen && !isResignModalOpen && !isTransferModalOpen" class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
+    <div v-if="store.error && !isModalOpen && !isResignModalOpen && !isTransferModalOpen" class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
       {{ store.error }}
     </div>
 
@@ -331,9 +318,6 @@ async function executeDelete() {
               </button>
               <button v-if="item.workingStatus === 'Active' || item.workingStatus === 'Probation'" @click="openResign(item)" class="p-2 text-muted-foreground hover:text-warning hover:bg-warning/10 rounded-lg transition-colors" title="Mark Resigned">
                 <UserMinusIcon class="w-4 h-4" />
-              </button>
-              <button @click="confirmDelete(item)" class="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
-                <TrashIcon class="w-4 h-4" />
               </button>
             </template>
           </div>
@@ -526,26 +510,6 @@ async function executeDelete() {
           <Button type="submit" :disabled="store.isLoading" class="bg-warning hover:bg-warning/90 border-transparent shadow-md">Confirm Resignation</Button>
         </div>
       </form>
-    </Modal>
-
-    <!-- Delete Confirmation Modal -->
-    <Modal :isOpen="isConfirmDeleteOpen" title="Confirm Deletion" @close="isConfirmDeleteOpen = false">
-      <div class="space-y-6">
-        <p class="text-sm text-muted-foreground font-sans">
-          Are you sure you want to completely delete the record for <strong>{{ selectedEmp?.fullName }}</strong>? This action cannot be undone. Consider marking them as resigned instead.
-        </p>
-
-        <div v-if="store.error && isConfirmDeleteOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans">
-          {{ store.error }}
-        </div>
-
-        <div class="pt-4 flex justify-end gap-4">
-          <Button variant="ghost" @click="isConfirmDeleteOpen = false">Cancel</Button>
-          <Button @click="executeDelete" :disabled="store.isLoading" class="bg-red-500 hover:bg-red-600 border-transparent text-white shadow-md">
-            {{ store.isLoading ? 'Deleting...' : 'Delete Permanently' }}
-          </Button>
-        </div>
-      </div>
     </Modal>
   </div>
 </template>

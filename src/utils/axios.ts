@@ -25,7 +25,7 @@ api.interceptors.response.use(
     return response
   },
   (error) => {
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+    if (error.response && error.response.status === 401) {
       const authStore = useAuthStore()
       authStore.clearToken()
       // Use window.location to force a hard redirect to clear state

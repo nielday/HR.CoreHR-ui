@@ -7,12 +7,12 @@ export interface EmployeeContract {
   employeeId: string
   contractTypeId: string
   contractTypeName?: string
+  contractCode?: string
   startDate: string
   endDate?: string
   actualEndDate?: string
-  status: string
-  contractFileUrl?: string
-  notes?: string
+  status: number
+  note?: string
 }
 
 export const useEmployeeContractStore = defineStore('employeeContract', () => {

@@ -87,20 +87,6 @@ export const useEmployeeStore = defineStore('employee', () => {
     }
   }
 
-  async function deleteEmployee(id: string) {
-    isLoading.value = true
-    error.value = null
-    try {
-      await api.delete(`/Employees/${id}`)
-      employees.value = employees.value.filter(e => e.id !== id)
-      return true
-    } catch (err: any) {
-      error.value = err.response?.data?.message || 'Failed to delete employee'
-      return false
-    } finally {
-      isLoading.value = false
-    }
-  }
 
   async function resignEmployee(id: string, reason: string, resignedDate: string) {
     isLoading.value = true
@@ -162,6 +148,6 @@ export const useEmployeeStore = defineStore('employee', () => {
   return { 
     employees, totalItems, totalPages, currentPage, pageSize, 
     isLoading, error, fetchEmployees, fetchEmployeeById, fetchDepartmentHistory, 
-    createEmployee, updateEmployee, deleteEmployee, resignEmployee, transferEmployee 
+    createEmployee, updateEmployee, resignEmployee, transferEmployee 
   }
 })

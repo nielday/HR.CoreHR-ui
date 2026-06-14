@@ -31,9 +31,11 @@ const isTerminateModalOpen = ref(false)
 
 const newContract = ref({
   contractTypeId: '',
+  contractCode: '',
+  status: 1, // Default Active
   startDate: '',
   endDate: '',
-  notes: ''
+  note: ''
 })
 
 const terminateData = ref({
@@ -57,18 +59,28 @@ async function loadEmployeeData() {
   }
 }
 
-function getStatusBadgeClass(status: string) {
-  if (status === 'Active') return 'bg-green-50 text-green-600 border-green-200'
-  if (status === 'Terminated') return 'bg-red-50 text-red-600 border-red-200'
-  if (status === 'Expired') return 'bg-orange-50 text-orange-600 border-orange-200'
-  return 'bg-gray-100 text-gray-500 border-gray-200'
+function getStatusBadgeClass(status: number) {
+  if (status === 1) return 'bg-green-50 text-green-600 border-green-200' // Active
+  if (status === 3) return 'bg-red-50 text-red-600 border-red-200' // Terminated
+  if (status === 2) return 'bg-orange-50 text-orange-600 border-orange-200' // Expired
+  return 'bg-gray-100 text-gray-500 border-gray-200' // Pending = 0
+}
+
+function getStatusText(status: number) {
+  switch(status) {
+    case 0: return 'Pending'
+    case 1: return 'Active'
+    case 2: return 'Expired'
+    case 3: return 'Terminated'
+    default: return 'Unknown'
+  }
 }
 
 // Contract Functions
 function openCreateContractModal() {
   isEditContractMode.value = false
   editingContractId.value = null
-  newContract.value = { contractTypeId: '', startDate: '', endDate: '', notes: '' }
+  newContract.value = { contractTypeId: '', contractCode: '', status: 1, startDate: '', endDate: '', note: '' }
   isContractModalOpen.value = true
 }
 
@@ -77,9 +89,11 @@ function openEditContractModal(contract: any) {
   editingContractId.value = contract.id
   newContract.value = {
     contractTypeId: contract.contractTypeId,
+    contractCode: contract.contractCode || '',
+    status: contract.status,
     startDate: contract.startDate ? contract.startDate.split('T')[0] : '',
     endDate: contract.endDate ? contract.endDate.split('T')[0] : '',
-    notes: contract.notes || ''
+    note: contract.note || ''
   }
   isContractModalOpen.value = true
 }
@@ -88,9 +102,11 @@ async function submitContract() {
   const payload = {
     employeeId,
     contractTypeId: newContract.value.contractTypeId,
+    contractCode: newContract.value.contractCode,
+    status: newContract.value.status,
     startDate: newContract.value.startDate ? new Date(newContract.value.startDate).toISOString() : null,
     endDate: newContract.value.endDate ? new Date(newContract.value.endDate).toISOString() : null,
-    notes: newContract.value.notes
+    note: newContract.value.note
   }
 
   let success = false
@@ -216,8 +232,8 @@ async function executeTerminate() {
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div v-for="c in empContractStore.contracts" :key="c.id" class="bg-card border border-border p-5 rounded-2xl shadow-sm relative group">
           <div class="flex justify-between items-start mb-3">
-            <h4 class="font-semibold">{{ c.contractTypeName }}</h4>
-            <span class="px-2 py-0.5 text-[10px] font-mono tracking-widest uppercase rounded-full border" :class="getStatusBadgeClass(c.status)">{{ c.status }}</span>
+            <h4 class="font-semibold">{{ c.contractTypeName }} ({{ c.contractCode }})</h4>
+            <span class="px-2 py-0.5 text-[10px] font-mono tracking-widest uppercase rounded-full border" :class="getStatusBadgeClass(c.status)">{{ getStatusText(c.status) }}</span>
           </div>
           <div class="space-y-2 text-sm">
             <div class="flex justify-between text-muted-foreground">
@@ -234,10 +250,10 @@ async function executeTerminate() {
             </div>
           </div>
           <div v-if="canManageSystem" class="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card shadow-sm p-1 rounded-lg border border-border">
-            <button v-if="c.status !== 'Terminated'" @click="openEditContractModal(c)" class="p-1.5 text-muted-foreground hover:text-accent rounded-md" title="Edit">
+            <button v-if="c.status !== 3" @click="openEditContractModal(c)" class="p-1.5 text-muted-foreground hover:text-accent rounded-md" title="Edit">
               <PencilIcon class="w-4 h-4" />
             </button>
-            <button v-if="c.status === 'Active' || c.status === 'Pending'" @click="openTerminateModal(c)" class="p-1.5 text-muted-foreground hover:text-red-500 rounded-md" title="Terminate">
+            <button v-if="c.status === 1 || c.status === 0" @click="openTerminateModal(c)" class="p-1.5 text-muted-foreground hover:text-red-500 rounded-md" title="Terminate">
               <XCircleIcon class="w-4 h-4" />
             </button>
           </div>
@@ -267,11 +283,11 @@ async function executeTerminate() {
           <tr v-for="h in transferHistory" :key="h.id" class="hover:bg-muted/30 transition-colors">
             <td class="px-6 py-4">{{ new Date(h.transferDate).toLocaleDateString() }}</td>
             <td class="px-6 py-4">
-              <div class="font-medium text-foreground">{{ h.oldDepartmentName || '-' }}</div>
+              <div class="font-medium text-foreground">{{ h.fromDepartmentName || '-' }}</div>
               <div class="text-xs text-muted-foreground">{{ h.oldPositionName || '-' }}</div>
             </td>
             <td class="px-6 py-4">
-              <div class="font-medium text-foreground">{{ h.newDepartmentName || '-' }}</div>
+              <div class="font-medium text-foreground">{{ h.toDepartmentName || '-' }}</div>
               <div class="text-xs text-muted-foreground">{{ h.newPositionName || '-' }}</div>
             </td>
             <td class="px-6 py-4 text-muted-foreground">{{ h.reason || '-' }}</td>
@@ -295,6 +311,21 @@ async function executeTerminate() {
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
+            <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Contract Code <span class="text-red-500">*</span></label>
+            <input v-model="newContract.contractCode" type="text" :disabled="isEditContractMode" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"/>
+          </div>
+          <div>
+            <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Status <span class="text-red-500">*</span></label>
+            <select v-model="newContract.status" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
+              <option :value="0">Pending</option>
+              <option :value="1">Active</option>
+              <option :value="2">Expired</option>
+              <option :value="3">Terminated</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Start Date <span class="text-red-500">*</span></label>
             <input v-model="newContract.startDate" type="date" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"/>
           </div>
@@ -305,7 +336,7 @@ async function executeTerminate() {
         </div>
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Notes</label>
-          <textarea v-model="newContract.notes" rows="2" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Optional notes..."></textarea>
+          <textarea v-model="newContract.note" rows="2" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Optional notes..."></textarea>
         </div>
         
         <div v-if="empContractStore.error && isContractModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans">
