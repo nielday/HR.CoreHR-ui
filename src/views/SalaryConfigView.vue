@@ -21,13 +21,22 @@ const form = ref({
   otherDeductions: 0,
 })
 
+// Chỉ hiển thị nhân viên đang làm việc — bỏ người đã nghỉ việc (Resigned).
 const employeeOptions = computed(() =>
-  (empStore.employees as any[]).map(e => ({ value: e.id, label: `${e.fullName} (${e.employeeCode})` }))
+  (empStore.employees as any[])
+    .filter(e => e.workingStatus !== 'Resigned')
+    .map(e => ({ value: e.id, label: `${e.fullName} (${e.employeeCode})` }))
 )
 
 const netSalary = computed(() =>
   form.value.baseSalary + form.value.mealAllowance + form.value.transportAllowance
   - form.value.insuranceDeduction - form.value.otherDeductions
+)
+
+// Khấu trừ vượt tổng thu nhập → cấu hình không hợp lệ (thực lãnh sẽ âm)
+const invalidConfig = computed(() =>
+  (form.value.insuranceDeduction + form.value.otherDeductions) >
+  (form.value.baseSalary + form.value.mealAllowance + form.value.transportAllowance)
 )
 
 const vnd = (n: number) => (n ?? 0).toLocaleString('vi-VN') + ' ₫'
@@ -114,13 +123,20 @@ onMounted(() => { if (!empStore.employees.length) empStore.fetchEmployees({ page
         </div>
 
         <!-- Net preview -->
-        <div class="flex items-center justify-between p-4 rounded-xl bg-accent/5 border border-accent/20">
+        <div
+          class="flex items-center justify-between p-4 rounded-xl border"
+          :class="invalidConfig ? 'bg-red-50 border-red-200' : 'bg-accent/5 border-accent/20'"
+        >
           <span class="font-mono text-xs uppercase tracking-widest text-muted-foreground">Thực lãnh (dự kiến)</span>
-          <span class="font-display text-2xl text-accent">{{ vnd(netSalary) }}</span>
+          <span class="font-display text-2xl" :class="invalidConfig ? 'text-red-600' : 'text-accent'">{{ vnd(netSalary) }}</span>
+        </div>
+
+        <div v-if="invalidConfig" class="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm font-sans">
+          Tổng khấu trừ đang vượt quá tổng thu nhập → thực lãnh âm. Hãy điều chỉnh lại trước khi lưu.
         </div>
 
         <div class="pt-2 flex justify-end">
-          <Button @click="save" :disabled="store.isLoading" class="min-w-[160px]">
+          <Button @click="save" :disabled="store.isLoading || invalidConfig" class="min-w-[160px]">
             <SaveIcon class="w-4 h-4 mr-2" />
             {{ store.isLoading ? 'Đang lưu...' : 'Lưu cấu hình' }}
           </Button>
