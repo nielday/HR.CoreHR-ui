@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeftIcon, FileTextIcon, HistoryIcon, UserIcon, PlusIcon, PencilIcon, XCircleIcon } from 'lucide-vue-next'
+import { ArrowLeftIcon, FileTextIcon, HistoryIcon, UserIcon, PlusIcon, PencilIcon, RefreshCwIcon, XCircleIcon } from 'lucide-vue-next'
 import { useEmployeeStore } from '../stores/employee'
 import { useEmployeeContractStore } from '../stores/employee-contract'
 import { useContractStore } from '../stores/contract'
@@ -17,6 +17,8 @@ const contractTypeStore = useContractStore()
 const authStore = useAuthStore()
 
 const canManageSystem = computed(() => ['Admin', 'HR'].includes(authStore.userRole || ''))
+const activeContract = computed(() => empContractStore.contracts.find((contract) => contract.status === 1))
+const hasActiveContract = computed(() => Boolean(activeContract.value))
 
 const employeeId = route.params.id as string
 const employee = ref<any>(null)
@@ -81,14 +83,23 @@ function getStatusText(status: number) {
 
 // Contract Functions
 function openCreateContractModal() {
+  empContractStore.error = null
   isEditContractMode.value = false
   isRenewContractMode.value = false
   editingContractId.value = null
-  newContract.value = { contractTypeId: '', contractCode: '', status: 1, startDate: '', endDate: '', note: '' }
+  newContract.value = {
+    contractTypeId: '',
+    contractCode: '',
+    status: hasActiveContract.value ? 0 : 1,
+    startDate: '',
+    endDate: '',
+    note: ''
+  }
   isContractModalOpen.value = true
 }
 
 function openEditContractModal(contract: any) {
+  empContractStore.error = null
   isEditContractMode.value = true
   isRenewContractMode.value = false
   editingContractId.value = contract.id
@@ -104,14 +115,29 @@ function openEditContractModal(contract: any) {
 }
 
 function openRenewContractModal(contract: any) {
+  empContractStore.error = null
   isEditContractMode.value = false
   isRenewContractMode.value = true
   editingContractId.value = contract.id
+
+  const today = new Date()
+  const oldStartDate = new Date(contract.startDate)
+  const suggestedStartDate = contract.endDate
+    ? new Date(new Date(contract.endDate).setDate(new Date(contract.endDate).getDate() + 1))
+    : today
+  const minimumStartDate = new Date(oldStartDate)
+  minimumStartDate.setDate(minimumStartDate.getDate() + 1)
+  const renewalStartDate = new Date(Math.max(
+    today.getTime(),
+    suggestedStartDate.getTime(),
+    minimumStartDate.getTime()
+  ))
+
   newContract.value = {
     contractTypeId: contract.contractTypeId,
     contractCode: '',
     status: 1,
-    startDate: new Date().toISOString().split('T')[0] as string,
+    startDate: renewalStartDate.toISOString().split('T')[0] as string,
     endDate: '',
     note: ''
   }
@@ -151,6 +177,7 @@ async function submitContract() {
 }
 
 function openTerminateModal(contract: any) {
+  empContractStore.error = null
   editingContractId.value = contract.id
   terminateData.value = {
     reason: '',
@@ -247,8 +274,14 @@ async function executeTerminate() {
 
     <!-- Contracts Tab -->
     <div v-else-if="activeTab === 'contracts'" class="space-y-4">
-      <div class="flex justify-end" v-if="canManageSystem">
-        <Button @click="openCreateContractModal" size="sm" class="shadow-sm">
+      <div v-if="canManageSystem" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p v-if="hasActiveContract" class="text-sm text-muted-foreground">
+          This employee already has an Active contract. Use
+          <span class="font-medium text-foreground">Renew Contract</span>
+          to replace it, or create a Pending contract.
+        </p>
+        <span v-else></span>
+        <Button @click="openCreateContractModal" class="shadow-sm shrink-0">
           <PlusIcon class="w-4 h-4 mr-2" /> New Contract
         </Button>
       </div>
@@ -258,9 +291,9 @@ async function executeTerminate() {
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div v-for="c in empContractStore.contracts" :key="c.id" class="bg-card border border-border p-5 rounded-2xl shadow-sm relative group">
+        <div v-for="c in empContractStore.contracts" :key="c.id" class="bg-card border border-border p-5 rounded-2xl shadow-sm">
           <div class="flex justify-between items-start mb-3">
-            <h4 class="font-semibold">{{ c.contractTypeName }} ({{ c.contractCode }})</h4>
+            <h4 class="font-semibold pr-3">{{ c.contractTypeName }} ({{ c.contractCode }})</h4>
             <span class="px-2 py-0.5 text-[10px] font-mono tracking-widest uppercase rounded-full border" :class="getStatusBadgeClass(c.status)">{{ getStatusText(c.status) }}</span>
           </div>
           <div class="space-y-2 text-sm">
@@ -277,15 +310,31 @@ async function executeTerminate() {
               <span class="text-foreground">{{ new Date(c.actualEndDate).toLocaleDateString() }}</span>
             </div>
           </div>
-          <div v-if="canManageSystem" class="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card shadow-sm p-1 rounded-lg border border-border">
-            <button v-if="c.status === 1" @click="openRenewContractModal(c)" class="p-1.5 text-muted-foreground hover:text-green-500 rounded-md" title="Renew">
-              <PlusIcon class="w-4 h-4" />
+          <div v-if="canManageSystem" class="mt-4 pt-4 border-t border-border flex flex-wrap items-center gap-2">
+            <button
+              v-if="c.status === 1"
+              type="button"
+              @click="openRenewContractModal(c)"
+              class="inline-flex items-center gap-2 h-9 px-3 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors text-sm font-medium"
+            >
+              <RefreshCwIcon class="w-4 h-4" />
+              Renew Contract
             </button>
-            <button v-if="c.status !== 4 && c.status !== 3" @click="openEditContractModal(c)" class="p-1.5 text-muted-foreground hover:text-accent rounded-md" title="Edit">
-              <PencilIcon class="w-4 h-4" />
+            <button
+              v-if="c.status !== 4 && c.status !== 3"
+              type="button"
+              @click="openEditContractModal(c)"
+              class="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-muted-foreground hover:text-accent hover:bg-accent/10 transition-colors text-sm"
+            >
+              <PencilIcon class="w-4 h-4" /> Edit
             </button>
-            <button v-if="c.status === 1 || c.status === 0" @click="openTerminateModal(c)" class="p-1.5 text-muted-foreground hover:text-red-500 rounded-md" title="Terminate">
-              <XCircleIcon class="w-4 h-4" />
+            <button
+              v-if="c.status === 1 || c.status === 0"
+              type="button"
+              @click="openTerminateModal(c)"
+              class="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors text-sm"
+            >
+              <XCircleIcon class="w-4 h-4" /> Terminate
             </button>
           </div>
         </div>
@@ -333,6 +382,14 @@ async function executeTerminate() {
     <!-- Contract Modal -->
     <Modal :isOpen="isContractModalOpen" :title="isRenewContractMode ? 'Renew Contract' : (isEditContractMode ? 'Edit Contract' : 'New Contract')" @close="isContractModalOpen = false">
       <form @submit.prevent="submitContract" class="space-y-4">
+        <div v-if="isRenewContractMode" class="p-3 bg-green-50 text-green-800 border border-green-200 rounded-xl text-sm">
+          Saving will end the current Active contract and create this replacement as the new Active contract.
+        </div>
+        <div v-else-if="!isEditContractMode && hasActiveContract" class="p-3 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-sm">
+          An Active contract already exists. This new contract must remain Pending. Use
+          <strong>Renew Contract</strong> on the Active contract to replace it.
+        </div>
+
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Contract Type <span class="text-red-500">*</span></label>
           <select v-model="newContract.contractTypeId" :disabled="isEditContractMode" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
@@ -349,7 +406,12 @@ async function executeTerminate() {
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Status <span class="text-red-500">*</span></label>
             <select v-model="newContract.status" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
               <option :value="0">Pending</option>
-              <option :value="1">Active</option>
+              <option
+                v-if="!hasActiveContract || (isEditContractMode && editingContractId === activeContract?.id)"
+                :value="1"
+              >
+                Active
+              </option>
               <option :value="2">Expired</option>
               <option :value="3">Cancelled</option>
               <option :value="4">Terminated</option>
@@ -378,7 +440,7 @@ async function executeTerminate() {
         <div class="pt-4 flex justify-end gap-4">
           <Button variant="ghost" type="button" @click="isContractModalOpen = false">Cancel</Button>
           <Button type="submit" :disabled="empContractStore.isLoading" class="min-w-[120px]">
-            {{ empContractStore.isLoading ? 'Saving...' : 'Save' }}
+            {{ empContractStore.isLoading ? 'Saving...' : (isRenewContractMode ? 'Renew Contract' : 'Save') }}
           </Button>
         </div>
       </form>
