@@ -16,11 +16,11 @@ export const useContractStore = defineStore('contract', () => {
   const isLoading = ref<boolean>(false)
   const error = ref<string | null>(null)
 
-  async function fetchContracts() {
+  async function fetchContracts(includeInactive: boolean = false) {
     isLoading.value = true
     error.value = null
     try {
-      const response = await api.get('/ContractTypes')
+      const response = await api.get(`/ContractTypes?includeInactive=${includeInactive}`)
       contracts.value = response.data
     } catch (err: any) {
       error.value = err.response?.data?.message || err.message || 'Failed to fetch contract types'
@@ -77,5 +77,23 @@ export const useContractStore = defineStore('contract', () => {
     }
   }
 
-  return { contracts, isLoading, error, fetchContracts, createContract, updateContract, deleteContract }
+  async function restoreContract(id: string) {
+    isLoading.value = true
+    error.value = null
+    try {
+      await api.patch(`/ContractTypes/${id}/restore`)
+      const idx = contracts.value.findIndex(c => c.id === id)
+      if (idx !== -1) {
+        contracts.value[idx].isActive = true
+      }
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Failed to restore contract type'
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  return { contracts, isLoading, error, fetchContracts, createContract, updateContract, deleteContract, restoreContract }
 })

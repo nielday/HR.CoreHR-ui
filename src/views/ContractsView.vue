@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { PlusIcon, PencilIcon, TrashIcon } from 'lucide-vue-next'
+import { ref, onMounted, computed, watch } from 'vue'
+import { PlusIcon, PencilIcon, TrashIcon, RotateCcwIcon } from 'lucide-vue-next'
 import { useContractStore } from '../stores/contract'
 import { useAuthStore } from '../stores/auth'
 import Button from '../components/ui/Button.vue'
@@ -15,6 +15,7 @@ const isEditMode = ref(false)
 const editingId = ref<string | null>(null)
 const isConfirmDeleteOpen = ref(false)
 const selectedContract = ref<any>(null)
+const showInactive = ref(false)
 
 const newContract = ref({
   contractTypeCode: '',
@@ -33,7 +34,11 @@ const headers = [
 ] as const
 
 onMounted(() => {
-  store.fetchContracts()
+  store.fetchContracts(showInactive.value)
+})
+
+watch(showInactive, (newVal) => {
+  store.fetchContracts(newVal)
 })
 
 function openCreateModal() {
@@ -94,6 +99,10 @@ async function executeDelete() {
     if (success) isConfirmDeleteOpen.value = false
   }
 }
+
+async function executeRestore(item: any) {
+  await store.restoreContract(item.id)
+}
 </script>
 
 <template>
@@ -104,10 +113,16 @@ async function executeDelete() {
         <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Contract Types</h1>
         <p class="text-muted-foreground font-sans text-lg">Manage employment agreements and durations.</p>
       </div>
-      <Button v-if="canManageSystem" @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
-        <PlusIcon class="w-4 h-4 mr-2" />
-        New Contract Type
-      </Button>
+      <div class="flex items-center gap-4">
+        <label class="flex items-center gap-2 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+          <input type="checkbox" v-model="showInactive" class="w-4 h-4 rounded border-border text-accent focus:ring-accent" />
+          Show inactive
+        </label>
+        <Button v-if="canManageSystem" @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
+          <PlusIcon class="w-4 h-4 mr-2" />
+          New Contract Type
+        </Button>
+      </div>
     </div>
 
     <div v-if="store.error && !isModalOpen && !isConfirmDeleteOpen" class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
@@ -130,7 +145,12 @@ async function executeDelete() {
         </template>
         
         <template #[`item.contractTypeName`]="{ item }">
-          <span class="font-sans font-medium text-foreground">{{ item.contractTypeName }}</span>
+          <div class="flex items-center gap-2">
+            <span class="font-sans font-medium" :class="item.isActive === false ? 'text-muted-foreground line-through' : 'text-foreground'">{{ item.contractTypeName }}</span>
+            <span v-if="item.isActive === false" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-600 uppercase tracking-wider">
+              Inactive
+            </span>
+          </div>
         </template>
 
         <template #[`item.defaultDurationMonths`]="{ item }">
@@ -146,12 +166,19 @@ async function executeDelete() {
 
         <template #[`item.actions`]="{ item }">
           <div v-if="canManageSystem" class="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
-            <button @click="openEditModal(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Edit">
-              <PencilIcon class="w-4 h-4" />
-            </button>
-            <button @click="confirmDelete(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
-              <TrashIcon class="w-4 h-4" />
-            </button>
+            <template v-if="item.isActive !== false">
+              <button @click="openEditModal(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Edit">
+                <PencilIcon class="w-4 h-4" />
+              </button>
+              <button @click="confirmDelete(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                <TrashIcon class="w-4 h-4" />
+              </button>
+            </template>
+            <template v-else>
+              <button @click="executeRestore(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors" title="Restore">
+                <RotateCcwIcon class="w-4 h-4" />
+              </button>
+            </template>
           </div>
         </template>
       </v-data-table>
