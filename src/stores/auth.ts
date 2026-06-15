@@ -36,7 +36,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function testLogin(username = 'admin', password = 'password') {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/TestAuth/login`, {
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/Auth/login`, {
         username,
         password
       })
