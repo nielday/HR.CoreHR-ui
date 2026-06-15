@@ -35,13 +35,13 @@ onUnmounted(() => {
     <div class="fixed inset-0 bg-foreground/20 backdrop-blur-sm" @click="emit('close')"></div>
     
     <!-- Modal Container -->
-    <div class="flex min-h-full items-center justify-center p-4 sm:p-6">
+    <div class="flex min-h-full justify-center p-4 sm:p-6">
       <!-- Modal Content -->
       <div 
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        class="relative bg-card w-full p-8 rounded-2xl shadow-xl border border-border motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 duration-200"
+        class="relative bg-card w-full p-8 rounded-2xl shadow-xl border border-border motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 duration-200 m-auto"
       :class="{
         'max-w-sm': maxWidth === 'sm',
         'max-w-md': maxWidth === 'md',
