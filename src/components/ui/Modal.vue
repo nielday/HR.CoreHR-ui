@@ -30,16 +30,18 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+  <div v-if="isOpen" class="fixed inset-0 z-50 overflow-y-auto">
     <!-- Backdrop -->
-    <div class="absolute inset-0 bg-foreground/20 backdrop-blur-sm" @click="emit('close')"></div>
+    <div class="fixed inset-0 bg-foreground/20 backdrop-blur-sm" @click="emit('close')"></div>
     
-    <!-- Modal Content -->
-    <div 
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modal-title"
-      class="relative bg-card w-full p-8 rounded-2xl shadow-xl border border-border motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 duration-200 max-h-[95vh] overflow-y-auto"
+    <!-- Modal Container -->
+    <div class="flex min-h-full items-center justify-center p-4 sm:p-6">
+      <!-- Modal Content -->
+      <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        class="relative bg-card w-full p-8 rounded-2xl shadow-xl border border-border motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 duration-200"
       :class="{
         'max-w-sm': maxWidth === 'sm',
         'max-w-md': maxWidth === 'md',
@@ -58,6 +60,7 @@ onUnmounted(() => {
       </div>
       
       <slot></slot>
+      </div>
     </div>
   </div>
 </template>
