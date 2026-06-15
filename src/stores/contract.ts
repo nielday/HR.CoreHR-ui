@@ -83,8 +83,8 @@ export const useContractStore = defineStore('contract', () => {
     try {
       await api.patch(`/ContractTypes/${id}/restore`)
       const idx = contracts.value.findIndex(c => c.id === id)
-      if (idx !== -1) {
-        contracts.value[idx].isActive = true
+      if (idx !== -1 && contracts.value[idx]) {
+        contracts.value[idx]!.isActive = true
       }
       return true
     } catch (err: any) {
