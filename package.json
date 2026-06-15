@@ -15,7 +15,9 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "@antv/g2plot": "^2.4.35",
     "@mdi/font": "^7.4.47",
+    "ant-design-vue": "^4.2.6",
     "axios": "^1.17.0",
     "jwt-decode": "^4.0.0",
     "lucide-vue-next": "^1.0.0",

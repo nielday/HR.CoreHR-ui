@@ -50,6 +50,24 @@ const router = createRouter({
           meta: { roles: ['Admin', 'HR'] }
         },
         {
+          path: 'payroll/dashboard',
+          name: 'payroll-dashboard',
+          component: () => import('../views/PayrollDashboardView.vue'),
+          meta: { roles: ['Admin', 'HR', 'Manager'] }
+        },
+        {
+          path: 'payroll/records',
+          name: 'payroll-records',
+          component: () => import('../views/PayrollsView.vue'),
+          meta: { roles: ['Admin', 'HR'] }
+        },
+        {
+          path: 'payroll/salary-config',
+          name: 'payroll-salary-config',
+          component: () => import('../views/SalaryConfigView.vue'),
+          meta: { roles: ['Admin', 'HR'] }
+        },
+        {
           path: 'about',
           name: 'about',
           component: () => import('../views/AboutView.vue'),
