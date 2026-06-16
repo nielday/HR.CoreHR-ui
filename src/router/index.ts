@@ -11,6 +11,11 @@ const router = createRouter({
       component: () => import('../views/LoginView.vue'),
     },
     {
+      path: '/change-password',
+      name: 'change-password',
+      component: () => import('../views/ChangePasswordView.vue'),
+    },
+    {
       path: '/',
       component: MainLayout,
       meta: { requiresAuth: true },
@@ -104,6 +109,12 @@ const router = createRouter({
           meta: { roles: ['Admin', 'HR'] }
         },
         {
+          path: 'users',
+          name: 'users',
+          component: () => import('../views/UsersView.vue'),
+          meta: { roles: ['Admin', 'HR'] }
+        },
+        {
           path: 'about',
           name: 'about',
           component: () => import('../views/AboutView.vue'),
@@ -114,26 +125,35 @@ const router = createRouter({
   ],
 })
 
-// Route guard for authentication and RBAC
+// Route guard: xác thực, buộc đổi mật khẩu lần đầu, và RBAC
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
-  
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next('/login')
-  } else if (to.path === '/login' && authStore.isAuthenticated) {
-    next('/employees')
-  } else {
-    // Check RBAC
-    if (to.meta.roles && Array.isArray(to.meta.roles)) {
-      const userRole = authStore.userRole
-      if (!userRole || !to.meta.roles.includes(userRole)) {
-        console.warn(`Access Denied. User Role ${userRole} is not in required roles ${to.meta.roles.join(', ')}`)
-        next('/employees') // Redirect to a safe page (employees can be seen by all)
-        return
-      }
-    }
-    next()
+  const authed = authStore.isAuthenticated
+
+  // Chưa đăng nhập
+  if (!authed) {
+    if (to.path === '/login') return next()
+    return next('/login')
   }
+
+  // Đã đăng nhập nhưng buộc đổi mật khẩu lần đầu → ép về trang đổi mật khẩu
+  if (authStore.mustChangePassword && to.path !== '/change-password') {
+    return next('/change-password')
+  }
+  // Đã đổi xong rồi mà còn ở trang đổi/login → đưa về trang chính
+  if (!authStore.mustChangePassword && (to.path === '/change-password' || to.path === '/login')) {
+    return next('/employees')
+  }
+
+  // RBAC
+  if (to.meta.roles && Array.isArray(to.meta.roles)) {
+    const userRole = authStore.userRole
+    if (!userRole || !to.meta.roles.includes(userRole)) {
+      console.warn(`Access Denied. User Role ${userRole} is not in required roles ${to.meta.roles.join(', ')}`)
+      return next('/employees')
+    }
+  }
+  next()
 })
 
 export default router
