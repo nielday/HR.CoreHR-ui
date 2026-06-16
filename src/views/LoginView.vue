@@ -20,7 +20,7 @@ async function handleLogin() {
     await authStore.testLogin(username.value, password.value)
     router.push('/employees') // After login, go to Employees instead of departments
   } catch (err: any) {
-    error.value = err.response?.data?.message || err.response?.data?.Message || err.message || 'Login failed. System requires an active API token to proceed.'
+    error.value = err.response?.data?.message || err.response?.data?.Message || err.message || 'Đăng nhập thất bại. Hệ thống cần token API hợp lệ để tiếp tục.'
   } finally {
     isLoading.value = false
   }
@@ -40,7 +40,7 @@ async function handleLogin() {
             <span class="font-display text-2xl text-foreground">HR</span>
           </div>
           <h1 class="font-display text-3xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">HR Core</h1>
-          <p class="font-mono text-xs uppercase tracking-widest text-muted-foreground">Admin Portal</p>
+          <p class="font-mono text-xs uppercase tracking-widest text-muted-foreground">Cổng quản trị</p>
         </div>
 
         <div v-if="error" class="mb-6 p-4 bg-red-50 text-red-500 rounded-xl text-sm font-sans text-center border border-red-100">
@@ -49,21 +49,21 @@ async function handleLogin() {
 
         <form @submit.prevent="handleLogin" class="space-y-4">
           <div>
-            <label for="username" class="sr-only">Username</label>
-            <input id="username" v-model="username" type="text" placeholder="Username (admin, hr, manager, employee)" required class="w-full h-12 px-4 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent focus:ring-offset-2 outline-none transition-all font-mono text-sm" />
+            <label for="username" class="sr-only">Tên đăng nhập</label>
+            <input id="username" v-model="username" type="text" placeholder="Tên đăng nhập (admin, hr, manager, employee)" required class="w-full h-12 px-4 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent focus:ring-offset-2 outline-none transition-all font-mono text-sm" />
           </div>
           <div>
-            <label for="password" class="sr-only">Password</label>
-            <input id="password" v-model="password" type="password" placeholder="Password" required class="w-full h-12 px-4 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent focus:ring-offset-2 outline-none transition-all font-mono text-sm" />
+            <label for="password" class="sr-only">Mật khẩu</label>
+            <input id="password" v-model="password" type="password" placeholder="Mật khẩu" required class="w-full h-12 px-4 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent focus:ring-offset-2 outline-none transition-all font-mono text-sm" />
           </div>
           
           <Button type="submit" class="w-full py-6 mt-4 text-base" :disabled="isLoading">
-            {{ isLoading ? 'Authenticating...' : 'Login & Enter' }}
+            {{ isLoading ? 'Đang đăng nhập...' : 'Đăng nhập' }}
           </Button>
         </form>
-        
+
         <p class="text-center text-xs text-muted-foreground/80 mt-6 font-sans">
-          Try login with: admin/123456, hr/123456, manager/123456
+          Đăng nhập thử với: admin/123456, hr/123456, manager/123456
         </p>
       </div>
     </div>

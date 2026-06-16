@@ -68,11 +68,11 @@ const pagination = ref({
 })
 
 const headers = [
-  { title: 'Code', align: 'start', key: 'employeeCode' },
-  { title: 'Employee', align: 'start', key: 'fullName' },
-  { title: 'Department', align: 'start', key: 'departmentName' },
-  { title: 'Position', align: 'start', key: 'positionName' },
-  { title: 'Status', align: 'center', key: 'workingStatus' },
+  { title: 'Mã', align: 'start', key: 'employeeCode' },
+  { title: 'Nhân viên', align: 'start', key: 'fullName' },
+  { title: 'Phòng ban', align: 'start', key: 'departmentName' },
+  { title: 'Chức vụ', align: 'start', key: 'positionName' },
+  { title: 'Trạng thái', align: 'center', key: 'workingStatus' },
   { title: '', align: 'end', key: 'actions', sortable: false },
 ] as const
 
@@ -224,12 +224,12 @@ async function executeResign() {
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
       <div>
-        <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Employees</h1>
-        <p class="text-muted-foreground font-sans text-lg">Manage your workforce, update profiles and monitor statuses.</p>
+        <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Nhân viên</h1>
+        <p class="text-muted-foreground font-sans text-lg">Quản lý nhân sự, cập nhật hồ sơ và theo dõi trạng thái.</p>
       </div>
       <Button v-if="canManageSystem" @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
         <PlusIcon class="w-4 h-4 mr-2" />
-        New Employee
+        Thêm nhân viên
       </Button>
     </div>
 
@@ -241,29 +241,29 @@ async function executeResign() {
           v-model="searchParams.keyword" 
           @input="onSearchInput"
           type="text" 
-          placeholder="Search name, code, email..." 
+          placeholder="Tìm theo tên, mã, email..."
           class="w-full h-10 pl-9 pr-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"
         />
       </div>
       <div class="flex-1 w-full flex flex-col sm:flex-row gap-4">
         <select v-model="searchParams.departmentId" @change="onFilterChange" class="flex-1 h-10 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-          <option value="">All Departments</option>
+          <option value="">Tất cả phòng ban</option>
           <option v-for="d in deptStore.departments" :key="d.id" :value="d.id">{{ d.departmentName }}</option>
         </select>
         <select v-model="searchParams.positionId" @change="onFilterChange" class="flex-1 h-10 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-          <option value="">All Positions</option>
+          <option value="">Tất cả chức vụ</option>
           <option v-for="p in posStore.positions" :key="p.id" :value="p.id">{{ p.positionName }}</option>
         </select>
         <select v-model="searchParams.contractTypeId" @change="onFilterChange" class="flex-1 h-10 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-          <option value="">All Contracts</option>
+          <option value="">Tất cả hợp đồng</option>
           <option v-for="c in contractStore.contracts" :key="c.id" :value="c.id">{{ c.contractTypeName }}</option>
         </select>
         <select v-model="searchParams.workingStatus" @change="onFilterChange" class="w-full sm:w-40 h-10 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-          <option value="">All Statuses</option>
-          <option value="Active">Active</option>
-          <option value="Probation">Probation</option>
-          <option value="Suspended">Suspended</option>
-          <option value="Resigned">Resigned</option>
+          <option value="">Tất cả trạng thái</option>
+          <option value="Active">Đang làm việc</option>
+          <option value="Probation">Thử việc</option>
+          <option value="Suspended">Tạm ngưng</option>
+          <option value="Resigned">Đã nghỉ việc</option>
         </select>
       </div>
     </div>
@@ -298,26 +298,26 @@ async function executeResign() {
 
         <template #[`item.workingStatus`]="{ item }">
           <span v-if="item.workingStatus === 'Active' || item.workingStatus === 'Probation'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-green-50 text-green-600 border border-green-200">
-            {{ item.workingStatus === 'Probation' ? 'Probation' : 'Active' }}
+            {{ item.workingStatus === 'Probation' ? 'Thử việc' : 'Đang làm việc' }}
           </span>
           <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-gray-100 text-gray-500 border border-gray-200">
-            {{ item.workingStatus }}
+            {{ item.workingStatus === 'Resigned' ? 'Đã nghỉ việc' : item.workingStatus === 'Suspended' ? 'Tạm ngưng' : item.workingStatus }}
           </span>
         </template>
 
         <template #[`item.actions`]="{ item }">
           <div class="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
-            <button @click="router.push(`/employees/${item.id}`)" class="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors" title="View Details">
+            <button @click="router.push(`/employees/${item.id}`)" class="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors" title="Xem chi tiết">
               <EyeIcon class="w-4 h-4" />
             </button>
             <template v-if="canManageSystem">
-              <button @click="openEditModal(item)" class="p-2 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Edit">
+              <button @click="openEditModal(item)" class="p-2 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Sửa">
                 <PencilIcon class="w-4 h-4" />
               </button>
-              <button v-if="item.workingStatus === 'Active' || item.workingStatus === 'Probation'" @click="openTransfer(item)" class="p-2 text-muted-foreground hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Transfer">
+              <button v-if="item.workingStatus === 'Active' || item.workingStatus === 'Probation'" @click="openTransfer(item)" class="p-2 text-muted-foreground hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Điều chuyển">
                 <ArrowRightLeftIcon class="w-4 h-4" />
               </button>
-              <button v-if="item.workingStatus === 'Active' || item.workingStatus === 'Probation'" @click="openResign(item)" class="p-2 text-muted-foreground hover:text-warning hover:bg-warning/10 rounded-lg transition-colors" title="Mark Resigned">
+              <button v-if="item.workingStatus === 'Active' || item.workingStatus === 'Probation'" @click="openResign(item)" class="p-2 text-muted-foreground hover:text-warning hover:bg-warning/10 rounded-lg transition-colors" title="Đánh dấu nghỉ việc">
                 <UserMinusIcon class="w-4 h-4" />
               </button>
             </template>
@@ -327,30 +327,30 @@ async function executeResign() {
     </div>
 
     <!-- Create / Edit Employee Modal -->
-    <Modal :isOpen="isModalOpen" :title="isEditMode ? 'Edit Employee Profile' : 'New Employee Profile'" maxWidth="3xl" @close="isModalOpen = false">
+    <Modal :isOpen="isModalOpen" :title="isEditMode ? 'Sửa hồ sơ nhân viên' : 'Hồ sơ nhân viên mới'" maxWidth="3xl" @close="isModalOpen = false">
       <form @submit.prevent="submitCreateOrUpdate" class="space-y-8">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
           
           <!-- Column 1: Personal Info -->
           <div class="space-y-4">
             <div class="border-b border-border pb-2 mb-4">
-              <h4 class="font-mono text-[10px] uppercase tracking-widest text-accent">Personal Information</h4>
+              <h4 class="font-mono text-[10px] uppercase tracking-widest text-accent">Thông tin cá nhân</h4>
             </div>
             
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Code <span class="text-red-500">*</span></label>
+                <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mã <span class="text-red-500">*</span></label>
                 <input v-model="newEmp.employeeCode" type="text" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="EMP-001" :disabled="isEditMode"/>
               </div>
               <div>
-                <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Hire Date <span class="text-red-500">*</span></label>
+                <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Ngày vào làm <span class="text-red-500">*</span></label>
                 <input v-model="newEmp.hireDate" type="date" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"/>
               </div>
             </div>
 
             <div>
-              <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Full Name <span class="text-red-500">*</span></label>
-              <input v-model="newEmp.fullName" type="text" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="John Doe"/>
+              <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Họ và tên <span class="text-red-500">*</span></label>
+              <input v-model="newEmp.fullName" type="text" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Nguyễn Văn A"/>
             </div>
             
             <div>
@@ -360,28 +360,28 @@ async function executeResign() {
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Date of Birth</label>
+                <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Ngày sinh</label>
                 <input v-model="newEmp.dateOfBirth" type="date" class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"/>
               </div>
               <div>
-                <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Gender</label>
+                <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Giới tính</label>
                 <select v-model="newEmp.gender" class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-                  <option value="">Select</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
+                  <option value="">Chọn</option>
+                  <option value="Male">Nam</option>
+                  <option value="Female">Nữ</option>
+                  <option value="Other">Khác</option>
                 </select>
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Phone Number</label>
-                <input v-model="newEmp.phoneNumber" type="tel" class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="+1 234 567 890"/>
+                <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Số điện thoại</label>
+                <input v-model="newEmp.phoneNumber" type="tel" class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="+84 912 345 678"/>
               </div>
               <div>
-                <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Address</label>
-                <input v-model="newEmp.address" type="text" class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="City, Country"/>
+                <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Địa chỉ</label>
+                <input v-model="newEmp.address" type="text" class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Thành phố, Quốc gia"/>
               </div>
             </div>
           </div>
@@ -389,41 +389,41 @@ async function executeResign() {
           <!-- Column 2: Job & Contract -->
           <div class="space-y-4">
             <div class="border-b border-border pb-2 mb-4">
-              <h4 class="font-mono text-[10px] uppercase tracking-widest text-accent">Assignment & Contract</h4>
+              <h4 class="font-mono text-[10px] uppercase tracking-widest text-accent">Phân công & Hợp đồng</h4>
             </div>
 
             <div>
-              <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Department <span class="text-red-500">*</span></label>
+              <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Phòng ban <span class="text-red-500">*</span></label>
               <select v-model="newEmp.departmentId" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" :disabled="isEditMode">
-                <option value="" disabled>Select a department</option>
+                <option value="" disabled>Chọn phòng ban</option>
                 <option v-for="d in deptStore.departments" :key="d.id" :value="d.id">{{ d.departmentName }} ({{ d.departmentCode }})</option>
               </select>
-              <p v-if="isEditMode" class="text-xs text-muted-foreground mt-1">To change department or position, use the Transfer action.</p>
+              <p v-if="isEditMode" class="text-xs text-muted-foreground mt-1">Để thay đổi phòng ban hoặc chức vụ, hãy dùng chức năng Điều chuyển.</p>
             </div>
 
             <div>
-              <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Position <span class="text-red-500">*</span></label>
+              <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Chức vụ <span class="text-red-500">*</span></label>
               <select v-model="newEmp.positionId" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" :disabled="isEditMode">
-                <option value="" disabled>Select a position</option>
+                <option value="" disabled>Chọn chức vụ</option>
                 <option v-for="p in posStore.positions" :key="p.id" :value="p.id">{{ p.positionName }}</option>
               </select>
             </div>
 
             <div class="pt-2">
-              <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Contract Type</label>
+              <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Loại hợp đồng</label>
               <select v-model="newEmp.contractTypeId" class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-                <option value="">No Contract (Pending)</option>
+                <option value="">Chưa có hợp đồng (Chờ xử lý)</option>
                 <option v-for="c in contractStore.contracts" :key="c.id" :value="c.id">{{ c.contractTypeName }}</option>
               </select>
             </div>
 
             <div class="grid grid-cols-2 gap-4" v-if="newEmp.contractTypeId">
               <div>
-                <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Start Date</label>
+                <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Ngày bắt đầu</label>
                 <input v-model="newEmp.contractStartDate" type="date" class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"/>
               </div>
               <div>
-                <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">End Date</label>
+                <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Ngày kết thúc</label>
                 <input v-model="newEmp.contractEndDate" type="date" class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"/>
               </div>
             </div>
@@ -435,43 +435,43 @@ async function executeResign() {
         </div>
 
         <div class="pt-6 border-t border-border flex justify-end gap-4 mt-6">
-          <Button variant="ghost" type="button" @click="isModalOpen = false">Cancel</Button>
+          <Button variant="ghost" type="button" @click="isModalOpen = false">Hủy</Button>
           <Button type="submit" :disabled="store.isLoading" class="min-w-[150px]">
-            {{ store.isLoading ? 'Processing...' : (isEditMode ? 'Save Changes' : 'Create Employee') }}
+            {{ store.isLoading ? 'Đang xử lý...' : (isEditMode ? 'Lưu thay đổi' : 'Tạo nhân viên') }}
           </Button>
         </div>
       </form>
     </Modal>
 
     <!-- Transfer Modal -->
-    <Modal :isOpen="isTransferModalOpen" title="Transfer Employee" @close="isTransferModalOpen = false">
+    <Modal :isOpen="isTransferModalOpen" title="Điều chuyển nhân viên" @close="isTransferModalOpen = false">
       <form @submit.prevent="executeTransfer" class="space-y-4">
         <p class="text-sm text-muted-foreground font-sans">
-          Transfer <strong>{{ selectedEmp?.fullName }}</strong> to a new department or position.
+          Điều chuyển <strong>{{ selectedEmp?.fullName }}</strong> sang phòng ban hoặc chức vụ mới.
         </p>
 
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">New Department <span class="text-red-500">*</span></label>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Phòng ban mới <span class="text-red-500">*</span></label>
           <select v-model="transferData.newDepartmentId" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-blue-500 outline-none font-sans text-sm">
             <option v-for="d in deptStore.departments" :key="d.id" :value="d.id">{{ d.departmentName }}</option>
           </select>
         </div>
 
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">New Position <span class="text-red-500">*</span></label>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Chức vụ mới <span class="text-red-500">*</span></label>
           <select v-model="transferData.newPositionId" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-blue-500 outline-none font-sans text-sm">
             <option v-for="p in posStore.positions" :key="p.id" :value="p.id">{{ p.positionName }}</option>
           </select>
         </div>
 
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Effective Date <span class="text-red-500">*</span></label>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Ngày hiệu lực <span class="text-red-500">*</span></label>
           <input v-model="transferData.transferDate" type="date" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-blue-500 outline-none font-sans text-sm"/>
         </div>
 
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Reason</label>
-          <textarea v-model="transferData.reason" rows="2" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-blue-500 outline-none font-sans text-sm" placeholder="Reason for transfer..."></textarea>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Lý do</label>
+          <textarea v-model="transferData.reason" rows="2" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-blue-500 outline-none font-sans text-sm" placeholder="Lý do điều chuyển..."></textarea>
         </div>
 
         <div v-if="store.error && isTransferModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans mt-4">
@@ -479,27 +479,27 @@ async function executeResign() {
         </div>
 
         <div class="pt-4 flex justify-end gap-4">
-          <Button variant="ghost" type="button" @click="isTransferModalOpen = false">Cancel</Button>
-          <Button type="submit" :disabled="store.isLoading" class="bg-blue-600 hover:bg-blue-700 border-transparent text-white shadow-md">Confirm Transfer</Button>
+          <Button variant="ghost" type="button" @click="isTransferModalOpen = false">Hủy</Button>
+          <Button type="submit" :disabled="store.isLoading" class="bg-blue-600 hover:bg-blue-700 border-transparent text-white shadow-md">Xác nhận điều chuyển</Button>
         </div>
       </form>
     </Modal>
 
     <!-- Resign Modal -->
-    <Modal :isOpen="isResignModalOpen" title="Resign Employee" @close="isResignModalOpen = false">
+    <Modal :isOpen="isResignModalOpen" title="Nghỉ việc" @close="isResignModalOpen = false">
       <form @submit.prevent="executeResign" class="space-y-4">
         <p class="text-sm text-muted-foreground font-sans">
-          Mark <strong>{{ selectedEmp?.fullName }}</strong> as resigned. This action will change their status but preserve their record.
+          Đánh dấu <strong>{{ selectedEmp?.fullName }}</strong> đã nghỉ việc. Thao tác này sẽ thay đổi trạng thái nhưng vẫn giữ lại hồ sơ.
         </p>
 
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Resign Date <span class="text-red-500">*</span></label>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Ngày nghỉ việc <span class="text-red-500">*</span></label>
           <input v-model="resignDate" type="date" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-warning outline-none font-sans text-sm"/>
         </div>
 
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Reason</label>
-          <textarea v-model="resignReason" rows="3" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-warning outline-none font-sans text-sm" placeholder="Optional reason..."></textarea>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Lý do</label>
+          <textarea v-model="resignReason" rows="3" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-warning outline-none font-sans text-sm" placeholder="Lý do (không bắt buộc)..."></textarea>
         </div>
 
         <div v-if="store.error && isResignModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans mt-4">
@@ -507,8 +507,8 @@ async function executeResign() {
         </div>
 
         <div class="pt-4 flex justify-end gap-4">
-          <Button variant="ghost" type="button" @click="isResignModalOpen = false">Cancel</Button>
-          <Button type="submit" :disabled="store.isLoading" class="bg-warning hover:bg-warning/90 border-transparent shadow-md">Confirm Resignation</Button>
+          <Button variant="ghost" type="button" @click="isResignModalOpen = false">Hủy</Button>
+          <Button type="submit" :disabled="store.isLoading" class="bg-warning hover:bg-warning/90 border-transparent shadow-md">Xác nhận nghỉ việc</Button>
         </div>
       </form>
     </Modal>

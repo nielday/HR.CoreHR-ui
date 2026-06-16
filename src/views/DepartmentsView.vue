@@ -29,10 +29,10 @@ const newDept = ref({
 })
 
 const headers = [
-  { title: 'Department Name', align: 'start', key: 'departmentName', width: '30%' },
-  { title: 'Code', align: 'start', key: 'departmentCode', width: '15%' },
-  { title: 'Description', align: 'start', key: 'description', width: '25%' },
-  { title: 'Status', align: 'center', key: 'isActive', width: '15%' },
+  { title: 'Tên phòng ban', align: 'start', key: 'departmentName', width: '30%' },
+  { title: 'Mã', align: 'start', key: 'departmentCode', width: '15%' },
+  { title: 'Mô tả', align: 'start', key: 'description', width: '25%' },
+  { title: 'Trạng thái', align: 'center', key: 'isActive', width: '15%' },
   { title: '', align: 'end', key: 'actions', sortable: false },
 ] as const
 
@@ -125,12 +125,12 @@ async function executeDelete() {
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
       <div>
-        <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Departments</h1>
-        <p class="text-muted-foreground font-sans text-lg">Manage organizational structure and hierarchy.</p>
+        <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Phòng ban</h1>
+        <p class="text-muted-foreground font-sans text-lg">Quản lý cơ cấu tổ chức và phân cấp.</p>
       </div>
       <Button v-if="canManageSystem" @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
         <PlusIcon class="w-4 h-4 mr-2" />
-        New Department
+        Thêm phòng ban
       </Button>
     </div>
 
@@ -180,20 +180,20 @@ async function executeDelete() {
         <!-- Custom Status Column -->
         <template #[`item.isActive`]="{ item }">
           <span v-if="item.isActive" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-green-50 text-green-600 border border-green-200">
-            Active
+            Đang hoạt động
           </span>
           <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-gray-100 text-gray-500 border border-gray-200">
-            Inactive
+            Ngừng hoạt động
           </span>
         </template>
 
         <!-- Custom Actions Column -->
         <template #[`item.actions`]="{ item }">
           <div v-if="canManageSystem" class="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
-            <button @click="openEditModal(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Edit">
+            <button @click="openEditModal(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Sửa">
               <PencilIcon class="w-4 h-4" />
             </button>
-            <button @click="confirmDelete(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete" :disabled="item.subDepartments?.length > 0">
+            <button @click="confirmDelete(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Xóa" :disabled="item.subDepartments?.length > 0">
               <TrashIcon class="w-4 h-4" :class="{'opacity-30 cursor-not-allowed': item.subDepartments?.length > 0}" />
             </button>
           </div>
@@ -202,28 +202,28 @@ async function executeDelete() {
     </div>
 
     <!-- Create / Edit Department Modal -->
-    <Modal :isOpen="isModalOpen" :title="isEditMode ? 'Edit Department' : 'New Department'" @close="isModalOpen = false">
+    <Modal :isOpen="isModalOpen" :title="isEditMode ? 'Sửa phòng ban' : 'Thêm phòng ban'" @close="isModalOpen = false">
       <form @submit.prevent="submitCreateOrUpdate" class="space-y-5">
         
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Department Code <span class="text-red-500">*</span></label>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mã phòng ban <span class="text-red-500">*</span></label>
           <input v-model="newDept.departmentCode" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="HR-01" :disabled="isEditMode"/>
         </div>
 
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Department Name <span class="text-red-500">*</span></label>
-          <input v-model="newDept.departmentName" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Human Resources"/>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Tên phòng ban <span class="text-red-500">*</span></label>
+          <input v-model="newDept.departmentName" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Phòng Nhân sự"/>
         </div>
 
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Description</label>
-          <textarea v-model="newDept.description" rows="2" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm resize-none" placeholder="Optional description..."></textarea>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mô tả</label>
+          <textarea v-model="newDept.description" rows="2" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm resize-none" placeholder="Mô tả (không bắt buộc)..."></textarea>
         </div>
 
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Parent Department</label>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Phòng ban cha</label>
           <select v-model="newDept.parentDepartmentId" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-            <option value="">-- None (Root Level) --</option>
+            <option value="">-- Không có phòng cha (Cấp gốc) --</option>
             <option v-for="d in store.departments" :key="d.id" :value="d.id" :disabled="d.id === editingId">
               {{ d.departmentName }}
             </option>
@@ -231,9 +231,9 @@ async function executeDelete() {
         </div>
 
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Department Manager</label>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Trưởng phòng</label>
           <select v-model="newDept.managerEmployeeId" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-            <option value="">-- None Assigned --</option>
+            <option value="">-- Chưa phân công --</option>
             <option v-for="e in employeeStore.employees" :key="e.id" :value="e.id">
               {{ e.fullName }} ({{ e.employeeCode }})
             </option>
@@ -242,7 +242,7 @@ async function executeDelete() {
 
         <div v-if="isEditMode" class="flex items-center gap-3 pt-2">
           <input type="checkbox" id="isActive" v-model="newDept.isActive" class="w-4 h-4 rounded text-accent focus:ring-accent accent-accent" />
-          <label for="isActive" class="font-sans text-sm text-foreground">Active Status</label>
+          <label for="isActive" class="font-sans text-sm text-foreground">Trạng thái hoạt động</label>
         </div>
 
         <div v-if="store.error && isModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans mt-4">
@@ -250,19 +250,19 @@ async function executeDelete() {
         </div>
 
         <div class="pt-6 border-t border-border flex justify-end gap-4 mt-6">
-          <Button variant="ghost" type="button" @click="isModalOpen = false">Cancel</Button>
+          <Button variant="ghost" type="button" @click="isModalOpen = false">Hủy</Button>
           <Button type="submit" :disabled="store.isLoading" class="min-w-[150px]">
-            {{ store.isLoading ? 'Processing...' : (isEditMode ? 'Save Changes' : 'Create Department') }}
+            {{ store.isLoading ? 'Đang xử lý...' : (isEditMode ? 'Lưu thay đổi' : 'Thêm phòng ban') }}
           </Button>
         </div>
       </form>
     </Modal>
 
     <!-- Delete Confirmation Modal -->
-    <Modal :isOpen="isConfirmDeleteOpen" title="Confirm Deletion" @close="isConfirmDeleteOpen = false">
+    <Modal :isOpen="isConfirmDeleteOpen" title="Xác nhận xóa" @close="isConfirmDeleteOpen = false">
       <div class="space-y-6">
         <p class="text-sm text-muted-foreground font-sans">
-          Are you sure you want to delete <strong>{{ selectedDept?.departmentName }}</strong>?
+          Bạn có chắc muốn xóa <strong>{{ selectedDept?.departmentName }}</strong>?
         </p>
 
         <div v-if="store.error && isConfirmDeleteOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans">
@@ -270,9 +270,9 @@ async function executeDelete() {
         </div>
 
         <div class="pt-4 flex justify-end gap-4">
-          <Button variant="ghost" @click="isConfirmDeleteOpen = false">Cancel</Button>
+          <Button variant="ghost" @click="isConfirmDeleteOpen = false">Hủy</Button>
           <Button @click="executeDelete" :disabled="store.isLoading" class="bg-red-500 hover:bg-red-600 border-transparent text-white shadow-md">
-            {{ store.isLoading ? 'Deleting...' : 'Delete Department' }}
+            {{ store.isLoading ? 'Đang xóa...' : 'Xóa phòng ban' }}
           </Button>
         </div>
       </div>

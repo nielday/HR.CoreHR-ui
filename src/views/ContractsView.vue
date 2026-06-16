@@ -26,10 +26,10 @@ const newContract = ref({
 })
 
 const headers = [
-  { title: 'Code', align: 'start', key: 'contractTypeCode', width: '20%' },
-  { title: 'Name', align: 'start', key: 'contractTypeName', width: '30%' },
-  { title: 'Duration', align: 'start', key: 'defaultDurationMonths', width: '15%' },
-  { title: 'Description', align: 'start', key: 'description', width: '20%' },
+  { title: 'Mã', align: 'start', key: 'contractTypeCode', width: '20%' },
+  { title: 'Tên', align: 'start', key: 'contractTypeName', width: '30%' },
+  { title: 'Thời hạn', align: 'start', key: 'defaultDurationMonths', width: '15%' },
+  { title: 'Mô tả', align: 'start', key: 'description', width: '20%' },
   { title: '', align: 'end', key: 'actions', sortable: false },
 ] as const
 
@@ -110,17 +110,17 @@ async function executeRestore(item: any) {
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
       <div>
-        <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Contract Types</h1>
-        <p class="text-muted-foreground font-sans text-lg">Manage employment agreements and durations.</p>
+        <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Loại hợp đồng</h1>
+        <p class="text-muted-foreground font-sans text-lg">Quản lý các loại hợp đồng lao động và thời hạn.</p>
       </div>
       <div class="flex items-center gap-4">
         <label class="flex items-center gap-2 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
           <input type="checkbox" v-model="showInactive" class="w-4 h-4 rounded border-border text-accent focus:ring-accent" />
-          Show inactive
+          Hiện loại đã ẩn
         </label>
         <Button v-if="canManageSystem" @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
           <PlusIcon class="w-4 h-4 mr-2" />
-          New Contract Type
+          Thêm loại hợp đồng
         </Button>
       </div>
     </div>
@@ -148,14 +148,14 @@ async function executeRestore(item: any) {
           <div class="flex items-center gap-2">
             <span class="font-sans font-medium" :class="item.isActive === false ? 'text-muted-foreground line-through' : 'text-foreground'">{{ item.contractTypeName }}</span>
             <span v-if="item.isActive === false" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-600 uppercase tracking-wider">
-              Inactive
+              Đã ẩn
             </span>
           </div>
         </template>
 
         <template #[`item.defaultDurationMonths`]="{ item }">
           <span v-if="item.defaultDurationMonths" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-foreground border border-border">
-            {{ item.defaultDurationMonths }} Mo
+            {{ item.defaultDurationMonths }} tháng
           </span>
           <span v-else class="text-muted-foreground italic">—</span>
         </template>
@@ -167,15 +167,15 @@ async function executeRestore(item: any) {
         <template #[`item.actions`]="{ item }">
           <div v-if="canManageSystem" class="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
             <template v-if="item.isActive !== false">
-              <button @click="openEditModal(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Edit">
+              <button @click="openEditModal(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Sửa">
                 <PencilIcon class="w-4 h-4" />
               </button>
-              <button @click="confirmDelete(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+              <button @click="confirmDelete(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Xóa">
                 <TrashIcon class="w-4 h-4" />
               </button>
             </template>
             <template v-else>
-              <button @click="executeRestore(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors" title="Restore">
+              <button @click="executeRestore(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors" title="Khôi phục">
                 <RotateCcwIcon class="w-4 h-4" />
               </button>
             </template>
@@ -185,30 +185,30 @@ async function executeRestore(item: any) {
     </div>
 
     <!-- Create / Edit Modal -->
-    <Modal :isOpen="isModalOpen" :title="isEditMode ? 'Edit Contract Type' : 'New Contract Type'" @close="isModalOpen = false">
+    <Modal :isOpen="isModalOpen" :title="isEditMode ? 'Sửa loại hợp đồng' : 'Thêm loại hợp đồng'" @close="isModalOpen = false">
       <form @submit.prevent="submitCreateOrUpdate" class="space-y-5">
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Code <span class="text-red-500">*</span></label>
-            <input v-model="newContract.contractTypeCode" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="e.g. FULL" :disabled="isEditMode"/>
+            <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mã <span class="text-red-500">*</span></label>
+            <input v-model="newContract.contractTypeCode" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="VD: FULL" :disabled="isEditMode"/>
           </div>
           <div>
-            <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Duration (Mo)</label>
+            <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Thời hạn (tháng)</label>
             <input v-model="newContract.defaultDurationMonths" type="number" min="1" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="12" />
           </div>
         </div>
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Name <span class="text-red-500">*</span></label>
-          <input v-model="newContract.contractTypeName" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Full-time Employment"/>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Tên <span class="text-red-500">*</span></label>
+          <input v-model="newContract.contractTypeName" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Hợp đồng toàn thời gian"/>
         </div>
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Description</label>
-          <textarea v-model="newContract.description" rows="3" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm resize-none" placeholder="Standard contract..."></textarea>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mô tả</label>
+          <textarea v-model="newContract.description" rows="3" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm resize-none" placeholder="Hợp đồng tiêu chuẩn..."></textarea>
         </div>
         
         <div v-if="isEditMode" class="flex items-center gap-3 pt-2">
           <input type="checkbox" id="isActiveContract" v-model="newContract.isActive" class="w-4 h-4 rounded text-accent focus:ring-accent accent-accent" />
-          <label for="isActiveContract" class="font-sans text-sm text-foreground">Active Status</label>
+          <label for="isActiveContract" class="font-sans text-sm text-foreground">Trạng thái hoạt động</label>
         </div>
 
         <div v-if="store.error && isModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans mt-4">
@@ -216,27 +216,27 @@ async function executeRestore(item: any) {
         </div>
 
         <div class="pt-6 border-t border-border flex justify-end gap-4 mt-6">
-          <Button variant="ghost" type="button" @click="isModalOpen = false">Cancel</Button>
+          <Button variant="ghost" type="button" @click="isModalOpen = false">Hủy</Button>
           <Button type="submit" :disabled="store.isLoading" class="min-w-[150px]">
-            {{ store.isLoading ? 'Processing...' : (isEditMode ? 'Save Changes' : 'Create Type') }}
+            {{ store.isLoading ? 'Đang xử lý...' : (isEditMode ? 'Lưu thay đổi' : 'Tạo loại hợp đồng') }}
           </Button>
         </div>
       </form>
     </Modal>
 
     <!-- Delete Confirmation Modal -->
-    <Modal :isOpen="isConfirmDeleteOpen" title="Confirm Deletion" @close="isConfirmDeleteOpen = false">
+    <Modal :isOpen="isConfirmDeleteOpen" title="Xác nhận xóa" @close="isConfirmDeleteOpen = false">
       <div class="space-y-6">
         <p class="text-sm text-muted-foreground font-sans">
-          Are you sure you want to delete <strong>{{ selectedContract?.contractTypeName }}</strong>?
+          Bạn có chắc muốn xóa <strong>{{ selectedContract?.contractTypeName }}</strong>?
         </p>
         <div v-if="store.error && isConfirmDeleteOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans">
           {{ store.error }}
         </div>
         <div class="pt-4 flex justify-end gap-4">
-          <Button variant="ghost" @click="isConfirmDeleteOpen = false">Cancel</Button>
+          <Button variant="ghost" @click="isConfirmDeleteOpen = false">Hủy</Button>
           <Button @click="executeDelete" :disabled="store.isLoading" class="bg-red-500 hover:bg-red-600 border-transparent text-white shadow-md">
-            {{ store.isLoading ? 'Deleting...' : 'Delete Contract Type' }}
+            {{ store.isLoading ? 'Đang xóa...' : 'Xóa loại hợp đồng' }}
           </Button>
         </div>
       </div>

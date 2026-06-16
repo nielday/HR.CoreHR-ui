@@ -30,7 +30,7 @@ function logout() {
       <div class="flex items-center gap-2 md:gap-4">
         <button @click="logout" class="flex items-center gap-2 p-2 px-3 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
           <LogOutIcon class="w-4 h-4" />
-          <span class="hidden md:inline font-medium text-sm">Logout</span>
+          <span class="hidden md:inline font-medium text-sm">Đăng xuất</span>
         </button>
       </div>
     </template>

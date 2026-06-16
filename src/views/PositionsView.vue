@@ -25,10 +25,10 @@ const newPos = ref({
 })
 
 const headers = [
-  { title: 'Code', align: 'start', key: 'positionCode', width: '15%' },
-  { title: 'Name', align: 'start', key: 'positionName', width: '25%' },
-  { title: 'Level', align: 'start', key: 'level', width: '15%' },
-  { title: 'Description', align: 'start', key: 'description', width: '35%' },
+  { title: 'Mã', align: 'start', key: 'positionCode', width: '15%' },
+  { title: 'Tên', align: 'start', key: 'positionName', width: '25%' },
+  { title: 'Cấp bậc', align: 'start', key: 'level', width: '15%' },
+  { title: 'Mô tả', align: 'start', key: 'description', width: '35%' },
   { title: '', align: 'end', key: 'actions', sortable: false },
 ] as const
 
@@ -101,12 +101,12 @@ async function executeDelete() {
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
       <div>
-        <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Positions</h1>
-        <p class="text-muted-foreground font-sans text-lg">Manage job titles and roles within the company.</p>
+        <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Chức vụ</h1>
+        <p class="text-muted-foreground font-sans text-lg">Quản lý chức danh và vị trí công việc trong công ty.</p>
       </div>
       <Button v-if="canManageSystem" @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
         <PlusIcon class="w-4 h-4 mr-2" />
-        New Position
+        Thêm chức vụ
       </Button>
     </div>
 
@@ -135,7 +135,7 @@ async function executeDelete() {
 
         <template #[`item.level`]="{ item }">
           <span v-if="item.level !== null && item.level !== undefined" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-foreground border border-border">
-            Level {{ item.level }}
+            Cấp bậc {{ item.level }}
           </span>
           <span v-else class="text-muted-foreground italic">—</span>
         </template>
@@ -146,10 +146,10 @@ async function executeDelete() {
 
         <template #[`item.actions`]="{ item }">
           <div v-if="canManageSystem" class="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
-            <button @click="openEditModal(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Edit">
+            <button @click="openEditModal(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Sửa">
               <PencilIcon class="w-4 h-4" />
             </button>
-            <button @click="confirmDelete(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+            <button @click="confirmDelete(item)" class="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Xóa">
               <TrashIcon class="w-4 h-4" />
             </button>
           </div>
@@ -158,28 +158,28 @@ async function executeDelete() {
     </div>
 
     <!-- Create / Edit Modal -->
-    <Modal :isOpen="isModalOpen" :title="isEditMode ? 'Edit Position' : 'New Position'" @close="isModalOpen = false">
+    <Modal :isOpen="isModalOpen" :title="isEditMode ? 'Sửa chức vụ' : 'Thêm chức vụ'" @close="isModalOpen = false">
       <form @submit.prevent="submitCreateOrUpdate" class="space-y-5">
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Code <span class="text-red-500">*</span></label>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mã <span class="text-red-500">*</span></label>
           <input v-model="newPos.positionCode" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="e.g. DEV" :disabled="isEditMode"/>
         </div>
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Name <span class="text-red-500">*</span></label>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Tên <span class="text-red-500">*</span></label>
           <input v-model="newPos.positionName" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Developer"/>
         </div>
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Level</label>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Cấp bậc</label>
           <input v-model="newPos.level" type="number" min="0" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="e.g. 1" />
         </div>
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Description</label>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mô tả</label>
           <textarea v-model="newPos.description" rows="3" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm resize-none" placeholder="Software development..."></textarea>
         </div>
         
         <div v-if="isEditMode" class="flex items-center gap-3 pt-2">
           <input type="checkbox" id="isActivePos" v-model="newPos.isActive" class="w-4 h-4 rounded text-accent focus:ring-accent accent-accent" />
-          <label for="isActivePos" class="font-sans text-sm text-foreground">Active Status</label>
+          <label for="isActivePos" class="font-sans text-sm text-foreground">Trạng thái hoạt động</label>
         </div>
 
         <div v-if="store.error && isModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans mt-4">
@@ -187,27 +187,27 @@ async function executeDelete() {
         </div>
 
         <div class="pt-6 border-t border-border flex justify-end gap-4 mt-6">
-          <Button variant="ghost" type="button" @click="isModalOpen = false">Cancel</Button>
+          <Button variant="ghost" type="button" @click="isModalOpen = false">Hủy</Button>
           <Button type="submit" :disabled="store.isLoading" class="min-w-[150px]">
-            {{ store.isLoading ? 'Processing...' : (isEditMode ? 'Save Changes' : 'Create Position') }}
+            {{ store.isLoading ? 'Đang xử lý...' : (isEditMode ? 'Lưu thay đổi' : 'Tạo chức vụ') }}
           </Button>
         </div>
       </form>
     </Modal>
 
     <!-- Delete Confirmation Modal -->
-    <Modal :isOpen="isConfirmDeleteOpen" title="Confirm Deletion" @close="isConfirmDeleteOpen = false">
+    <Modal :isOpen="isConfirmDeleteOpen" title="Xác nhận xóa" @close="isConfirmDeleteOpen = false">
       <div class="space-y-6">
         <p class="text-sm text-muted-foreground font-sans">
-          Are you sure you want to delete <strong>{{ selectedPos?.positionName }}</strong>?
+          Bạn có chắc muốn xóa <strong>{{ selectedPos?.positionName }}</strong>?
         </p>
         <div v-if="store.error && isConfirmDeleteOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans">
           {{ store.error }}
         </div>
         <div class="pt-4 flex justify-end gap-4">
-          <Button variant="ghost" @click="isConfirmDeleteOpen = false">Cancel</Button>
+          <Button variant="ghost" @click="isConfirmDeleteOpen = false">Hủy</Button>
           <Button @click="executeDelete" :disabled="store.isLoading" class="bg-red-500 hover:bg-red-600 border-transparent text-white shadow-md">
-            {{ store.isLoading ? 'Deleting...' : 'Delete Position' }}
+            {{ store.isLoading ? 'Đang xóa...' : 'Xóa chức vụ' }}
           </Button>
         </div>
       </div>

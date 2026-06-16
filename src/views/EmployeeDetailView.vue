@@ -72,12 +72,12 @@ function getStatusBadgeClass(status: number) {
 
 function getStatusText(status: number) {
   switch(status) {
-    case 0: return 'Pending'
-    case 1: return 'Active'
-    case 2: return 'Expired'
-    case 3: return 'Cancelled'
-    case 4: return 'Terminated'
-    default: return 'Unknown'
+    case 0: return 'Chờ duyệt'
+    case 1: return 'Đang hiệu lực'
+    case 2: return 'Hết hạn'
+    case 3: return 'Đã hủy'
+    case 4: return 'Đã chấm dứt'
+    default: return 'Không xác định'
   }
 }
 
@@ -209,63 +209,63 @@ async function executeTerminate() {
       </button>
       <div>
         <h1 class="font-display text-3xl font-bold text-foreground flex items-center gap-3">
-          {{ employee?.fullName || 'Loading...' }}
+          {{ employee?.fullName || 'Đang tải...' }}
           <span v-if="employee" class="text-sm font-mono tracking-widest px-2.5 py-0.5 rounded-full" :class="getStatusBadgeClass(employee.workingStatus)">
             {{ employee.workingStatus }}
           </span>
         </h1>
-        <p class="text-muted-foreground font-mono text-sm mt-1">Code: {{ employee?.employeeCode }} | Dept: {{ employee?.departmentName }} | Pos: {{ employee?.positionName }}</p>
+        <p class="text-muted-foreground font-mono text-sm mt-1">Mã: {{ employee?.employeeCode }} | Phòng ban: {{ employee?.departmentName }} | Chức vụ: {{ employee?.positionName }}</p>
       </div>
     </div>
 
     <!-- Tabs -->
     <div class="flex gap-2 border-b border-border mb-6">
       <button @click="activeTab = 'profile'" :class="[activeTab === 'profile' ? 'border-accent text-accent' : 'border-transparent text-muted-foreground hover:text-foreground', 'flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors font-sans text-sm']">
-        <UserIcon class="w-4 h-4" /> Profile Details
+        <UserIcon class="w-4 h-4" /> Thông tin chi tiết
       </button>
       <button @click="activeTab = 'contracts'" :class="[activeTab === 'contracts' ? 'border-accent text-accent' : 'border-transparent text-muted-foreground hover:text-foreground', 'flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors font-sans text-sm']">
-        <FileTextIcon class="w-4 h-4" /> Contracts
+        <FileTextIcon class="w-4 h-4" /> Hợp đồng
       </button>
       <button @click="activeTab = 'history'" :class="[activeTab === 'history' ? 'border-accent text-accent' : 'border-transparent text-muted-foreground hover:text-foreground', 'flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors font-sans text-sm']">
-        <HistoryIcon class="w-4 h-4" /> Transfer History
+        <HistoryIcon class="w-4 h-4" /> Lịch sử chuyển phòng
       </button>
     </div>
 
     <div v-if="!employee" class="p-8 text-center text-muted-foreground">
-      Loading...
+      Đang tải...
     </div>
 
     <!-- Profile Tab -->
     <div v-else-if="activeTab === 'profile'" class="bg-card border border-border rounded-2xl p-6 shadow-sm">
-      <h3 class="font-display text-xl mb-6">Personal Information</h3>
+      <h3 class="font-display text-xl mb-6">Thông tin cá nhân</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
         <div>
           <span class="block font-mono text-xs uppercase tracking-widest text-muted-foreground">Email</span>
           <span class="block mt-1 font-sans">{{ employee.email }}</span>
         </div>
         <div>
-          <span class="block font-mono text-xs uppercase tracking-widest text-muted-foreground">Phone</span>
+          <span class="block font-mono text-xs uppercase tracking-widest text-muted-foreground">Số điện thoại</span>
           <span class="block mt-1 font-sans">{{ employee.phoneNumber || '-' }}</span>
         </div>
         <div>
-          <span class="block font-mono text-xs uppercase tracking-widest text-muted-foreground">Date of Birth</span>
+          <span class="block font-mono text-xs uppercase tracking-widest text-muted-foreground">Ngày sinh</span>
           <span class="block mt-1 font-sans">{{ employee.dateOfBirth ? new Date(employee.dateOfBirth).toLocaleDateString() : '-' }}</span>
         </div>
         <div>
-          <span class="block font-mono text-xs uppercase tracking-widest text-muted-foreground">Gender</span>
+          <span class="block font-mono text-xs uppercase tracking-widest text-muted-foreground">Giới tính</span>
           <span class="block mt-1 font-sans">{{ employee.gender || '-' }}</span>
         </div>
         <div class="md:col-span-2">
-          <span class="block font-mono text-xs uppercase tracking-widest text-muted-foreground">Address</span>
+          <span class="block font-mono text-xs uppercase tracking-widest text-muted-foreground">Địa chỉ</span>
           <span class="block mt-1 font-sans">{{ employee.address || '-' }}</span>
         </div>
         <div class="md:col-span-2 mt-4 pt-4 border-t border-border grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
           <div>
-            <span class="block font-mono text-xs uppercase tracking-widest text-muted-foreground">Hire Date</span>
+            <span class="block font-mono text-xs uppercase tracking-widest text-muted-foreground">Ngày vào làm</span>
             <span class="block mt-1 font-sans">{{ employee.hireDate ? new Date(employee.hireDate).toLocaleDateString() : '-' }}</span>
           </div>
           <div>
-            <span class="block font-mono text-xs uppercase tracking-widest text-muted-foreground">Working Status</span>
+            <span class="block font-mono text-xs uppercase tracking-widest text-muted-foreground">Trạng thái làm việc</span>
             <span class="block mt-1 font-sans">{{ employee.workingStatus }}</span>
           </div>
         </div>
@@ -276,13 +276,13 @@ async function executeTerminate() {
     <div v-else-if="activeTab === 'contracts'" class="space-y-4">
       <div v-if="canManageSystem" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p v-if="hasActiveContract" class="text-sm text-muted-foreground">
-          This employee already has an Active contract. Use
-          <span class="font-medium text-foreground">Renew Contract</span>
-          to replace it, or create a Pending contract.
+          Nhân viên này đã có hợp đồng đang hiệu lực. Dùng
+          <span class="font-medium text-foreground">Gia hạn hợp đồng</span>
+          để thay thế, hoặc tạo một hợp đồng chờ duyệt.
         </p>
         <span v-else></span>
         <Button @click="openCreateContractModal" class="shadow-sm shrink-0">
-          <PlusIcon class="w-4 h-4 mr-2" /> New Contract
+          <PlusIcon class="w-4 h-4 mr-2" /> Hợp đồng mới
         </Button>
       </div>
       
@@ -298,15 +298,15 @@ async function executeTerminate() {
           </div>
           <div class="space-y-2 text-sm">
             <div class="flex justify-between text-muted-foreground">
-              <span>Start:</span>
+              <span>Bắt đầu:</span>
               <span class="text-foreground">{{ c.startDate ? new Date(c.startDate).toLocaleDateString() : '-' }}</span>
             </div>
             <div class="flex justify-between text-muted-foreground">
-              <span>End:</span>
-              <span class="text-foreground">{{ c.endDate ? new Date(c.endDate).toLocaleDateString() : 'Indefinite' }}</span>
+              <span>Kết thúc:</span>
+              <span class="text-foreground">{{ c.endDate ? new Date(c.endDate).toLocaleDateString() : 'Không xác định' }}</span>
             </div>
             <div class="flex justify-between text-muted-foreground" v-if="c.actualEndDate">
-              <span>Actual End:</span>
+              <span>Kết thúc thực tế:</span>
               <span class="text-foreground">{{ new Date(c.actualEndDate).toLocaleDateString() }}</span>
             </div>
           </div>
@@ -318,7 +318,7 @@ async function executeTerminate() {
               class="inline-flex items-center gap-2 h-9 px-3 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors text-sm font-medium"
             >
               <RefreshCwIcon class="w-4 h-4" />
-              Renew Contract
+              Gia hạn hợp đồng
             </button>
             <button
               v-if="c.status !== 4 && c.status !== 3"
@@ -326,7 +326,7 @@ async function executeTerminate() {
               @click="openEditContractModal(c)"
               class="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-muted-foreground hover:text-accent hover:bg-accent/10 transition-colors text-sm"
             >
-              <PencilIcon class="w-4 h-4" /> Edit
+              <PencilIcon class="w-4 h-4" /> Sửa
             </button>
             <button
               v-if="c.status === 1 || c.status === 0"
@@ -334,12 +334,12 @@ async function executeTerminate() {
               @click="openTerminateModal(c)"
               class="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors text-sm"
             >
-              <XCircleIcon class="w-4 h-4" /> Terminate
+              <XCircleIcon class="w-4 h-4" /> Chấm dứt
             </button>
           </div>
         </div>
         <div v-if="empContractStore.contracts.length === 0" class="col-span-full py-8 text-center text-muted-foreground bg-card border border-border rounded-2xl border-dashed">
-          No contracts found for this employee.
+          Nhân viên này chưa có hợp đồng nào.
         </div>
       </div>
     </div>
@@ -347,16 +347,16 @@ async function executeTerminate() {
     <!-- History Tab -->
     <div v-else-if="activeTab === 'history'" class="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
       <div class="p-6">
-        <h3 class="font-display text-xl mb-2">Department & Position Transfers</h3>
-        <p class="text-muted-foreground text-sm">History of all role and department changes.</p>
+        <h3 class="font-display text-xl mb-2">Điều chuyển phòng ban & chức vụ</h3>
+        <p class="text-muted-foreground text-sm">Lịch sử tất cả thay đổi chức vụ và phòng ban.</p>
       </div>
       <table class="w-full text-left text-sm font-sans">
         <thead class="bg-muted/50 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
           <tr>
-            <th class="px-6 py-4 font-medium">Effective Date</th>
-            <th class="px-6 py-4 font-medium">From</th>
-            <th class="px-6 py-4 font-medium">To</th>
-            <th class="px-6 py-4 font-medium">Reason</th>
+            <th class="px-6 py-4 font-medium">Ngày hiệu lực</th>
+            <th class="px-6 py-4 font-medium">Từ</th>
+            <th class="px-6 py-4 font-medium">Đến</th>
+            <th class="px-6 py-4 font-medium">Lý do</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-border">
@@ -373,64 +373,64 @@ async function executeTerminate() {
             <td class="px-6 py-4 text-muted-foreground">{{ h.reason || '-' }}</td>
           </tr>
           <tr v-if="transferHistory.length === 0">
-            <td colspan="4" class="px-6 py-8 text-center text-muted-foreground italic">No transfer history found.</td>
+            <td colspan="4" class="px-6 py-8 text-center text-muted-foreground italic">Chưa có lịch sử điều chuyển.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <!-- Contract Modal -->
-    <Modal :isOpen="isContractModalOpen" :title="isRenewContractMode ? 'Renew Contract' : (isEditContractMode ? 'Edit Contract' : 'New Contract')" @close="isContractModalOpen = false">
+    <Modal :isOpen="isContractModalOpen" :title="isRenewContractMode ? 'Gia hạn hợp đồng' : (isEditContractMode ? 'Sửa hợp đồng' : 'Hợp đồng mới')" @close="isContractModalOpen = false">
       <form @submit.prevent="submitContract" class="space-y-4">
         <div v-if="isRenewContractMode" class="p-3 bg-green-50 text-green-800 border border-green-200 rounded-xl text-sm">
-          Saving will end the current Active contract and create this replacement as the new Active contract.
+          Khi lưu, hợp đồng đang hiệu lực hiện tại sẽ kết thúc và hợp đồng thay thế này sẽ trở thành hợp đồng hiệu lực mới.
         </div>
         <div v-else-if="!isEditContractMode && hasActiveContract" class="p-3 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-sm">
-          An Active contract already exists. This new contract must remain Pending. Use
-          <strong>Renew Contract</strong> on the Active contract to replace it.
+          Đã có một hợp đồng đang hiệu lực. Hợp đồng mới này phải ở trạng thái chờ duyệt. Dùng
+          <strong>Gia hạn hợp đồng</strong> trên hợp đồng đang hiệu lực để thay thế.
         </div>
 
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Contract Type <span class="text-red-500">*</span></label>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Loại hợp đồng <span class="text-red-500">*</span></label>
           <select v-model="newContract.contractTypeId" :disabled="isEditContractMode" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-            <option value="" disabled>Select Type</option>
+            <option value="" disabled>Chọn loại</option>
             <option v-for="c in contractTypeStore.contracts" :key="c.id" :value="c.id">{{ c.contractTypeName }}</option>
           </select>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Contract Code <span class="text-red-500">*</span></label>
+            <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mã hợp đồng <span class="text-red-500">*</span></label>
             <input v-model="newContract.contractCode" type="text" :disabled="isEditContractMode" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"/>
           </div>
           <div v-if="!isRenewContractMode">
-            <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Status <span class="text-red-500">*</span></label>
+            <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Trạng thái <span class="text-red-500">*</span></label>
             <select v-model="newContract.status" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-              <option :value="0">Pending</option>
+              <option :value="0">Chờ duyệt</option>
               <option
                 v-if="!hasActiveContract || (isEditContractMode && editingContractId === activeContract?.id)"
                 :value="1"
               >
-                Active
+                Đang hiệu lực
               </option>
-              <option :value="2">Expired</option>
-              <option :value="3">Cancelled</option>
-              <option :value="4">Terminated</option>
+              <option :value="2">Hết hạn</option>
+              <option :value="3">Đã hủy</option>
+              <option :value="4">Đã chấm dứt</option>
             </select>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Start Date <span class="text-red-500">*</span></label>
+            <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Ngày bắt đầu <span class="text-red-500">*</span></label>
             <input v-model="newContract.startDate" type="date" :disabled="isEditContractMode" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"/>
           </div>
           <div>
-            <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">End Date</label>
+            <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Ngày kết thúc</label>
             <input v-model="newContract.endDate" type="date" class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"/>
           </div>
         </div>
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Notes</label>
-          <textarea v-model="newContract.note" rows="2" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Optional notes..."></textarea>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Ghi chú</label>
+          <textarea v-model="newContract.note" rows="2" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Ghi chú tùy chọn..."></textarea>
         </div>
         
         <div v-if="empContractStore.error && isContractModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans">
@@ -438,29 +438,29 @@ async function executeTerminate() {
         </div>
 
         <div class="pt-4 flex justify-end gap-4">
-          <Button variant="ghost" type="button" @click="isContractModalOpen = false">Cancel</Button>
+          <Button variant="ghost" type="button" @click="isContractModalOpen = false">Hủy</Button>
           <Button type="submit" :disabled="empContractStore.isLoading" class="min-w-[120px]">
-            {{ empContractStore.isLoading ? 'Saving...' : (isRenewContractMode ? 'Renew Contract' : 'Save') }}
+            {{ empContractStore.isLoading ? 'Đang lưu...' : (isRenewContractMode ? 'Gia hạn hợp đồng' : 'Lưu') }}
           </Button>
         </div>
       </form>
     </Modal>
 
     <!-- Terminate Modal -->
-    <Modal :isOpen="isTerminateModalOpen" title="Terminate Contract" @close="isTerminateModalOpen = false">
+    <Modal :isOpen="isTerminateModalOpen" title="Chấm dứt hợp đồng" @close="isTerminateModalOpen = false">
       <form @submit.prevent="executeTerminate" class="space-y-4">
         <p class="text-sm text-muted-foreground font-sans">
-          Are you sure you want to terminate this contract early?
+          Bạn có chắc chắn muốn chấm dứt hợp đồng này sớm không?
         </p>
 
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Actual End Date <span class="text-red-500">*</span></label>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Ngày kết thúc thực tế <span class="text-red-500">*</span></label>
           <input v-model="terminateData.actualEndDate" type="date" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-red-500 outline-none font-sans text-sm"/>
         </div>
 
         <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Reason <span class="text-red-500">*</span></label>
-          <textarea v-model="terminateData.reason" required rows="3" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-red-500 outline-none font-sans text-sm" placeholder="Reason for termination..."></textarea>
+          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Lý do <span class="text-red-500">*</span></label>
+          <textarea v-model="terminateData.reason" required rows="3" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-red-500 outline-none font-sans text-sm" placeholder="Lý do chấm dứt..."></textarea>
         </div>
 
         <div v-if="empContractStore.error && isTerminateModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans mt-4">
@@ -468,8 +468,8 @@ async function executeTerminate() {
         </div>
 
         <div class="pt-4 flex justify-end gap-4">
-          <Button variant="ghost" type="button" @click="isTerminateModalOpen = false">Cancel</Button>
-          <Button type="submit" :disabled="empContractStore.isLoading" class="bg-red-500 hover:bg-red-600 border-transparent text-white shadow-md">Confirm Termination</Button>
+          <Button variant="ghost" type="button" @click="isTerminateModalOpen = false">Hủy</Button>
+          <Button type="submit" :disabled="empContractStore.isLoading" class="bg-red-500 hover:bg-red-600 border-transparent text-white shadow-md">Xác nhận chấm dứt</Button>
         </div>
       </form>
     </Modal>

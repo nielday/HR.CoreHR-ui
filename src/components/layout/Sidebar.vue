@@ -20,6 +20,12 @@ const drawer = computed({
 
 const userRole = computed(() => authStore.userRole)
 
+// Tên vai trò hiển thị bằng tiếng Việt (giá trị gốc Admin/HR/Manager/Employee vẫn dùng cho logic)
+const roleLabel = computed(() => {
+  const map: Record<string, string> = { Admin: 'Quản trị viên', HR: 'Nhân sự', Manager: 'Quản lý', Employee: 'Nhân viên' }
+  return map[userRole.value || ''] || userRole.value || ''
+})
+
 // Determine visibility of menus based on role
 const canManageSystem = computed(() => ['Admin', 'HR'].includes(userRole.value || ''))
 const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.value || ''))
@@ -39,32 +45,32 @@ const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.v
         </div>
         <div>
           <h1 class="font-display text-xl text-white tracking-tight leading-tight">Core</h1>
-          <p class="font-mono text-[10px] uppercase tracking-widest text-accent-secondary">Enterprise</p>
+          <p class="font-mono text-[10px] uppercase tracking-widest text-accent-secondary">Doanh nghiệp</p>
         </div>
       </div>
 
       <!-- Navigation -->
       <nav class="flex-1 px-4 py-6 space-y-1 relative z-10 overflow-y-auto custom-scrollbar">
         <div class="px-4 mb-2 mt-2">
-          <span class="font-mono text-[10px] uppercase tracking-[0.2em] text-white/50">Main Menu</span>
+          <span class="font-mono text-[10px] uppercase tracking-[0.2em] text-white/50">Menu chính</span>
         </div>
 
         <RouterLink to="/employees" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
           <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
-          <span class="font-sans font-medium text-sm">Employees</span>
+          <span class="font-sans font-medium text-sm">Nhân viên</span>
         </RouterLink>
 
         <template v-if="canViewAll">
           <RouterLink to="/departments" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
             <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
-            <span class="font-sans font-medium text-sm">Departments</span>
+            <span class="font-sans font-medium text-sm">Phòng ban</span>
           </RouterLink>
         </template>
 
         <!-- Payroll (Nhóm 3) -->
         <template v-if="canViewAll">
           <div class="px-4 mb-2 mt-8">
-            <span class="font-mono text-[10px] uppercase tracking-[0.2em] text-white/50">Payroll</span>
+            <span class="font-mono text-[10px] uppercase tracking-[0.2em] text-white/50">Lương</span>
           </div>
 
           <RouterLink to="/payroll/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
@@ -87,17 +93,17 @@ const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.v
 
         <template v-if="canManageSystem">
           <div class="px-4 mb-2 mt-8">
-            <span class="font-mono text-[10px] uppercase tracking-[0.2em] text-white/50">Settings</span>
+            <span class="font-mono text-[10px] uppercase tracking-[0.2em] text-white/50">Cài đặt</span>
           </div>
 
           <RouterLink to="/positions" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
             <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
-            <span class="font-sans font-medium text-sm">Positions</span>
+            <span class="font-sans font-medium text-sm">Chức vụ</span>
           </RouterLink>
 
           <RouterLink to="/contracts" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
             <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
-            <span class="font-sans font-medium text-sm">Contract Types</span>
+            <span class="font-sans font-medium text-sm">Loại hợp đồng</span>
           </RouterLink>
         </template>
       </nav>
@@ -111,8 +117,8 @@ const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.v
             </div>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-white truncate">{{ userRole === 'Admin' ? 'Administrator' : userRole }}</p>
-            <p class="text-xs text-muted-foreground truncate">{{ userRole }} Role</p>
+            <p class="text-sm font-medium text-white truncate">{{ roleLabel }}</p>
+            <p class="text-xs text-muted-foreground truncate">Vai trò: {{ roleLabel }}</p>
           </div>
         </div>
       </div>
