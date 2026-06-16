@@ -67,6 +67,19 @@ export interface LeaveRequest {
   rejectReason?: string | null
   createdAt: string
 }
+export interface LeavePolicy {
+  id: string
+  leaveType: number
+  annualQuotaDays?: number | null
+  description?: string | null
+  isActive: boolean
+}
+export interface LeaveBalance {
+  leaveType: number
+  entitledDays?: number | null
+  usedDays: number
+  remainingDays?: number | null
+}
 export interface Shift {
   id?: string
   shiftCode: string
@@ -86,6 +99,9 @@ export const useAttendanceStore = defineStore('attendance', () => {
   const summaries = ref<MonthlyAttendanceSummary[]>([])
   const myLeaves = ref<LeaveRequest[]>([])
   const pendingLeaves = ref<LeaveRequest[]>([])
+  const leavePolicies = ref<LeavePolicy[]>([])
+  const myLeaveBalance = ref<LeaveBalance[]>([])
+  const selectedLeaveBalance = ref<LeaveBalance[]>([])
   const shifts = ref<Shift[]>([])
 
   const pickErr = (e: any, f: string) =>
@@ -138,6 +154,18 @@ export const useAttendanceStore = defineStore('attendance', () => {
   async function rejectLeave(id: string, reason: string) {
     return wrap(async () => { await attendanceApi.post(`/leave-requests/${id}/reject`, { reason }); return true }, 'Từ chối thất bại')
   }
+  async function fetchMyLeaveBalance(year: number) {
+    await wrap(async () => { const r = await attendanceApi.get('/leave-requests/balance', { params: { year } }); myLeaveBalance.value = r.data }, 'Không tải được số phép còn lại')
+  }
+  async function fetchLeaveBalance(employeeId: string, year: number) {
+    await wrap(async () => { const r = await attendanceApi.get(`/leave-requests/balance/${employeeId}`, { params: { year } }); selectedLeaveBalance.value = r.data }, 'Không tải được số phép của nhân viên')
+  }
+  async function fetchLeavePolicies() {
+    await wrap(async () => { const r = await attendanceApi.get('/leave-policies'); leavePolicies.value = r.data }, 'Không tải được cấu hình nghỉ phép')
+  }
+  async function updateLeavePolicy(id: string, payload: Partial<LeavePolicy>) {
+    return wrap(async () => { const r = await attendanceApi.put(`/leave-policies/${id}`, payload); return r.data }, 'Cập nhật cấu hình nghỉ phép thất bại')
+  }
 
   // ===== Ca làm việc =====
   async function fetchShifts() {
@@ -155,9 +183,10 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
   return {
     isLoading, error,
-    myAttendance, attendanceList, summaries, myLeaves, pendingLeaves, shifts,
+    myAttendance, attendanceList, summaries, myLeaves, pendingLeaves, leavePolicies, myLeaveBalance, selectedLeaveBalance, shifts,
     checkIn, checkOut, fetchMine, fetchAttendance, upsertManual, closeMonth, fetchSummary,
     createLeave, fetchMyLeaves, fetchPendingLeaves, approveLeave, rejectLeave,
+    fetchMyLeaveBalance, fetchLeaveBalance, fetchLeavePolicies, updateLeavePolicy,
     fetchShifts, createShift, updateShift, deactivateShift,
   }
 })

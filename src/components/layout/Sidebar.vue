@@ -100,6 +100,11 @@ const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.v
             <span class="font-sans font-medium text-sm">Ca làm việc</span>
           </RouterLink>
 
+          <RouterLink to="/attendance/leave-policies" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+            <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
+            <span class="font-sans font-medium text-sm">Cấu hình nghỉ phép</span>
+          </RouterLink>
+
           <RouterLink to="/attendance/closing" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
             <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
             <span class="font-sans font-medium text-sm">Chốt công</span>

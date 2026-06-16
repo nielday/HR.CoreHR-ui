@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { Table as ATable, Tag as ATag, Select as ASelect, message } from 'ant-design-vue'
-import { PlusIcon } from 'lucide-vue-next'
+import { CalendarDaysIcon, PlusIcon } from 'lucide-vue-next'
 import { useAttendanceStore, LEAVE_STATUS, LEAVE_TYPE } from '../stores/attendance'
 import Button from '../components/ui/Button.vue'
 import Modal from '../components/ui/Modal.vue'
@@ -9,6 +9,7 @@ import Modal from '../components/ui/Modal.vue'
 const store = useAttendanceStore()
 
 const isModalOpen = ref(false)
+const currentYear = new Date().getFullYear()
 
 const leaveTypeOptions = [
   { value: 0, label: 'Phép năm' },
@@ -61,6 +62,7 @@ async function submitLeave() {
     message.success('Đã gửi đơn nghỉ phép')
     isModalOpen.value = false
     await store.fetchMyLeaves()
+    await store.fetchMyLeaveBalance(currentYear)
   } else {
     message.error(store.error || 'Gửi đơn nghỉ thất bại')
   }
@@ -68,6 +70,7 @@ async function submitLeave() {
 
 onMounted(() => {
   store.fetchMyLeaves()
+  store.fetchMyLeaveBalance(currentYear)
 })
 </script>
 
@@ -87,6 +90,35 @@ onMounted(() => {
 
     <div v-if="store.error && !isModalOpen" class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
       {{ store.error }}
+    </div>
+
+    <!-- Số phép còn lại -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div
+        v-for="balance in store.myLeaveBalance"
+        :key="balance.leaveType"
+        class="bg-card border border-border rounded-2xl shadow-sm p-5 flex items-start gap-4"
+      >
+        <div class="w-11 h-11 rounded-xl bg-accent/10 text-accent flex items-center justify-center shrink-0">
+          <CalendarDaysIcon class="w-5 h-5" />
+        </div>
+        <div class="min-w-0">
+          <p class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-1">
+            {{ LEAVE_TYPE[balance.leaveType] || balance.leaveType }}
+          </p>
+          <p class="font-display text-2xl text-foreground">
+            <template v-if="balance.entitledDays === null || balance.entitledDays === undefined">
+              Không giới hạn
+            </template>
+            <template v-else>
+              Còn {{ balance.remainingDays }} / {{ balance.entitledDays }}
+            </template>
+          </p>
+          <p class="text-xs text-muted-foreground font-sans mt-1">
+            Đã dùng {{ balance.usedDays }} ngày trong năm {{ currentYear }}
+          </p>
+        </div>
+      </div>
     </div>
 
     <!-- Bảng đơn nghỉ -->
