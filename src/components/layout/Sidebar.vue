@@ -67,6 +67,45 @@ const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.v
           </RouterLink>
         </template>
 
+        <!-- Chấm công (Nhóm 2) -->
+        <div class="px-4 mb-2 mt-8">
+          <span class="font-mono text-[10px] uppercase tracking-[0.2em] text-white/50">Chấm công</span>
+        </div>
+
+        <RouterLink to="/attendance/me" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+          <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
+          <span class="font-sans font-medium text-sm">Chấm công của tôi</span>
+        </RouterLink>
+
+        <RouterLink to="/attendance/leave" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+          <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
+          <span class="font-sans font-medium text-sm">Đơn nghỉ phép</span>
+        </RouterLink>
+
+        <template v-if="canViewAll">
+          <RouterLink to="/attendance/leave-approval" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+            <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
+            <span class="font-sans font-medium text-sm">Duyệt nghỉ phép</span>
+          </RouterLink>
+
+          <RouterLink to="/attendance/records" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+            <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
+            <span class="font-sans font-medium text-sm">Bảng chấm công</span>
+          </RouterLink>
+        </template>
+
+        <template v-if="canManageSystem">
+          <RouterLink to="/attendance/shifts" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+            <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
+            <span class="font-sans font-medium text-sm">Ca làm việc</span>
+          </RouterLink>
+
+          <RouterLink to="/attendance/closing" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+            <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
+            <span class="font-sans font-medium text-sm">Chốt công</span>
+          </RouterLink>
+        </template>
+
         <!-- Payroll (Nhóm 3) -->
         <template v-if="canViewAll">
           <div class="px-4 mb-2 mt-8">

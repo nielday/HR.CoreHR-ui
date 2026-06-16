@@ -68,6 +68,42 @@ const router = createRouter({
           meta: { roles: ['Admin', 'HR'] }
         },
         {
+          path: 'attendance/me',
+          name: 'attendance-me',
+          component: () => import('../views/MyAttendanceView.vue'),
+          meta: { roles: ['Admin', 'HR', 'Manager', 'Employee'] }
+        },
+        {
+          path: 'attendance/leave',
+          name: 'attendance-leave',
+          component: () => import('../views/MyLeaveView.vue'),
+          meta: { roles: ['Admin', 'HR', 'Manager', 'Employee'] }
+        },
+        {
+          path: 'attendance/leave-approval',
+          name: 'attendance-leave-approval',
+          component: () => import('../views/LeaveApprovalView.vue'),
+          meta: { roles: ['Admin', 'HR', 'Manager'] }
+        },
+        {
+          path: 'attendance/records',
+          name: 'attendance-records',
+          component: () => import('../views/AttendanceRecordsView.vue'),
+          meta: { roles: ['Admin', 'HR', 'Manager'] }
+        },
+        {
+          path: 'attendance/shifts',
+          name: 'attendance-shifts',
+          component: () => import('../views/ShiftsView.vue'),
+          meta: { roles: ['Admin', 'HR'] }
+        },
+        {
+          path: 'attendance/closing',
+          name: 'attendance-closing',
+          component: () => import('../views/AttendanceClosingView.vue'),
+          meta: { roles: ['Admin', 'HR'] }
+        },
+        {
           path: 'about',
           name: 'about',
           component: () => import('../views/AboutView.vue'),
