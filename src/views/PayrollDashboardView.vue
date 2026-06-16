@@ -4,9 +4,22 @@ import { Statistic as AStatistic, Select as ASelect, Table as ATable, message } 
 import { Column } from '@antv/g2plot'
 import { CalculatorIcon, RefreshCwIcon, UsersIcon, WalletIcon, PlusCircleIcon, MinusCircleIcon } from 'lucide-vue-next'
 import { usePayrollStore } from '../stores/payroll'
+import { useDepartmentStore } from '../stores/department'
 import Button from '../components/ui/Button.vue'
 
 const store = usePayrollStore()
+const deptStore = useDepartmentStore()
+
+// Payroll chỉ lưu DepartmentId (không có tên phòng) → tra tên từ N1 (HR Core) theo Id.
+const deptNameMap = computed<Record<string, string>>(() => {
+  const m: Record<string, string> = {}
+  for (const d of (deptStore.departments as any[])) {
+    if (d.id) m[d.id] = d.departmentName
+  }
+  return m
+})
+const resolveDeptName = (row: any) =>
+  (row.departmentId && deptNameMap.value[row.departmentId]) || row.departmentName || 'Chưa phân phòng'
 
 const now = new Date()
 const month = ref<number>(now.getMonth() + 1)
@@ -31,7 +44,7 @@ let chart: Column | null = null
 const chartEl = ref<HTMLElement | null>(null)
 
 function renderChart() {
-  const data = byDept.value.map(d => ({ department: d.departmentName, value: d.totalSalaryFund }))
+  const data = byDept.value.map(d => ({ department: resolveDeptName(d), value: d.totalSalaryFund }))
   if (!chartEl.value) return
   if (!chart) {
     chart = new Column(chartEl.value, {
@@ -54,7 +67,10 @@ function renderChart() {
 }
 
 async function load() {
-  await store.fetchDashboard(month.value, year.value)
+  await Promise.all([
+    store.fetchDashboard(month.value, year.value),
+    deptStore.departments.length ? Promise.resolve() : deptStore.fetchDepartments(),
+  ])
   await nextTick()
   renderChart()
 }
@@ -137,7 +153,8 @@ onBeforeUnmount(() => { chart?.destroy(); chart = null })
       <h2 class="font-display text-xl mb-4 text-foreground">Chi tiết theo phòng ban</h2>
       <ATable :columns="deptColumns" :data-source="byDept" :pagination="false" :loading="store.isLoading" row-key="departmentName" size="middle">
         <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'totalSalaryFund'"><span class="font-mono font-semibold text-accent">{{ vnd(record.totalSalaryFund) }}</span></template>
+          <template v-if="column.key === 'departmentName'"><span class="font-sans font-medium text-foreground">{{ resolveDeptName(record) }}</span></template>
+          <template v-else-if="column.key === 'totalSalaryFund'"><span class="font-mono font-semibold text-accent">{{ vnd(record.totalSalaryFund) }}</span></template>
           <template v-else-if="column.key === 'totalAllowances'"><span class="font-mono text-emerald-600">{{ vnd(record.totalAllowances) }}</span></template>
           <template v-else-if="column.key === 'totalDeductions'"><span class="font-mono text-red-600">{{ vnd(record.totalDeductions) }}</span></template>
         </template>
