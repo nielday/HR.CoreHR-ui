@@ -42,7 +42,7 @@ watch(
   <Teleport to="body">
     <div
       v-if="isOpen"
-      class="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center overflow-y-auto p-4"
+      class="fixed inset-0 z-[1000] flex items-start sm:items-center justify-center overflow-y-auto p-4"
     >
       <!-- Backdrop -->
       <div
