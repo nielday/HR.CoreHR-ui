@@ -22,7 +22,13 @@ const router = createRouter({
       children: [
         {
           path: '',
-          redirect: '/departments'
+          redirect: '/dashboard'
+        },
+        {
+          path: 'dashboard',
+          name: 'dashboard',
+          component: () => import('../views/PayrollDashboardView.vue'),
+          meta: { roles: ['Admin', 'HR', 'Manager'] }
         },
         {
           path: 'employees',
@@ -117,6 +123,12 @@ const router = createRouter({
         {
           path: 'users',
           name: 'users',
+          component: () => import('../views/UsersView.vue'),
+          meta: { roles: ['Admin', 'HR'] }
+        },
+        {
+          path: 'permissions',
+          name: 'permissions',
           component: () => import('../views/UsersView.vue'),
           meta: { roles: ['Admin', 'HR'] }
         },
