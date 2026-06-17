@@ -128,8 +128,8 @@ async function executeDelete() {
     </div>
 
     <!-- Sơ đồ tổ chức (PrimeVue OrganizationChart) -->
-    <div class="bg-card border border-border rounded-2xl shadow-md p-4 sm:p-6 overflow-auto flex dept-org-wrap" style="min-height: calc(100vh - 230px)">
-      <div v-if="orgRoots.length" class="m-auto space-y-10 py-4">
+    <div class="bg-card border border-border rounded-2xl shadow-md p-4 sm:p-6 overflow-auto flex dept-org-wrap">
+      <div v-if="orgRoots.length" class="m-auto space-y-12 py-6">
         <OrganizationChart
           v-for="root in orgRoots"
           :key="root.key"
@@ -227,7 +227,7 @@ async function executeDelete() {
 
 <style scoped>
 .dept-org { margin: 0 auto; }
-.dept-node { min-width: 210px; }
+.dept-node { min-width: 240px; }
 
 .dept-act {
   font-size: 13px;
@@ -251,7 +251,7 @@ async function executeDelete() {
 .dept-org :deep(.p-organizationchart-node-content) {
   border-radius: 16px;
   border: 1px solid #e2e8f0;
-  padding: 18px 28px;
+  padding: 22px 36px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
   transition: border-color .2s, box-shadow .2s, transform .2s;
 }
@@ -261,9 +261,9 @@ async function executeDelete() {
   transform: translateY(-2px);
 }
 
-/* Giãn khoảng cách dọc giữa các cấp + khoảng cách ngang giữa các node */
+/* Giãn khoảng cách dọc giữa các cấp + khoảng cách ngang giữa các node anh em */
 .dept-org :deep(.p-organizationchart-line-down) {
-  height: 34px;
+  height: 50px;
   background: #cbd5e1;
   width: 2px;
 }
@@ -272,8 +272,8 @@ async function executeDelete() {
   border-color: #cbd5e1;
   border-width: 2px;
 }
-.dept-org :deep(.p-organizationchart-node) { padding: 0 18px; }
-.dept-org :deep(.p-organizationchart-nodes) { padding-top: 18px; }
+.dept-org :deep(.p-organizationchart-node) { padding: 0 44px; }
+.dept-org :deep(.p-organizationchart-nodes) { padding-top: 28px; }
 
 /* Nút thu/mở nhánh rõ hơn */
 .dept-org :deep(.p-organizationchart-node-toggle-button) {
