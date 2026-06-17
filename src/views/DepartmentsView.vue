@@ -101,7 +101,7 @@ function renderChart() {
                 <span class="font-mono text-[12px] uppercase tracking-wider text-slate-500">${item.departmentCode}</span>
                 <span class="inline-block w-2.5 h-2.5 rounded-full" style="${isActiveColor}"></span>
               </div>
-              ${manager ? `<div class="text-[13px] text-slate-500 mt-1.5">TP: ${manager}</div>` : ''}
+              ${manager ? `<div class="text-[13px] text-slate-500 mt-1.5">Trưởng phòng: ${manager}</div>` : ''}
               ${actionsHtml}
            </div>
          `
