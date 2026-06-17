@@ -71,7 +71,7 @@ const router = createRouter({
           path: 'departments',
           name: 'departments',
           component: () => import('../views/DepartmentsView.vue'),
-          meta: { roles: ['Admin', 'HR', 'Manager'] }
+          meta: { roles: ['Admin', 'HR', 'Manager'], fullWidth: true }
         },
         {
           path: 'positions',

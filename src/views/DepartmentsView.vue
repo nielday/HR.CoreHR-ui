@@ -152,8 +152,8 @@ async function executeDelete() {
     </div>
 
     <!-- Sơ đồ tổ chức (PrimeVue OrganizationChart) -->
-    <div ref="orgWrap" class="bg-card border border-border rounded-2xl shadow-md p-4 sm:p-6 overflow-auto flex dept-org-wrap">
-      <div v-if="orgRoots.length" ref="orgInner" class="m-auto space-y-12 py-6" :style="{ zoom }">
+    <div ref="orgWrap" class="bg-card border border-border rounded-2xl shadow-md p-4 sm:p-6 overflow-auto dept-org-wrap">
+      <div v-if="orgRoots.length" ref="orgInner" class="dept-org-inner space-y-12 py-6" :style="{ zoom }">
         <OrganizationChart
           v-for="root in orgRoots"
           :key="root.key"
@@ -250,7 +250,26 @@ async function executeDelete() {
 </template>
 
 <style scoped>
-.dept-org { margin: 0 auto; }
+.dept-org-wrap {
+  width: 100%;
+  min-height: clamp(360px, 52vh, 720px);
+}
+
+.dept-org-inner {
+  width: max-content;
+  margin-inline: auto;
+  transform-origin: top center;
+}
+
+.dept-org {
+  width: max-content;
+  margin-inline: auto;
+}
+
+.dept-org :deep(.p-organizationchart-table) {
+  margin-inline: auto;
+}
+
 .dept-node { min-width: 240px; }
 
 .dept-act {
