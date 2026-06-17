@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, nextTick, watch } from 'vue'
 import { Empty as AEmpty } from 'ant-design-vue'
 import OrganizationChart from 'primevue/organizationchart'
 import { useDepartmentStore } from '../stores/department'
@@ -60,6 +60,30 @@ function toOrg(d: any): any {
   }
 }
 const orgRoots = computed(() => (store.departmentTree || []).map(toOrg))
+
+// Tự động phóng to sơ đồ nhỏ cho vừa bề ngang khung (chỉ zoom LÊN, tối đa 1.6×;
+// cây lớn vượt khung giữ nguyên 1× và cuộn ngang). Giúp cây của Manager (ít node) không bị nhỏ.
+const orgWrap = ref<HTMLElement | null>(null)
+const orgInner = ref<HTMLElement | null>(null)
+const zoom = ref(1)
+
+async function fitZoom() {
+  if (!orgWrap.value || !orgInner.value) return
+  zoom.value = 1
+  await nextTick()
+  const natural = orgInner.value.scrollWidth
+  const avail = orgWrap.value.clientWidth - 48 // trừ padding khung
+  if (natural > 0 && avail > 0) {
+    zoom.value = Math.min(1.6, Math.max(1, avail / natural))
+  }
+}
+
+watch(orgRoots, () => { nextTick(fitZoom) }, { immediate: true })
+onMounted(() => {
+  window.addEventListener('resize', fitZoom)
+  nextTick(fitZoom)
+})
+onBeforeUnmount(() => window.removeEventListener('resize', fitZoom))
 
 function openCreateModal() {
   isEditMode.value = false
@@ -128,8 +152,8 @@ async function executeDelete() {
     </div>
 
     <!-- Sơ đồ tổ chức (PrimeVue OrganizationChart) -->
-    <div class="bg-card border border-border rounded-2xl shadow-md p-4 sm:p-6 overflow-auto flex dept-org-wrap">
-      <div v-if="orgRoots.length" class="m-auto space-y-12 py-6">
+    <div ref="orgWrap" class="bg-card border border-border rounded-2xl shadow-md p-4 sm:p-6 overflow-auto flex dept-org-wrap">
+      <div v-if="orgRoots.length" ref="orgInner" class="m-auto space-y-12 py-6" :style="{ zoom }">
         <OrganizationChart
           v-for="root in orgRoots"
           :key="root.key"
