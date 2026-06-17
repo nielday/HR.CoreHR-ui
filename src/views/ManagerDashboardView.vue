@@ -64,7 +64,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="space-y-6 motion-safe:animate-in motion-safe:fade-in duration-700 pb-12">
+  <div class="space-y-6 motion-safe:animate-in motion-safe:fade-in duration-700 pb-12 flex flex-col min-h-[calc(100vh-100px)]">
     <!-- Header -->
     <div>
       <h1 class="font-display text-4xl mb-1 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Tổng quan quản lý</h1>
@@ -99,10 +99,10 @@ onMounted(async () => {
       </ACol>
     </ARow>
 
-    <ARow :gutter="[16, 16]">
+    <ARow :gutter="[16, 16]" class="flex-1">
       <!-- Đơn nghỉ chờ duyệt -->
       <ACol :xs="24" :lg="12">
-        <ACard :bordered="false" class="shadow-md rounded-2xl h-full">
+        <ACard :bordered="false" class="shadow-md rounded-2xl h-full flex flex-col" :bodyStyle="{ flex: 1, display: 'flex', flexDirection: 'column' }">
           <template #title>
             Đơn nghỉ chờ duyệt
             <ATag v-if="pendingLeaves.length" color="orange" class="ml-2">{{ pendingLeaves.length }}</ATag>
@@ -118,8 +118,8 @@ onMounted(async () => {
               </div>
             </div>
           </div>
-          <AEmpty v-else :image="undefined" description="Không có đơn chờ duyệt" />
-          <div class="pt-3">
+          <AEmpty v-else :image="undefined" description="Không có đơn chờ duyệt" class="m-auto" />
+          <div class="pt-3 mt-auto">
             <RouterLink to="/attendance/leave-approval"><AButton size="small">Duyệt nghỉ phép</AButton></RouterLink>
           </div>
         </ACard>
@@ -127,7 +127,7 @@ onMounted(async () => {
 
       <!-- Chấm công hôm nay -->
       <ACol :xs="24" :lg="12">
-        <ACard :bordered="false" class="shadow-md rounded-2xl h-full">
+        <ACard :bordered="false" class="shadow-md rounded-2xl h-full flex flex-col" :bodyStyle="{ flex: 1, display: 'flex', flexDirection: 'column' }">
           <template #title>
             Chấm công hôm nay
             <span class="font-mono text-xs text-muted-foreground ml-2">{{ fmtDate(todayKey) }}</span>
@@ -145,8 +145,8 @@ onMounted(async () => {
               <ATag :color="ATTENDANCE_STATUS[r.status]?.color">{{ ATTENDANCE_STATUS[r.status]?.label || r.status }}</ATag>
             </div>
           </div>
-          <AEmpty v-else :image="undefined" description="Chưa có chấm công hôm nay" />
-          <div class="pt-3">
+          <AEmpty v-else :image="undefined" description="Chưa có chấm công hôm nay" class="m-auto" />
+          <div class="pt-3 mt-auto">
             <RouterLink to="/attendance/records"><AButton size="small">Bảng chấm công</AButton></RouterLink>
           </div>
         </ACard>

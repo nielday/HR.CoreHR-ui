@@ -204,8 +204,8 @@ async function executeDelete() {
     </div>
 
     <!-- Sơ đồ tổ chức (d3-org-chart) -->
-    <div class="bg-card border border-border rounded-2xl shadow-md p-4 sm:p-6 dept-org-wrap overflow-hidden">
-      <div v-if="store.departments.length" ref="chartContainer" class="w-full h-[600px] bg-[#f8fafc] rounded-xl overflow-hidden border border-slate-100"></div>
+    <div class="bg-card border border-border rounded-2xl shadow-md p-4 sm:p-6 dept-org-wrap overflow-hidden h-[calc(100vh-200px)] min-h-[600px] flex flex-col">
+      <div v-if="store.departments.length" ref="chartContainer" class="w-full flex-1 bg-[#f8fafc] rounded-xl overflow-hidden border border-slate-100"></div>
       <AEmpty v-else :image="undefined" description="Chưa có phòng ban" class="m-auto" />
     </div>
 
