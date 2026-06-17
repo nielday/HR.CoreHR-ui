@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed, nextTick, watch } from 'vue'
 import { Empty as AEmpty } from 'ant-design-vue'
-import OrganizationChart from 'primevue/organizationchart'
+import { OrgChart } from 'd3-org-chart'
 import { useDepartmentStore } from '../stores/department'
 import { useEmployeeStore } from '../stores/employee'
 import { useAuthStore } from '../stores/auth'
@@ -29,10 +29,27 @@ const newDept = ref({
   isActive: true
 })
 
+const chartContainer = ref<HTMLElement | null>(null)
+let chart: any = null
+
 onMounted(() => {
-  store.fetchDepartmentTree()
-  store.fetchDepartments() // danh sách phẳng cho dropdown phòng cha
+  store.fetchDepartments() // danh sách phẳng cho d3-org-chart
   if (employeeStore.employees.length === 0) employeeStore.fetchEmployees()
+  
+  // Gắn event listener global để nhận sự kiện từ D3 HTML
+  ;(window as any).deptEdit = (id: string) => {
+    const item = store.departments.find(x => x.id === id)
+    if (item) openEditModal(item)
+  }
+  ;(window as any).deptDelete = (id: string) => {
+    const item = store.departments.find(x => x.id === id)
+    if (item) confirmDelete(item)
+  }
+})
+
+onBeforeUnmount(() => {
+  delete (window as any).deptEdit
+  delete (window as any).deptDelete
 })
 
 // map employeeId -> tên trưởng phòng
@@ -42,48 +59,55 @@ const managerName = (id?: string | null) => {
   return e ? `${e.fullName}` : null
 }
 
-// Chuyển cây phòng ban -> TreeNode cho PrimeVue OrganizationChart
-function toOrg(d: any): any {
-  return {
-    key: d.id,
-    expanded: true,
-    data: {
-      id: d.id,
-      raw: d,
-      name: d.departmentName,
-      code: d.departmentCode,
-      isActive: d.isActive,
-      managerName: managerName(d.managerEmployeeId),
-      hasChildren: !!(d.subDepartments && d.subDepartments.length)
-    },
-    children: (d.subDepartments || []).map(toOrg)
+function renderChart() {
+  if (!chartContainer.value) return
+  if (!chart) {
+    chart = new OrgChart()
+      .container(chartContainer.value)
+      .nodeHeight((d: any) => 130)
+      .nodeWidth((d: any) => 250)
+      .childrenMargin((d: any) => 50)
+      .compactMarginBetween((d: any) => 30)
+      .compactMarginPair((d: any) => 30)
+      .nodeId((d: any) => d.id)
+      .parentNodeId((d: any) => d.parentDepartmentId)
+      .pathFunc('step')
+      .nodeContent(function(d: any) {
+         const item = d.data
+         const hasChildren = d.children && d.children.length > 0
+         const manager = managerName(item.managerEmployeeId)
+         const isActiveColor = item.isActive ? 'background-color: #22c55e;' : 'background-color: #d1d5db;'
+         
+         const actionsHtml = canManageSystem.value ? `
+            <div class="dept-node-actions mt-3 flex items-center justify-center gap-2 transition-opacity duration-200">
+                <button type="button" class="dept-act" onclick="window.deptEdit('${item.id}')">Sửa</button>
+                <button type="button" class="dept-act danger" ${hasChildren ? 'disabled' : ''} onclick="window.deptDelete('${item.id}')">Xóa</button>
+            </div>
+         ` : ''
+
+         return `
+           <div class="dept-node-container h-full w-full bg-white text-center border border-slate-200 rounded-2xl shadow-sm p-4 flex flex-col justify-center">
+              <div class="font-sans font-semibold text-slate-900 text-[17px] leading-tight">${item.departmentName}</div>
+              <div class="flex items-center justify-center gap-2 mt-1.5">
+                <span class="font-mono text-[12px] uppercase tracking-wider text-slate-500">${item.departmentCode}</span>
+                <span class="inline-block w-2.5 h-2.5 rounded-full" style="${isActiveColor}"></span>
+              </div>
+              ${manager ? `<div class="text-[13px] text-slate-500 mt-1.5">TP: ${manager}</div>` : ''}
+              ${actionsHtml}
+           </div>
+         `
+      })
   }
+
+  const data = JSON.parse(JSON.stringify(store.departments))
+  chart.data(data).render().expandAll()
 }
-const orgRoots = computed(() => (store.departmentTree || []).map(toOrg))
 
-// Tự động phóng to sơ đồ nhỏ cho vừa bề ngang khung (chỉ zoom LÊN, tối đa 1.6×;
-// cây lớn vượt khung giữ nguyên 1× và cuộn ngang). Giúp cây của Manager (ít node) không bị nhỏ.
-const orgWrap = ref<HTMLElement | null>(null)
-const orgInner = ref<HTMLElement | null>(null)
-const zoom = ref(1)
-
-async function fitZoom() {
-  if (!orgWrap.value || !orgInner.value) return
-  zoom.value = 1
-  await nextTick()
-  const natural = orgInner.value.scrollWidth
-  const avail = orgWrap.value.clientWidth - 48 // trừ padding khung
-  if (natural > 0 && avail > 0) {
-    zoom.value = Math.min(1.6, Math.max(1, avail / natural))
+watch(() => [store.departments, employeeStore.employees], () => {
+  if (store.departments.length > 0) {
+    nextTick(renderChart)
   }
-}
-
-watch(orgRoots, () => { nextTick(fitZoom) }, { immediate: true })
-onMounted(() => {
-  window.addEventListener('resize', fitZoom)
-  nextTick(fitZoom)
-})
-onBeforeUnmount(() => window.removeEventListener('resize', fitZoom))
+}, { deep: true })
 
 function openCreateModal() {
   isEditMode.value = false
@@ -151,32 +175,9 @@ async function executeDelete() {
       {{ store.error }}
     </div>
 
-    <!-- Sơ đồ tổ chức (PrimeVue OrganizationChart) -->
-    <div ref="orgWrap" class="bg-card border border-border rounded-2xl shadow-md p-4 sm:p-6 overflow-auto dept-org-wrap">
-      <div v-if="orgRoots.length" ref="orgInner" class="dept-org-inner space-y-12 py-6" :style="{ zoom }">
-        <OrganizationChart
-          v-for="root in orgRoots"
-          :key="root.key"
-          :value="root"
-          collapsible
-          class="dept-org"
-        >
-          <template #default="slotProps">
-            <div class="dept-node text-center">
-              <div class="font-sans font-semibold text-foreground text-[17px] leading-tight">{{ slotProps.node.data.name }}</div>
-              <div class="flex items-center justify-center gap-2 mt-1.5">
-                <span class="font-mono text-[12px] uppercase tracking-wider text-muted-foreground">{{ slotProps.node.data.code }}</span>
-                <span class="inline-block w-2.5 h-2.5 rounded-full" :class="slotProps.node.data.isActive ? 'bg-green-500' : 'bg-gray-300'"></span>
-              </div>
-              <div v-if="slotProps.node.data.managerName" class="text-[13px] text-muted-foreground mt-1.5">TP: {{ slotProps.node.data.managerName }}</div>
-              <div v-if="canManageSystem" class="dept-node-actions mt-3 flex items-center justify-center gap-2">
-                <button type="button" class="dept-act" @click.stop="openEditModal(slotProps.node.data.raw)">Sửa</button>
-                <button type="button" class="dept-act danger" :disabled="slotProps.node.data.hasChildren" @click.stop="confirmDelete(slotProps.node.data.raw)">Xóa</button>
-              </div>
-            </div>
-          </template>
-        </OrganizationChart>
-      </div>
+    <!-- Sơ đồ tổ chức (d3-org-chart) -->
+    <div class="bg-card border border-border rounded-2xl shadow-md p-4 sm:p-6 dept-org-wrap overflow-hidden">
+      <div v-if="store.departments.length" ref="chartContainer" class="w-full h-[600px] bg-[#f8fafc] rounded-xl overflow-hidden border border-slate-100"></div>
       <AEmpty v-else :image="undefined" description="Chưa có phòng ban" class="m-auto" />
     </div>
 
@@ -252,28 +253,26 @@ async function executeDelete() {
 <style scoped>
 .dept-org-wrap {
   width: 100%;
-  min-height: clamp(560px, 68vh, 920px);
 }
 
-.dept-org-inner {
-  width: max-content;
-  margin-inline: auto;
-  padding-block: 34px 96px;
-  transform-origin: top center;
+:deep(.dept-node-container) {
+  transition: border-color .2s, box-shadow .2s, transform .2s;
 }
 
-.dept-org {
-  width: max-content;
-  margin-inline: auto;
+:deep(.dept-node-container:hover) {
+  border-color: var(--accent, #0052ff);
+  box-shadow: 0 8px 22px rgba(0, 82, 255, 0.12);
 }
 
-.dept-org :deep(.p-organizationchart-table) {
-  margin-inline: auto;
+:deep(.dept-node-actions) {
+  opacity: 0;
 }
 
-.dept-node { min-width: 240px; }
+:deep(.dept-node-container:hover .dept-node-actions) {
+  opacity: 1;
+}
 
-.dept-act {
+:deep(.dept-act) {
   font-size: 13px;
   padding: 3px 14px;
   border-radius: 8px;
@@ -283,57 +282,26 @@ async function executeDelete() {
   cursor: pointer;
   transition: all .15s;
 }
-.dept-act:hover { border-color: var(--accent, #0052ff); color: var(--accent, #0052ff); }
-.dept-act.danger:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
-.dept-act:disabled { opacity: .4; cursor: not-allowed; }
 
-/* Hiện action khi hover node */
-.dept-node-actions { opacity: 0; transition: opacity .2s; }
-.dept-org :deep(.p-organizationchart-node-content):hover .dept-node-actions { opacity: 1; }
-
-/* Ô node lớn, bo tròn, viền nhẹ + đổ bóng */
-.dept-org :deep(.p-organizationchart-node-content) {
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  padding: 22px 36px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-  transition: border-color .2s, box-shadow .2s, transform .2s;
-}
-.dept-org :deep(.p-organizationchart-node-content:hover) {
+:deep(.dept-act:hover) {
   border-color: var(--accent, #0052ff);
-  box-shadow: 0 8px 22px rgba(0, 82, 255, 0.12);
-  transform: translateY(-2px);
+  color: var(--accent, #0052ff);
 }
 
-/* PrimeVue v4 connector classes. Override logical borders from the theme. */
-.dept-org :deep(.p-organizationchart-connector-down) {
-  height: 82px !important;
-  width: 4px !important;
-  background: #64748b !important;
-  border-radius: 999px;
+:deep(.dept-act.danger:hover) {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: #fef2f2;
 }
-.dept-org :deep(.p-organizationchart-connector-left) {
-  border-inline-end: 3px solid #64748b !important;
-}
-.dept-org :deep(.p-organizationchart-connector-right) {
-  border-inline-start: 3px solid #64748b !important;
-}
-.dept-org :deep(.p-organizationchart-connector-top) {
-  border-block-start: 3px solid #64748b !important;
-}
-.dept-org :deep(.p-organizationchart-connectors :nth-child(1 of .p-organizationchart-connector-left)) {
-  border-inline-end: 0 none !important;
-}
-.dept-org :deep(.p-organizationchart-connectors :nth-child(1 of .p-organizationchart-connector-right)) {
-  border-inline-start: 3px solid #64748b !important;
-}
-.dept-org :deep(.p-organizationchart-node) { padding: 0 44px; }
-.dept-org :deep(.p-organizationchart-nodes) { padding-top: 44px; }
 
-/* Nút thu/mở nhánh rõ hơn */
-.dept-org :deep(.p-organizationchart-node-toggle-button) {
-  background: #fff;
-  border: 2px solid #94a3b8;
-  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.14);
+:deep(.dept-act:disabled) {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/* Sửa màu nét vẽ của d3-org-chart để đẹp hơn */
+:deep(.svg-chart-container path.link) {
+  stroke: #94a3b8 !important;
+  stroke-width: 2px !important;
 }
 </style>
