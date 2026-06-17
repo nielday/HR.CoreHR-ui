@@ -89,6 +89,8 @@ const headers = [
   { title: 'Nhân viên', align: 'start', key: 'fullName' },
   { title: 'Phòng ban', align: 'start', key: 'departmentName' },
   { title: 'Chức vụ', align: 'start', key: 'positionName' },
+  { title: 'Số điện thoại', align: 'start', key: 'phoneNumber' },
+  { title: 'Ngày vào làm', align: 'start', key: 'hireDate' },
   { title: 'Trạng thái', align: 'center', key: 'workingStatus' },
   { title: '', align: 'end', key: 'actions', sortable: false },
 ] as const
@@ -240,7 +242,7 @@ async function executeResign() {
 </script>
 
 <template>
-  <div class="space-y-6 motion-safe:animate-in motion-safe:fade-in duration-700 pb-12">
+  <div class="max-w-7xl mx-auto space-y-6 motion-safe:animate-in motion-safe:fade-in duration-700 pb-12">
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
       <div>
@@ -319,6 +321,14 @@ async function executeResign() {
             </div>
             <div v-if="item.email" class="text-xs text-muted-foreground">{{ item.email }}</div>
           </div>
+        </template>
+
+        <template #[`item.phoneNumber`]="{ item }">
+          <span class="font-mono text-xs text-muted-foreground">{{ item.phoneNumber || '—' }}</span>
+        </template>
+
+        <template #[`item.hireDate`]="{ item }">
+          <span class="font-mono text-xs text-muted-foreground">{{ item.hireDate ? new Date(item.hireDate).toLocaleDateString('vi-VN') : '—' }}</span>
         </template>
 
         <template #[`item.workingStatus`]="{ item }">
