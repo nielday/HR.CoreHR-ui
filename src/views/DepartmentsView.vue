@@ -252,12 +252,13 @@ async function executeDelete() {
 <style scoped>
 .dept-org-wrap {
   width: 100%;
-  min-height: clamp(360px, 52vh, 720px);
+  min-height: clamp(560px, 68vh, 920px);
 }
 
 .dept-org-inner {
   width: max-content;
   margin-inline: auto;
+  padding-block: 34px 96px;
   transform-origin: top center;
 }
 
@@ -306,22 +307,22 @@ async function executeDelete() {
 
 /* Giãn khoảng cách dọc giữa các cấp + khoảng cách ngang giữa các node anh em */
 .dept-org :deep(.p-organizationchart-line-down) {
-  height: 50px;
-  background: #cbd5e1;
-  width: 2px;
+  height: 76px;
+  background: #94a3b8;
+  width: 3px;
 }
 .dept-org :deep(.p-organizationchart-line-left),
 .dept-org :deep(.p-organizationchart-line-right) {
-  border-color: #cbd5e1;
-  border-width: 2px;
+  border-color: #94a3b8;
+  border-width: 3px;
 }
 .dept-org :deep(.p-organizationchart-node) { padding: 0 44px; }
-.dept-org :deep(.p-organizationchart-nodes) { padding-top: 28px; }
+.dept-org :deep(.p-organizationchart-nodes) { padding-top: 44px; }
 
 /* Nút thu/mở nhánh rõ hơn */
 .dept-org :deep(.p-organizationchart-node-toggle-button) {
   background: #fff;
-  border: 1px solid #cbd5e1;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
+  border: 2px solid #94a3b8;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.14);
 }
 </style>
