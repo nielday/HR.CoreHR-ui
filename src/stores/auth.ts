@@ -8,6 +8,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem('token'))
   const role = ref<string | null>(localStorage.getItem('role'))
+  const employeeId = ref<string | null>(localStorage.getItem('employeeId'))
   const mustChangePassword = ref<boolean>(localStorage.getItem('mustChangePassword') === 'true')
 
   const isAuthenticated = computed(() => !!token.value)
@@ -23,10 +24,18 @@ export const useAuthStore = defineStore('auth', () => {
       const userRoleStr = decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || decoded.role || 'Employee'
       role.value = userRoleStr
       localStorage.setItem('role', userRoleStr)
+
+      // employee_id chỉ có khi tài khoản gắn với một nhân viên (Admin thuần có thể không có)
+      const empId = decoded.employee_id || null
+      employeeId.value = empId
+      if (empId) localStorage.setItem('employeeId', empId)
+      else localStorage.removeItem('employeeId')
     } catch (e) {
       console.error('Error decoding token', e)
       role.value = 'Employee'
       localStorage.setItem('role', 'Employee')
+      employeeId.value = null
+      localStorage.removeItem('employeeId')
     }
   }
 
@@ -38,9 +47,11 @@ export const useAuthStore = defineStore('auth', () => {
   function clearToken() {
     token.value = null
     role.value = null
+    employeeId.value = null
     mustChangePassword.value = false
     localStorage.removeItem('token')
     localStorage.removeItem('role')
+    localStorage.removeItem('employeeId')
     localStorage.removeItem('mustChangePassword')
   }
 
@@ -66,5 +77,5 @@ export const useAuthStore = defineStore('auth', () => {
     setMustChangePassword(false)
   }
 
-  return { token, role, mustChangePassword, isAuthenticated, userRole, setToken, setMustChangePassword, clearToken, testLogin, changePassword }
+  return { token, role, employeeId, mustChangePassword, isAuthenticated, userRole, setToken, setMustChangePassword, clearToken, testLogin, changePassword }
 })

@@ -18,6 +18,23 @@ const router = useRouter()
 
 const authStore = useAuthStore()
 const canManageSystem = computed(() => ['Admin', 'HR'].includes(authStore.userRole || ''))
+const isEmployee = computed(() => authStore.userRole === 'Employee')
+
+// Nhân viên thường chỉ thấy đồng nghiệp cùng phòng + được mở chi tiết của riêng mình.
+function canViewDetail(item: any) {
+  return !isEmployee.value || item.id === authStore.employeeId
+}
+
+// Trưởng phòng (cấp trên) của phòng ban mà nhân viên đang xem — để làm nổi bật trong danh sách.
+const myDeptManagerId = computed<string | null>(() => {
+  if (!isEmployee.value) return null
+  // Với nhân viên thường, mọi dòng đều cùng phòng ban → lấy departmentId từ dòng bất kỳ
+  // (ổn định kể cả khi phân trang, không phụ thuộc việc dòng "chính mình" có trên trang hay không).
+  const deptId = store.employees[0]?.departmentId
+  if (!deptId) return null
+  const dept = deptStore.departments.find((d: any) => d.id === deptId)
+  return dept?.managerEmployeeId || null
+})
 
 const isModalOpen = ref(false)
 const isEditMode = ref(false)
@@ -81,6 +98,9 @@ onMounted(async () => {
     if (deptStore.departments.length === 0) await deptStore.fetchDepartments()
     if (posStore.positions.length === 0) await posStore.fetchPositions()
     if (contractStore.contracts.length === 0) await contractStore.fetchContracts()
+  } else {
+    // Cần danh sách phòng ban để xác định trưởng phòng (cấp trên) trong danh bạ.
+    if (deptStore.departments.length === 0) await deptStore.fetchDepartments()
   }
   fetchData()
 })
@@ -225,7 +245,7 @@ async function executeResign() {
     <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
       <div>
         <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Nhân viên</h1>
-        <p class="text-muted-foreground font-sans text-lg">Quản lý nhân sự, cập nhật hồ sơ và theo dõi trạng thái.</p>
+        <p class="text-muted-foreground font-sans text-lg">{{ isEmployee ? 'Danh bạ đồng nghiệp trong phòng ban của bạn.' : 'Quản lý nhân sự, cập nhật hồ sơ và theo dõi trạng thái.' }}</p>
       </div>
       <Button v-if="canManageSystem" @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
         <PlusIcon class="w-4 h-4 mr-2" />
@@ -245,7 +265,7 @@ async function executeResign() {
           class="w-full h-10 pl-9 pr-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"
         />
       </div>
-      <div class="flex-1 w-full flex flex-col sm:flex-row gap-4">
+      <div v-if="!isEmployee" class="flex-1 w-full flex flex-col sm:flex-row gap-4">
         <select v-model="searchParams.departmentId" @change="onFilterChange" class="flex-1 h-10 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
           <option value="">Tất cả phòng ban</option>
           <option v-for="d in deptStore.departments" :key="d.id" :value="d.id">{{ d.departmentName }}</option>
@@ -291,8 +311,13 @@ async function executeResign() {
 
         <template #[`item.fullName`]="{ item }">
           <div class="py-2">
-            <div class="font-semibold text-foreground">{{ item.fullName }}</div>
-            <div class="text-xs text-muted-foreground">{{ item.email }}</div>
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-foreground">{{ item.fullName }}</span>
+              <span v-if="myDeptManagerId && item.id === myDeptManagerId" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono tracking-wider uppercase bg-accent/10 text-accent border border-accent/20">
+                Trưởng phòng
+              </span>
+            </div>
+            <div v-if="item.email" class="text-xs text-muted-foreground">{{ item.email }}</div>
           </div>
         </template>
 
@@ -307,7 +332,7 @@ async function executeResign() {
 
         <template #[`item.actions`]="{ item }">
           <div class="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
-            <button @click="router.push(`/employees/${item.id}`)" class="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors" title="Xem chi tiết">
+            <button v-if="canViewDetail(item)" @click="router.push(`/employees/${item.id}`)" class="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors" title="Xem chi tiết">
               <EyeIcon class="w-4 h-4" />
             </button>
             <template v-if="canManageSystem">
