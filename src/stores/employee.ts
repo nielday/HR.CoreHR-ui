@@ -145,9 +145,39 @@ export const useEmployeeStore = defineStore('employee', () => {
     }
   }
 
-  return { 
-    employees, totalItems, totalPages, currentPage, pageSize, 
-    isLoading, error, fetchEmployees, fetchEmployeeById, fetchDepartmentHistory, 
-    createEmployee, updateEmployee, resignEmployee, transferEmployee 
+  // Self-service: hồ sơ của chính mình
+  async function fetchMyProfile() {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await api.get('/Employees/me')
+      return response.data
+    } catch (err: any) {
+      error.value = err.response?.data?.message || err.response?.data?.Message || 'Không tải được hồ sơ'
+      return null
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function updateMyProfile(payload: any) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await api.put('/Employees/me', payload)
+      return response.data
+    } catch (err: any) {
+      error.value = err.response?.data?.message || err.response?.data?.Message || 'Cập nhật hồ sơ thất bại'
+      return null
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  return {
+    employees, totalItems, totalPages, currentPage, pageSize,
+    isLoading, error, fetchEmployees, fetchEmployeeById, fetchDepartmentHistory,
+    createEmployee, updateEmployee, resignEmployee, transferEmployee,
+    fetchMyProfile, updateMyProfile
   }
 })

@@ -133,6 +133,12 @@ const router = createRouter({
           meta: { roles: ['Admin', 'HR'] }
         },
         {
+          path: 'profile',
+          name: 'my-profile',
+          component: () => import('../views/MyProfileView.vue'),
+          meta: { roles: ['Admin', 'HR', 'Manager', 'Employee'] }
+        },
+        {
           path: 'about',
           name: 'about',
           component: () => import('../views/AboutView.vue'),

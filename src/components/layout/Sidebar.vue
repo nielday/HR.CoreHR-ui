@@ -185,7 +185,7 @@ const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.v
 
       <!-- Bottom User Profile Section -->
       <div class="p-4 border-t border-white/5 bg-foreground/50 backdrop-blur-sm relative z-10">
-        <div class="flex items-center gap-3 px-3 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer border border-white/5">
+        <RouterLink to="/profile" class="flex items-center gap-3 px-3 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer border border-white/5" active-class="!bg-white/10" title="Hồ sơ của tôi">
           <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-accent to-accent-secondary p-[2px]">
             <div class="w-full h-full rounded-full border border-background overflow-hidden bg-white">
               <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" alt="User" class="w-full h-full object-cover" />
@@ -193,9 +193,9 @@ const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.v
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-white truncate">{{ roleLabel }}</p>
-            <p class="text-xs text-muted-foreground truncate">Vai trò: {{ roleLabel }}</p>
+            <p class="text-xs text-muted-foreground truncate">Hồ sơ của tôi ›</p>
           </div>
-        </div>
+        </RouterLink>
       </div>
       
     </div>
