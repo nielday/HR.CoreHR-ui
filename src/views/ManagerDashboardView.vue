@@ -120,7 +120,7 @@ onMounted(async () => {
           </div>
           <AEmpty v-else :image="undefined" description="Không có đơn chờ duyệt" />
           <div class="pt-3">
-            <RouterLink to="/attendance/leave-approval"><AButton type="primary" size="small">Duyệt nghỉ phép</AButton></RouterLink>
+            <RouterLink to="/attendance/leave-approval"><AButton size="small">Duyệt nghỉ phép</AButton></RouterLink>
           </div>
         </ACard>
       </ACol>
