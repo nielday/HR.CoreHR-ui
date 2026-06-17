@@ -57,6 +57,7 @@ export interface LeaveRequest {
   id: string
   employeeId: string
   leaveType: number
+  leaveTypeName: string
   fromDate: string
   toDate: string
   totalDays: number
@@ -70,12 +71,15 @@ export interface LeaveRequest {
 export interface LeavePolicy {
   id: string
   leaveType: number
+  name: string
+  isPaid: boolean
   annualQuotaDays?: number | null
   description?: string | null
   isActive: boolean
 }
 export interface LeaveBalance {
   leaveType: number
+  name: string
   entitledDays?: number | null
   usedDays: number
   remainingDays?: number | null
@@ -164,7 +168,13 @@ export const useAttendanceStore = defineStore('attendance', () => {
     await wrap(async () => { const r = await attendanceApi.get('/leave-policies'); leavePolicies.value = r.data }, 'Không tải được cấu hình nghỉ phép')
   }
   async function updateLeavePolicy(id: string, payload: Partial<LeavePolicy>) {
-    return wrap(async () => { const r = await attendanceApi.put(`/leave-policies/${id}`, payload); return r.data }, 'Cập nhật cấu hình nghỉ phép thất bại')
+    return wrap(async () => { const r = await attendanceApi.put(`/leave-policies/${id}`, payload); return r.data }, 'Cập nhật loại nghỉ thất bại')
+  }
+  async function createLeavePolicy(payload: Partial<LeavePolicy>) {
+    return wrap(async () => { const r = await attendanceApi.post('/leave-policies', payload); return r.data }, 'Tạo loại nghỉ thất bại')
+  }
+  async function deleteLeavePolicy(id: string) {
+    return wrap(async () => { await attendanceApi.delete(`/leave-policies/${id}`); return true }, 'Xóa loại nghỉ thất bại')
   }
 
   // ===== Ca làm việc =====
@@ -186,7 +196,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     myAttendance, attendanceList, summaries, myLeaves, pendingLeaves, leavePolicies, myLeaveBalance, selectedLeaveBalance, shifts,
     checkIn, checkOut, fetchMine, fetchAttendance, upsertManual, closeMonth, fetchSummary,
     createLeave, fetchMyLeaves, fetchPendingLeaves, approveLeave, rejectLeave,
-    fetchMyLeaveBalance, fetchLeaveBalance, fetchLeavePolicies, updateLeavePolicy,
+    fetchMyLeaveBalance, fetchLeaveBalance, fetchLeavePolicies, updateLeavePolicy, createLeavePolicy, deleteLeavePolicy,
     fetchShifts, createShift, updateShift, deactivateShift,
   }
 })

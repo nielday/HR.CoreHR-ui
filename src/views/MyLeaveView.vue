@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { Table as ATable, Tag as ATag, Select as ASelect, message } from 'ant-design-vue'
 import { CalendarDaysIcon, PlusIcon } from 'lucide-vue-next'
-import { useAttendanceStore, LEAVE_STATUS, LEAVE_TYPE } from '../stores/attendance'
+import { useAttendanceStore, LEAVE_STATUS } from '../stores/attendance'
 import Button from '../components/ui/Button.vue'
 import Modal from '../components/ui/Modal.vue'
 
@@ -11,11 +11,10 @@ const store = useAttendanceStore()
 const isModalOpen = ref(false)
 const currentYear = new Date().getFullYear()
 
-const leaveTypeOptions = [
-  { value: 0, label: 'Phép năm' },
-  { value: 1, label: 'Nghỉ ốm' },
-  { value: 2, label: 'Không lương' },
-]
+// Loại nghỉ động — lấy từ số phép còn lại (chỉ gồm loại đang hoạt động, kèm tên).
+const leaveTypeOptions = computed(() =>
+  (store.myLeaveBalance as any[]).map(b => ({ value: b.leaveType, label: b.name }))
+)
 
 const form = ref({
   leaveType: 0 as number,
@@ -46,7 +45,7 @@ function formatDate(value: string | null | undefined): string {
 }
 
 function openCreateModal() {
-  form.value = { leaveType: 0, fromDate: '', toDate: '', reason: '' }
+  form.value = { leaveType: leaveTypeOptions.value[0]?.value ?? 0, fromDate: '', toDate: '', reason: '' }
   store.error = null
   isModalOpen.value = true
 }
@@ -104,7 +103,7 @@ onMounted(() => {
         </div>
         <div class="min-w-0">
           <p class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-1">
-            {{ LEAVE_TYPE[balance.leaveType] || balance.leaveType }}
+            {{ balance.name }}
           </p>
           <p class="font-display text-2xl text-foreground">
             <template v-if="balance.entitledDays === null || balance.entitledDays === undefined">
@@ -126,7 +125,7 @@ onMounted(() => {
       <ATable :columns="columns" :data-source="store.myLeaves" :loading="store.isLoading" row-key="id" :pagination="{ pageSize: 10 }">
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'leaveType'">
-            <span class="font-sans font-medium text-foreground">{{ LEAVE_TYPE[record.leaveType] || record.leaveType }}</span>
+            <span class="font-sans font-medium text-foreground">{{ record.leaveTypeName }}</span>
           </template>
           <template v-else-if="column.key === 'fromDate'">
             <span class="font-mono text-sm">{{ formatDate(record.fromDate) }}</span>

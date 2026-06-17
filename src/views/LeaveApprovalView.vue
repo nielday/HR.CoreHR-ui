@@ -112,7 +112,7 @@ onMounted(async () => {
             </div>
           </template>
           <template v-else-if="column.key === 'leaveType'">
-            <span class="font-sans text-sm">{{ LEAVE_TYPE[record.leaveType] || record.leaveType }}</span>
+            <span class="font-sans text-sm">{{ record.leaveTypeName }}</span>
           </template>
           <template v-else-if="column.key === 'fromDate'"><span class="font-mono text-sm">{{ formatDate(record.fromDate) }}</span></template>
           <template v-else-if="column.key === 'toDate'"><span class="font-mono text-sm">{{ formatDate(record.toDate) }}</span></template>
