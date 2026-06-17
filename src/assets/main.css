@@ -40,6 +40,14 @@
   }
 }
 
+/* Ant Design overlays are teleported to body. Keep them above our custom modal. */
+.ant-select-dropdown,
+.ant-picker-dropdown,
+.ant-dropdown,
+.ant-popover {
+  z-index: 10000 !important;
+}
+
 /* Accessibility: Support for reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
