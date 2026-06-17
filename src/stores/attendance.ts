@@ -133,6 +133,12 @@ export const useAttendanceStore = defineStore('attendance', () => {
   async function kioskCheckOut(employeeCode: string) {
     return wrap(async () => { const r = await attendanceApi.post('/attendance/kiosk/check-out', { employeeCode }); return r.data }, 'Chấm công ra thất bại')
   }
+  async function kioskStatus() {
+    return wrap(async () => { const r = await attendanceApi.get('/attendance/kiosk/status'); return r.data }, 'Không tải được trạng thái kiosk')
+  }
+  async function kioskToggle(enabled: boolean) {
+    return wrap(async () => { const r = await attendanceApi.post('/attendance/kiosk/toggle', { enabled }); return r.data }, 'Đổi trạng thái kiosk thất bại')
+  }
   async function fetchMine(month: number, year: number) {
     await wrap(async () => { const r = await attendanceApi.get('/attendance/me', { params: { month, year } }); myAttendance.value = r.data }, 'Không tải được chấm công của bạn')
   }
@@ -201,7 +207,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
   return {
     isLoading, error,
     myAttendance, attendanceList, summaries, myLeaves, pendingLeaves, leavePolicies, myLeaveBalance, selectedLeaveBalance, shifts,
-    checkIn, checkOut, kioskCheckIn, kioskCheckOut, fetchMine, fetchAttendance, upsertManual, closeMonth, fetchSummary,
+    checkIn, checkOut, kioskCheckIn, kioskCheckOut, kioskStatus, kioskToggle, fetchMine, fetchAttendance, upsertManual, closeMonth, fetchSummary,
     createLeave, fetchMyLeaves, fetchPendingLeaves, approveLeave, rejectLeave,
     fetchMyLeaveBalance, fetchLeaveBalance, fetchLeavePolicies, updateLeavePolicy, createLeavePolicy, deleteLeavePolicy,
     fetchShifts, createShift, updateShift, deactivateShift,

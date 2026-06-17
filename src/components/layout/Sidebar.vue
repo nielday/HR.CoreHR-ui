@@ -114,7 +114,7 @@ const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.v
 
           <RouterLink to="/attendance/kiosk" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
             <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
-            <span class="font-sans font-medium text-sm">Kiosk chấm công</span>
+            <span class="font-sans font-medium text-sm">Quản lý Kiosk</span>
           </RouterLink>
 
           <RouterLink to="/attendance/closing" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">

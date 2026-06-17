@@ -11,6 +11,13 @@ const router = createRouter({
       component: () => import('../views/LoginView.vue'),
     },
     {
+      // Kiosk chấm công CÔNG KHAI — không cần đăng nhập, toàn màn hình.
+      path: '/kiosk',
+      name: 'public-kiosk',
+      component: () => import('../views/PublicKioskView.vue'),
+      meta: { public: true },
+    },
+    {
       path: '/change-password',
       name: 'change-password',
       component: () => import('../views/ChangePasswordView.vue'),
@@ -160,10 +167,13 @@ router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
   const authed = authStore.isAuthenticated
 
-  // Chưa đăng nhập
+  // Trang công khai (Kiosk) — không cần đăng nhập
+  if (to.meta.public) return next()
+
+  // Chưa đăng nhập → mặc định hiện màn hình Kiosk công cộng (trừ khi vào thẳng /login)
   if (!authed) {
     if (to.path === '/login') return next()
-    return next('/login')
+    return next('/kiosk')
   }
 
   // Đã đăng nhập nhưng buộc đổi mật khẩu lần đầu → ép về trang đổi mật khẩu
