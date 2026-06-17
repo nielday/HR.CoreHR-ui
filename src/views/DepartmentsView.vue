@@ -71,7 +71,6 @@ function renderChart() {
       .compactMarginPair((d: any) => 30)
       .nodeId((d: any) => d.id)
       .parentNodeId((d: any) => d.parentDepartmentId)
-      .pathFunc('step')
       .nodeContent(function(d: any) {
          const item = d.data
          const hasChildren = d.children && d.children.length > 0
