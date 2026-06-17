@@ -96,7 +96,7 @@ onBeforeUnmount(() => { chart?.destroy(); chart = null })
     <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
       <div>
         <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Payroll Dashboard</h1>
-        <p class="text-muted-foreground font-sans text-lg">Tổng quan lương theo kỳ và phòng ban.</p>
+        <p class="text-muted-foreground font-sans text-lg">Tổng quan lương theo tháng và phòng ban.</p>
       </div>
       <div class="flex items-center gap-3">
         <ASelect v-model:value="month" :options="months" style="width: 120px" size="large" />
@@ -143,7 +143,7 @@ onBeforeUnmount(() => { chart?.destroy(); chart = null })
     <div class="bg-card border border-border rounded-2xl shadow-md p-6">
       <h2 class="font-display text-xl mb-4 text-foreground">Quỹ lương theo phòng ban</h2>
       <div v-if="byDept.length === 0" class="h-64 flex items-center justify-center text-muted-foreground font-sans text-sm">
-        Chưa có dữ liệu lương cho kỳ này. Bấm <strong class="mx-1">Tính lương</strong> để tạo.
+        Chưa có dữ liệu lương cho tháng này. Bấm <strong class="mx-1">Tính lương</strong> để tạo.
       </div>
       <div v-show="byDept.length > 0" ref="chartEl" class="h-80"></div>
     </div>

@@ -63,7 +63,7 @@ watch([month, year], load)
     <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
       <div>
         <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Bảng lương của tôi</h1>
-        <p class="text-muted-foreground font-sans text-lg">Xem chi tiết lương theo từng kỳ của bạn.</p>
+        <p class="text-muted-foreground font-sans text-lg">Xem chi tiết lương theo từng tháng của bạn.</p>
       </div>
       <div class="flex items-center gap-3">
         <ASelect v-model:value="month" :options="months" style="width: 120px" size="large" />
@@ -77,14 +77,14 @@ watch([month, year], load)
     <div v-else-if="store.error" class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">{{ store.error }}</div>
 
     <template v-if="!notLinked">
-      <!-- Tóm tắt kỳ đang chọn -->
+      <!-- Tóm tắt tháng đang chọn -->
       <div v-if="current" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-card border border-border rounded-2xl shadow-sm p-5 flex items-start gap-4 md:col-span-1">
           <div class="w-11 h-11 rounded-xl bg-accent/10 text-accent flex items-center justify-center shrink-0">
             <WalletIcon class="w-5 h-5" />
           </div>
           <div class="min-w-0">
-            <p class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-1">Thực lãnh kỳ {{ current.month }}/{{ current.year }}</p>
+            <p class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-1">Thực lãnh tháng {{ current.month }}/{{ current.year }}</p>
             <p class="font-display text-2xl text-accent">{{ vnd(current.netSalary) }}</p>
             <ATag class="mt-2" :color="STATUS[current.status]?.color">{{ STATUS[current.status]?.label || current.status }}</ATag>
           </div>
@@ -129,7 +129,7 @@ watch([month, year], load)
           <template #emptyText>
             <div class="py-8 text-center text-muted-foreground font-sans text-sm">
               <BanknoteIcon class="w-6 h-6 mx-auto mb-2 opacity-50" />
-              Chưa có bảng lương cho kỳ {{ month }}/{{ year }}.
+              Chưa có bảng lương cho tháng {{ month }}/{{ year }}.
             </div>
           </template>
           <template #bodyCell="{ column, record }">
