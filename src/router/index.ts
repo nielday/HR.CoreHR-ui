@@ -29,10 +29,12 @@ const router = createRouter({
       children: [
         {
           path: '',
-          // Trang chủ theo vai trò: nhân viên → tổng quan cá nhân; còn lại → dashboard quản trị
+          // Trang chủ theo vai trò: nhân viên → tổng quan cá nhân; quản lý → dashboard phòng ban; HR/Admin → dashboard quản trị
           redirect: () => {
             const auth = useAuthStore()
-            return auth.userRole === 'Employee' ? '/me/dashboard' : '/dashboard'
+            if (auth.userRole === 'Employee') return '/me/dashboard'
+            if (auth.userRole === 'Manager') return '/manager/dashboard'
+            return '/dashboard'
           }
         },
         {
@@ -42,10 +44,16 @@ const router = createRouter({
           meta: { roles: ['Admin', 'HR', 'Manager', 'Employee'] }
         },
         {
+          path: 'manager/dashboard',
+          name: 'manager-dashboard',
+          component: () => import('../views/ManagerDashboardView.vue'),
+          meta: { roles: ['Manager'] }
+        },
+        {
           path: 'dashboard',
           name: 'dashboard',
           component: () => import('../views/PayrollDashboardView.vue'),
-          meta: { roles: ['Admin', 'HR', 'Manager'] }
+          meta: { roles: ['Admin', 'HR'] }
         },
         {
           path: 'employees',
@@ -81,7 +89,7 @@ const router = createRouter({
           path: 'payroll/dashboard',
           name: 'payroll-dashboard',
           component: () => import('../views/PayrollDashboardView.vue'),
-          meta: { roles: ['Admin', 'HR', 'Manager'] }
+          meta: { roles: ['Admin', 'HR'] }
         },
         {
           path: 'payroll/records',

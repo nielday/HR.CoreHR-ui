@@ -30,6 +30,7 @@ const roleLabel = computed(() => {
 const canManageSystem = computed(() => ['Admin', 'HR'].includes(userRole.value || ''))
 const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.value || ''))
 const isEmployee = computed(() => userRole.value === 'Employee')
+const isManager = computed(() => userRole.value === 'Manager')
 </script>
 
 <template>
@@ -61,7 +62,12 @@ const isEmployee = computed(() => userRole.value === 'Employee')
           <span class="font-sans font-medium text-sm">Tổng quan</span>
         </RouterLink>
 
-        <RouterLink v-if="canViewAll" to="/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+        <RouterLink v-if="isManager" to="/manager/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+          <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
+          <span class="font-sans font-medium text-sm">Tổng quan</span>
+        </RouterLink>
+
+        <RouterLink v-if="canManageSystem" to="/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
           <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
           <span class="font-sans font-medium text-sm">Dashboard</span>
         </RouterLink>
@@ -168,7 +174,7 @@ const isEmployee = computed(() => userRole.value === 'Employee')
           <span class="font-sans font-medium text-sm">Bảng lương của tôi</span>
         </RouterLink>
 
-        <template v-if="canViewAll">
+        <template v-if="canManageSystem">
           <RouterLink to="/payroll/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
             <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
             <span class="font-sans font-medium text-sm">Dashboard lương</span>
