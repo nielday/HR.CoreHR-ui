@@ -200,12 +200,7 @@ const isManager = computed(() => userRole.value === 'Manager')
 
           <RouterLink to="/users" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
             <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
-            <span class="font-sans font-medium text-sm">Tài khoản</span>
-          </RouterLink>
-
-          <RouterLink to="/permissions" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
-            <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
-            <span class="font-sans font-medium text-sm">Vai trò & phân quyền</span>
+            <span class="font-sans font-medium text-sm">Tài khoản & Phân quyền</span>
           </RouterLink>
         </template>
       </nav>
