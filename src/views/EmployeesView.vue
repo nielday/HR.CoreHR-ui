@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { PlusIcon, PencilIcon, UserMinusIcon, ArrowRightLeftIcon, SearchIcon, EyeIcon } from 'lucide-vue-next'
+import { PlusIcon, PencilIcon, UserMinusIcon, ArrowRightLeftIcon, SearchIcon, EyeIcon, BriefcaseIcon, MailIcon, PhoneIcon } from 'lucide-vue-next'
+import { Row as ARow, Col as ACol, Card as ACard, Avatar as AAvatar, Pagination as APagination, Spin as ASpin } from 'ant-design-vue'
 import { useEmployeeStore } from '../stores/employee'
 import { useDepartmentStore } from '../stores/department'
 import { usePositionStore } from '../stores/position'
@@ -294,71 +295,106 @@ async function executeResign() {
       {{ store.error }}
     </div>
 
-    <!-- Data Table -->
-    <div class="bg-card border border-border rounded-2xl shadow-md overflow-hidden relative group">
+    <!-- Data Grid -->
+    <div class="relative group">
       <div class="absolute -top-24 -right-24 w-48 h-48 bg-accent/5 rounded-full blur-[80px] pointer-events-none transition-opacity duration-1000 opacity-50 group-hover:opacity-100"></div>
 
-      <v-data-table-server
-        :headers="headers as any"
-        :items="store.employees"
-        :items-length="store.totalItems"
-        :loading="store.isLoading"
-        @update:options="loadItems"
-        class="bg-transparent font-sans"
-        hover
-      >
-        <template #[`item.employeeCode`]="{ item }">
-          <span class="font-mono text-sm font-medium text-foreground">{{ item.employeeCode }}</span>
-        </template>
+      <div v-if="store.isLoading" class="py-20 flex justify-center items-center">
+        <a-spin size="large" />
+      </div>
 
-        <template #[`item.fullName`]="{ item }">
-          <div class="py-2">
-            <div class="flex items-center gap-2">
-              <span class="font-semibold text-foreground">{{ item.fullName }}</span>
-              <span v-if="myDeptManagerId && item.id === myDeptManagerId" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono tracking-wider uppercase bg-accent/10 text-accent border border-accent/20">
-                Trưởng phòng
-              </span>
-            </div>
-            <div v-if="item.email" class="text-xs text-muted-foreground">{{ item.email }}</div>
+      <div v-else>
+        <a-row :gutter="[24, 24]">
+          <a-col :xs="24" :sm="12" :lg="8" :xl="6" v-for="item in store.employees" :key="item.id">
+            <a-card :bordered="false" class="shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl overflow-hidden h-full flex flex-col border border-border/50 group/card relative p-0" :bodyStyle="{ padding: 0, display: 'flex', flexDirection: 'column', height: '100%' }">
+              
+              <!-- Tag trạng thái nổi góc phải -->
+              <div class="absolute top-4 right-4 z-10">
+                <span v-if="item.workingStatus === 'Active' || item.workingStatus === 'Probation'" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-green-50 text-green-600 border border-green-200 shadow-sm">
+                  {{ item.workingStatus === 'Probation' ? 'Thử việc' : 'Đang làm' }}
+                </span>
+                <span v-else class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-gray-100 text-gray-500 border border-gray-200 shadow-sm">
+                  {{ item.workingStatus === 'Resigned' ? 'Đã nghỉ' : item.workingStatus === 'Suspended' ? 'Tạm ngưng' : item.workingStatus }}
+                </span>
+              </div>
+
+              <!-- Top part: Avatar & Status -->
+              <div class="p-5 flex flex-col items-center text-center mt-2">
+                <a-avatar :size="64" class="bg-gradient-to-tr from-accent to-accent-secondary text-white font-display text-2xl shadow-md mb-3 flex items-center justify-center">
+                  {{ item.fullName.split(' ').pop()?.[0] || 'NV' }}
+                </a-avatar>
+                <h3 class="font-semibold text-foreground text-lg leading-tight group-hover/card:text-accent transition-colors">{{ item.fullName }}</h3>
+                <div class="flex items-center justify-center gap-2 mt-1.5">
+                  <span class="font-mono text-xs text-muted-foreground">{{ item.employeeCode }}</span>
+                  <span v-if="myDeptManagerId && item.id === myDeptManagerId" class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-mono tracking-wider uppercase bg-accent/10 text-accent border border-accent/20">
+                    Trưởng phòng
+                  </span>
+                </div>
+              </div>
+
+              <!-- Middle part: Details -->
+              <div class="px-5 pb-5 flex-1 space-y-3">
+                <div class="flex items-start gap-3 text-sm text-foreground">
+                  <div class="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <BriefcaseIcon class="w-3.5 h-3.5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p class="font-medium leading-none mb-1">{{ item.positionName || '—' }}</p>
+                    <p class="text-xs text-muted-foreground">{{ item.departmentName || '—' }}</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3 text-sm text-foreground">
+                  <div class="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <MailIcon class="w-3.5 h-3.5 text-muted-foreground" />
+                  </div>
+                  <span class="truncate text-xs">{{ item.email || '—' }}</span>
+                </div>
+                <div class="flex items-center gap-3 text-sm text-foreground">
+                  <div class="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <PhoneIcon class="w-3.5 h-3.5 text-muted-foreground" />
+                  </div>
+                  <span class="text-xs">{{ item.phoneNumber || '—' }}</span>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="border-t border-border/50 bg-muted/20 px-4 py-3 flex items-center justify-center gap-2 mt-auto">
+                  <button v-if="canViewDetail(item)" @click="router.push(`/employees/${item.id}`)" class="flex-1 flex justify-center items-center p-2 text-muted-foreground hover:text-foreground hover:bg-white rounded-lg transition-all shadow-sm border border-transparent hover:border-border" title="Xem chi tiết">
+                    <EyeIcon class="w-4 h-4" />
+                  </button>
+                  <template v-if="canManageSystem">
+                    <button @click="openEditModal(item)" class="flex-1 flex justify-center items-center p-2 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-all" title="Sửa">
+                      <PencilIcon class="w-4 h-4" />
+                    </button>
+                    <button v-if="item.workingStatus === 'Active' || item.workingStatus === 'Probation'" @click="openTransfer(item)" class="flex-1 flex justify-center items-center p-2 text-muted-foreground hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Điều chuyển">
+                      <ArrowRightLeftIcon class="w-4 h-4" />
+                    </button>
+                    <button v-if="item.workingStatus === 'Active' || item.workingStatus === 'Probation'" @click="openResign(item)" class="flex-1 flex justify-center items-center p-2 text-muted-foreground hover:text-warning hover:bg-warning/10 rounded-lg transition-all" title="Đánh dấu nghỉ việc">
+                      <UserMinusIcon class="w-4 h-4" />
+                    </button>
+                  </template>
+              </div>
+            </a-card>
+          </a-col>
+        </a-row>
+
+        <div v-if="store.employees.length === 0" class="py-12 bg-card rounded-2xl border border-border flex flex-col items-center justify-center text-muted-foreground font-sans text-sm mt-4">
+           Không tìm thấy nhân viên nào
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="store.totalItems > 0" class="mt-8 flex justify-center">
+          <div class="bg-card px-4 py-2 rounded-2xl border border-border shadow-sm inline-flex">
+            <a-pagination
+              v-model:current="pagination.page"
+              v-model:pageSize="pagination.itemsPerPage"
+              :total="store.totalItems"
+              show-size-changer
+              @change="loadItems({ page: pagination.page, itemsPerPage: pagination.itemsPerPage })"
+            />
           </div>
-        </template>
-
-        <template #[`item.phoneNumber`]="{ item }">
-          <span class="font-mono text-xs text-muted-foreground">{{ item.phoneNumber || '—' }}</span>
-        </template>
-
-        <template #[`item.hireDate`]="{ item }">
-          <span class="font-mono text-xs text-muted-foreground">{{ item.hireDate ? new Date(item.hireDate).toLocaleDateString('vi-VN') : '—' }}</span>
-        </template>
-
-        <template #[`item.workingStatus`]="{ item }">
-          <span v-if="item.workingStatus === 'Active' || item.workingStatus === 'Probation'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-green-50 text-green-600 border border-green-200">
-            {{ item.workingStatus === 'Probation' ? 'Thử việc' : 'Đang làm việc' }}
-          </span>
-          <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-gray-100 text-gray-500 border border-gray-200">
-            {{ item.workingStatus === 'Resigned' ? 'Đã nghỉ việc' : item.workingStatus === 'Suspended' ? 'Tạm ngưng' : item.workingStatus }}
-          </span>
-        </template>
-
-        <template #[`item.actions`]="{ item }">
-          <div class="flex items-center justify-end gap-1 opacity-60 group-hover/row:opacity-100 transition-opacity">
-            <button v-if="canViewDetail(item)" @click="router.push(`/employees/${item.id}`)" class="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors" title="Xem chi tiết">
-              <EyeIcon class="w-4 h-4" />
-            </button>
-            <template v-if="canManageSystem">
-              <button @click="openEditModal(item)" class="p-2 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Sửa">
-                <PencilIcon class="w-4 h-4" />
-              </button>
-              <button v-if="item.workingStatus === 'Active' || item.workingStatus === 'Probation'" @click="openTransfer(item)" class="p-2 text-muted-foreground hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Điều chuyển">
-                <ArrowRightLeftIcon class="w-4 h-4" />
-              </button>
-              <button v-if="item.workingStatus === 'Active' || item.workingStatus === 'Probation'" @click="openResign(item)" class="p-2 text-muted-foreground hover:text-warning hover:bg-warning/10 rounded-lg transition-colors" title="Đánh dấu nghỉ việc">
-                <UserMinusIcon class="w-4 h-4" />
-              </button>
-            </template>
-          </div>
-        </template>
-      </v-data-table-server>
+        </div>
+      </div>
     </div>
 
     <!-- Create / Edit Employee Modal -->
