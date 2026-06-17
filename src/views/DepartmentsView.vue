@@ -128,8 +128,8 @@ async function executeDelete() {
     </div>
 
     <!-- Sơ đồ tổ chức (PrimeVue OrganizationChart) -->
-    <div class="bg-card border border-border rounded-2xl shadow-md p-4 sm:p-6 overflow-x-auto">
-      <template v-if="orgRoots.length">
+    <div class="bg-card border border-border rounded-2xl shadow-md p-4 sm:p-6 overflow-auto flex dept-org-wrap" style="min-height: calc(100vh - 230px)">
+      <div v-if="orgRoots.length" class="m-auto space-y-10 py-4">
         <OrganizationChart
           v-for="root in orgRoots"
           :key="root.key"
@@ -139,21 +139,21 @@ async function executeDelete() {
         >
           <template #default="slotProps">
             <div class="dept-node text-center">
-              <div class="font-sans font-semibold text-foreground text-[14px] leading-tight">{{ slotProps.node.data.name }}</div>
-              <div class="flex items-center justify-center gap-2 mt-1">
-                <span class="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">{{ slotProps.node.data.code }}</span>
-                <span class="inline-block w-2 h-2 rounded-full" :class="slotProps.node.data.isActive ? 'bg-green-500' : 'bg-gray-300'"></span>
+              <div class="font-sans font-semibold text-foreground text-[17px] leading-tight">{{ slotProps.node.data.name }}</div>
+              <div class="flex items-center justify-center gap-2 mt-1.5">
+                <span class="font-mono text-[12px] uppercase tracking-wider text-muted-foreground">{{ slotProps.node.data.code }}</span>
+                <span class="inline-block w-2.5 h-2.5 rounded-full" :class="slotProps.node.data.isActive ? 'bg-green-500' : 'bg-gray-300'"></span>
               </div>
-              <div v-if="slotProps.node.data.managerName" class="text-[11px] text-muted-foreground mt-1">TP: {{ slotProps.node.data.managerName }}</div>
-              <div v-if="canManageSystem" class="dept-node-actions mt-2 flex items-center justify-center gap-1.5">
+              <div v-if="slotProps.node.data.managerName" class="text-[13px] text-muted-foreground mt-1.5">TP: {{ slotProps.node.data.managerName }}</div>
+              <div v-if="canManageSystem" class="dept-node-actions mt-3 flex items-center justify-center gap-2">
                 <button type="button" class="dept-act" @click.stop="openEditModal(slotProps.node.data.raw)">Sửa</button>
                 <button type="button" class="dept-act danger" :disabled="slotProps.node.data.hasChildren" @click.stop="confirmDelete(slotProps.node.data.raw)">Xóa</button>
               </div>
             </div>
           </template>
         </OrganizationChart>
-      </template>
-      <AEmpty v-else :image="undefined" description="Chưa có phòng ban" />
+      </div>
+      <AEmpty v-else :image="undefined" description="Chưa có phòng ban" class="m-auto" />
     </div>
 
     <!-- Create / Edit Modal -->
@@ -226,17 +226,13 @@ async function executeDelete() {
 </template>
 
 <style scoped>
-.dept-org {
-  /* canh giữa sơ đồ trong khung */
-  margin: 0 auto;
-}
-.dept-node {
-  min-width: 150px;
-}
+.dept-org { margin: 0 auto; }
+.dept-node { min-width: 210px; }
+
 .dept-act {
-  font-size: 12px;
-  padding: 1px 10px;
-  border-radius: 6px;
+  font-size: 13px;
+  padding: 3px 14px;
+  border-radius: 8px;
   border: 1px solid #e2e8f0;
   background: #f8fafc;
   color: #475569;
@@ -247,14 +243,42 @@ async function executeDelete() {
 .dept-act.danger:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
 .dept-act:disabled { opacity: .4; cursor: not-allowed; }
 
-/* Ẩn action mặc định, hiện khi hover node */
+/* Hiện action khi hover node */
 .dept-node-actions { opacity: 0; transition: opacity .2s; }
 .dept-org :deep(.p-organizationchart-node-content):hover .dept-node-actions { opacity: 1; }
 
-/* Bo tròn & viền nhẹ cho ô node của PrimeVue cho hợp tông app */
+/* Ô node lớn, bo tròn, viền nhẹ + đổ bóng */
 .dept-org :deep(.p-organizationchart-node-content) {
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid #e2e8f0;
-  padding: 12px 16px;
+  padding: 18px 28px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  transition: border-color .2s, box-shadow .2s, transform .2s;
+}
+.dept-org :deep(.p-organizationchart-node-content:hover) {
+  border-color: var(--accent, #0052ff);
+  box-shadow: 0 8px 22px rgba(0, 82, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+/* Giãn khoảng cách dọc giữa các cấp + khoảng cách ngang giữa các node */
+.dept-org :deep(.p-organizationchart-line-down) {
+  height: 34px;
+  background: #cbd5e1;
+  width: 2px;
+}
+.dept-org :deep(.p-organizationchart-line-left),
+.dept-org :deep(.p-organizationchart-line-right) {
+  border-color: #cbd5e1;
+  border-width: 2px;
+}
+.dept-org :deep(.p-organizationchart-node) { padding: 0 18px; }
+.dept-org :deep(.p-organizationchart-nodes) { padding-top: 18px; }
+
+/* Nút thu/mở nhánh rõ hơn */
+.dept-org :deep(.p-organizationchart-node-toggle-button) {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
 }
 </style>
