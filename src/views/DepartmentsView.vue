@@ -305,16 +305,27 @@ async function executeDelete() {
   transform: translateY(-2px);
 }
 
-/* Giãn khoảng cách dọc giữa các cấp + khoảng cách ngang giữa các node anh em */
-.dept-org :deep(.p-organizationchart-line-down) {
-  height: 76px;
-  background: #94a3b8;
-  width: 3px;
+/* PrimeVue v4 connector classes. Override logical borders from the theme. */
+.dept-org :deep(.p-organizationchart-connector-down) {
+  height: 82px !important;
+  width: 4px !important;
+  background: #64748b !important;
+  border-radius: 999px;
 }
-.dept-org :deep(.p-organizationchart-line-left),
-.dept-org :deep(.p-organizationchart-line-right) {
-  border-color: #94a3b8;
-  border-width: 3px;
+.dept-org :deep(.p-organizationchart-connector-left) {
+  border-inline-end: 3px solid #64748b !important;
+}
+.dept-org :deep(.p-organizationchart-connector-right) {
+  border-inline-start: 3px solid #64748b !important;
+}
+.dept-org :deep(.p-organizationchart-connector-top) {
+  border-block-start: 3px solid #64748b !important;
+}
+.dept-org :deep(.p-organizationchart-connectors :nth-child(1 of .p-organizationchart-connector-left)) {
+  border-inline-end: 0 none !important;
+}
+.dept-org :deep(.p-organizationchart-connectors :nth-child(1 of .p-organizationchart-connector-right)) {
+  border-inline-start: 3px solid #64748b !important;
 }
 .dept-org :deep(.p-organizationchart-node) { padding: 0 44px; }
 .dept-org :deep(.p-organizationchart-nodes) { padding-top: 44px; }
