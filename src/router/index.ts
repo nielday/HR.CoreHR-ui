@@ -146,6 +146,18 @@ const router = createRouter({
           meta: { roles: ['Admin', 'HR'] }
         },
         {
+          path: 'my/contracts',
+          name: 'my-contracts',
+          component: () => import('../views/MyContractsView.vue'),
+          meta: { roles: ['Admin', 'HR', 'Manager', 'Employee'] }
+        },
+        {
+          path: 'my/payslip',
+          name: 'my-payslip',
+          component: () => import('../views/MyPayslipView.vue'),
+          meta: { roles: ['Admin', 'HR', 'Manager', 'Employee'] }
+        },
+        {
           path: 'profile',
           name: 'my-profile',
           component: () => import('../views/MyProfileView.vue'),

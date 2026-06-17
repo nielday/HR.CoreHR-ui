@@ -12,6 +12,12 @@ export interface PayrollRecord {
   totalAllowances: number
   totalDeductions: number
   netSalary: number
+  // Số liệu chấm công đã dùng để tính (audit)
+  standardWorkdays: number
+  actualWorkdays: number
+  overtimeHours: number
+  paidLeaveDays: number
+  unpaidLeaveDays: number
   status: number
   calculatedAt: string
 }
