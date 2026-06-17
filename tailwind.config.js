@@ -19,7 +19,7 @@ export default {
         ring: '#0052FF',
       },
       fontFamily: {
-        display: ['Calistoga', 'Georgia', 'serif'],
+        display: ['Inter', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
