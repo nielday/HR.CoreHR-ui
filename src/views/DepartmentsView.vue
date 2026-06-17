@@ -34,7 +34,7 @@ let chart: any = null
 
 onMounted(() => {
   store.fetchDepartments() // danh sách phẳng cho d3-org-chart
-  if (employeeStore.employees.length === 0) employeeStore.fetchEmployees()
+  if (employeeStore.allEmployees.length === 0) employeeStore.fetchAllEmployees()
   
   // Gắn event listener global để nhận sự kiện từ D3 HTML
   ;(window as any).deptEdit = (id: string) => {
@@ -55,7 +55,7 @@ onBeforeUnmount(() => {
 // map employeeId -> tên trưởng phòng
 const managerName = (id?: string | null) => {
   if (!id) return null
-  const e = (employeeStore.employees as any[]).find((x) => x.id === id)
+  const e = (employeeStore.allEmployees as any[]).find((x) => x.id === id)
   return e ? `${e.fullName}` : null
 }
 
@@ -114,7 +114,7 @@ function renderChart() {
   chart.data(data).render().expandAll()
 }
 
-watch(() => [store.departments, employeeStore.employees], () => {
+watch(() => [store.departments, employeeStore.allEmployees], () => {
   if (store.departments.length > 0) {
     nextTick(renderChart)
   }
@@ -220,7 +220,7 @@ async function executeDelete() {
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Trưởng phòng</label>
           <select v-model="newDept.managerEmployeeId" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
             <option value="">-- Chưa phân công --</option>
-            <option v-for="e in employeeStore.employees" :key="e.id" :value="e.id">
+            <option v-for="e in employeeStore.allEmployees" :key="e.id" :value="e.id">
               {{ e.fullName }} ({{ e.employeeCode }})
             </option>
           </select>

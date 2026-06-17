@@ -25,6 +25,7 @@ export interface Employee {
 
 export const useEmployeeStore = defineStore('employee', () => {
   const employees = ref<Employee[]>([])
+  const allEmployees = ref<Employee[]>([])
   const totalItems = ref<number>(0)
   const totalPages = ref<number>(0)
   const currentPage = ref<number>(1)
@@ -51,6 +52,19 @@ export const useEmployeeStore = defineStore('employee', () => {
       error.value = err.response?.data?.message || err.message || 'Failed to fetch employees'
     } finally {
       isLoading.value = false
+    }
+  }
+
+  async function fetchAllEmployees() {
+    try {
+      const response = await api.get('/Employees', { params: { page: 1, pageSize: 10000 } })
+      if (response.data.items) {
+        allEmployees.value = response.data.items
+      } else {
+        allEmployees.value = response.data
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch all employees:', err)
     }
   }
 
@@ -175,8 +189,8 @@ export const useEmployeeStore = defineStore('employee', () => {
   }
 
   return {
-    employees, totalItems, totalPages, currentPage, pageSize,
-    isLoading, error, fetchEmployees, fetchEmployeeById, fetchDepartmentHistory,
+    employees, allEmployees, totalItems, totalPages, currentPage, pageSize,
+    isLoading, error, fetchEmployees, fetchAllEmployees, fetchEmployeeById, fetchDepartmentHistory,
     createEmployee, updateEmployee, resignEmployee, transferEmployee,
     fetchMyProfile, updateMyProfile
   }
