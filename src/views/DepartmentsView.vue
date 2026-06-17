@@ -99,6 +99,18 @@ function renderChart() {
   }
 
   const data = JSON.parse(JSON.stringify(store.departments))
+
+  // Sửa lỗi nghiệp vụ cho Manager: 
+  // Manager chỉ nhận được phòng ban mình quản lý, nên parentDepartmentId có thể trỏ tới một ID không nằm trong mảng.
+  // d3-org-chart sẽ throw lỗi "missing: ID" nếu parentId không tồn tại.
+  // Giải pháp: Nếu parentId không có mặt trong mảng data, ta biến node đó thành root node (xóa parentId).
+  const allIds = new Set(data.map((d: any) => d.id))
+  data.forEach((d: any) => {
+    if (d.parentDepartmentId && !allIds.has(d.parentDepartmentId)) {
+      d.parentDepartmentId = null
+    }
+  })
+
   chart.data(data).render().expandAll()
 }
 
