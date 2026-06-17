@@ -59,6 +59,16 @@ const managerName = (id?: string | null) => {
   return e ? `${e.fullName}` : null
 }
 
+const availableManagers = computed(() => {
+  if (isEditMode.value && editingId.value) {
+    return employeeStore.allEmployees.filter(e => 
+      (e.departmentId === editingId.value && (e.workingStatus === 'Active' || e.workingStatus === 'Probation')) || 
+      e.id === newDept.value.managerEmployeeId // Luôn giữ lại người đang được chọn để tránh lỗi hiển thị
+    )
+  }
+  return []
+})
+
 function renderChart() {
   if (!chartContainer.value) return
   if (!chart) {
@@ -218,12 +228,13 @@ async function executeDelete() {
         </div>
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Trưởng phòng</label>
-          <select v-model="newDept.managerEmployeeId" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
+          <select v-model="newDept.managerEmployeeId" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" :disabled="!isEditMode">
             <option value="">-- Chưa phân công --</option>
-            <option v-for="e in employeeStore.allEmployees" :key="e.id" :value="e.id">
+            <option v-for="e in availableManagers" :key="e.id" :value="e.id">
               {{ e.fullName }} ({{ e.employeeCode }})
             </option>
           </select>
+          <p v-if="!isEditMode" class="text-[11px] text-muted-foreground mt-1">Vui lòng tạo phòng ban và thêm nhân sự vào phòng trước khi chỉ định trưởng phòng.</p>
         </div>
         <div v-if="isEditMode" class="flex items-center gap-3 pt-2">
           <input type="checkbox" id="isActive" v-model="newDept.isActive" class="w-4 h-4 rounded text-accent focus:ring-accent accent-accent" />
