@@ -29,6 +29,7 @@ const roleLabel = computed(() => {
 // Determine visibility of menus based on role
 const canManageSystem = computed(() => ['Admin', 'HR'].includes(userRole.value || ''))
 const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.value || ''))
+const isEmployee = computed(() => userRole.value === 'Employee')
 </script>
 
 <template>
@@ -54,6 +55,11 @@ const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.v
         <div class="px-4 mb-2 mt-2">
           <span class="font-mono text-[10px] uppercase tracking-[0.2em] text-white/50">Tổng quan</span>
         </div>
+
+        <RouterLink v-if="isEmployee" to="/me/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
+          <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
+          <span class="font-sans font-medium text-sm">Tổng quan</span>
+        </RouterLink>
 
         <RouterLink v-if="canViewAll" to="/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
           <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>

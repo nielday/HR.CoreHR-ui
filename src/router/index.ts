@@ -29,7 +29,17 @@ const router = createRouter({
       children: [
         {
           path: '',
-          redirect: '/dashboard'
+          // Trang chủ theo vai trò: nhân viên → tổng quan cá nhân; còn lại → dashboard quản trị
+          redirect: () => {
+            const auth = useAuthStore()
+            return auth.userRole === 'Employee' ? '/me/dashboard' : '/dashboard'
+          }
+        },
+        {
+          path: 'me/dashboard',
+          name: 'my-dashboard',
+          component: () => import('../views/MyDashboardView.vue'),
+          meta: { roles: ['Admin', 'HR', 'Manager', 'Employee'] }
         },
         {
           path: 'dashboard',
@@ -192,9 +202,9 @@ router.beforeEach((to, from, next) => {
   if (authStore.mustChangePassword && to.path !== '/change-password') {
     return next('/change-password')
   }
-  // Đã đổi xong rồi mà còn ở trang đổi/login → đưa về trang chính
+  // Đã đổi xong rồi mà còn ở trang đổi/login → đưa về trang chính (redirect '/' tự phân theo vai trò)
   if (!authStore.mustChangePassword && (to.path === '/change-password' || to.path === '/login')) {
-    return next('/employees')
+    return next('/')
   }
 
   // RBAC
@@ -202,7 +212,7 @@ router.beforeEach((to, from, next) => {
     const userRole = authStore.userRole
     if (!userRole || !to.meta.roles.includes(userRole)) {
       console.warn(`Access Denied. User Role ${userRole} is not in required roles ${to.meta.roles.join(', ')}`)
-      return next('/employees')
+      return next('/')
     }
   }
   next()

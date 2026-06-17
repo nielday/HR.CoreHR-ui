@@ -24,7 +24,7 @@ async function handleSubmit() {
   isLoading.value = true
   try {
     await authStore.changePassword(currentPassword.value, newPassword.value)
-    router.push('/employees')
+    router.push('/')
   } catch (err: any) {
     error.value = err.response?.data?.message || err.response?.data?.Message || err.message || 'Đổi mật khẩu thất bại.'
   } finally {

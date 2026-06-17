@@ -18,7 +18,7 @@ async function handleLogin() {
   error.value = ''
   try {
     await authStore.testLogin(username.value, password.value)
-    router.push('/employees') // After login, go to Employees instead of departments
+    router.push('/') // Trang chủ tự phân theo vai trò (nhân viên → tổng quan cá nhân)
   } catch (err: any) {
     error.value = err.response?.data?.message || err.response?.data?.Message || err.message || 'Đăng nhập thất bại. Hệ thống cần token API hợp lệ để tiếp tục.'
   } finally {
