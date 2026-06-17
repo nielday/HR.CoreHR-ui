@@ -30,7 +30,7 @@ const STATUS: Record<number, { label: string; color: string }> = {
 const current = ref<PayrollRecord | null>(null)
 
 const columns = [
-  { title: 'Kỳ', key: 'period', align: 'center' as const, width: 90 },
+  { title: 'Lương tháng', key: 'period', align: 'center' as const, width: 110 },
   { title: 'Lương cơ bản', key: 'baseSalary', align: 'right' as const },
   { title: 'Phụ cấp', key: 'totalAllowances', align: 'right' as const },
   { title: 'Khấu trừ', key: 'totalDeductions', align: 'right' as const },

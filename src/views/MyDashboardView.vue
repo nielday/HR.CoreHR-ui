@@ -233,7 +233,7 @@ onMounted(async () => {
         <ACol :xs="24" :lg="8">
           <ACard title="Lương kỳ gần nhất" :bordered="false" class="shadow-md rounded-2xl h-full">
             <div v-if="latestPayroll">
-              <AStatistic title="Thực lãnh" :value="latestPayroll.netSalary" :formatter="(v:any) => vnd(Number(v))" :value-style="{ color: '#2563eb' }" />
+              <AStatistic title="Thực lãnh" :value="vnd(latestPayroll.netSalary)" :value-style="{ color: '#2563eb' }" />
               <div class="flex items-center justify-between mt-3">
                 <span class="font-sans text-sm text-muted-foreground">Kỳ {{ latestPayroll.month }}/{{ latestPayroll.year }}</span>
                 <ATag :color="PAYROLL_STATUS[latestPayroll.status]?.color">{{ PAYROLL_STATUS[latestPayroll.status]?.label }}</ATag>
