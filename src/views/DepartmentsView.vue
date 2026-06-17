@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
-import { Tree as ATree, Tag as ATag, Empty as AEmpty, Button as AButton } from 'ant-design-vue'
+import { ref, onMounted, computed } from 'vue'
+import { Empty as AEmpty } from 'ant-design-vue'
+import OrganizationChart from 'primevue/organizationchart'
 import { useDepartmentStore } from '../stores/department'
 import { useEmployeeStore } from '../stores/employee'
 import { useAuthStore } from '../stores/auth'
@@ -34,27 +35,31 @@ onMounted(() => {
   if (employeeStore.employees.length === 0) employeeStore.fetchEmployees()
 })
 
-// Dựng dữ liệu cây cho a-tree (key/title/children), giữ nguyên dữ liệu gốc trên mỗi node
-function toNode(d: any): any {
-  const children = (d.subDepartments || []).map(toNode)
-  return { ...d, key: d.id, title: d.departmentName, ...(children.length ? { children } : {}) }
-}
-const treeData = computed(() => (store.departmentTree || []).map(toNode))
-const expandedKeys = ref<string[]>([])
-// Mặc định mở hết khi dữ liệu sẵn sàng
-watch(treeData, (t) => {
-  const keys: string[] = []
-  const walk = (nodes: any[]) => nodes.forEach((n) => { keys.push(n.key); if (n.children) walk(n.children) })
-  walk(t)
-  expandedKeys.value = keys
-}, { immediate: true })
-
 // map employeeId -> tên trưởng phòng
 const managerName = (id?: string | null) => {
   if (!id) return null
   const e = (employeeStore.employees as any[]).find((x) => x.id === id)
   return e ? `${e.fullName}` : null
 }
+
+// Chuyển cây phòng ban -> TreeNode cho PrimeVue OrganizationChart
+function toOrg(d: any): any {
+  return {
+    key: d.id,
+    expanded: true,
+    data: {
+      id: d.id,
+      raw: d,
+      name: d.departmentName,
+      code: d.departmentCode,
+      isActive: d.isActive,
+      managerName: managerName(d.managerEmployeeId),
+      hasChildren: !!(d.subDepartments && d.subDepartments.length)
+    },
+    children: (d.subDepartments || []).map(toOrg)
+  }
+}
+const orgRoots = computed(() => (store.departmentTree || []).map(toOrg))
 
 function openCreateModal() {
   isEditMode.value = false
@@ -111,7 +116,7 @@ async function executeDelete() {
     <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
       <div>
         <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Phòng ban</h1>
-        <p class="text-muted-foreground font-sans text-lg">Cơ cấu tổ chức dạng cây phân cấp.</p>
+        <p class="text-muted-foreground font-sans text-lg">Sơ đồ tổ chức phân cấp từ trên xuống.</p>
       </div>
       <Button v-if="canManageSystem" @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
         Thêm phòng ban
@@ -122,41 +127,32 @@ async function executeDelete() {
       {{ store.error }}
     </div>
 
-    <!-- Cây phòng ban (Ant Design Tree) -->
-    <div class="bg-card border border-border rounded-2xl shadow-md p-4 sm:p-6">
-      <ATree
-        v-if="treeData.length"
-        v-model:expandedKeys="expandedKeys"
-        :tree-data="treeData"
-        :selectable="false"
-        block-node
-        class="dept-tree"
-      >
-        <template #title="node">
-          <div class="flex items-center justify-between gap-3 py-1.5 pr-2 group/row w-full">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="font-sans font-semibold text-foreground text-[15px]">{{ node.departmentName }}</span>
-              <span class="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">{{ node.departmentCode }}</span>
-              <ATag v-if="node.isActive" color="green">Đang hoạt động</ATag>
-              <ATag v-else color="default">Ngừng hoạt động</ATag>
-              <span v-if="managerName(node.managerEmployeeId)" class="text-xs text-muted-foreground font-sans">
-                · TP: {{ managerName(node.managerEmployeeId) }}
-              </span>
-              <span v-if="node.description" class="text-xs text-muted-foreground font-sans hidden md:inline">— {{ node.description }}</span>
+    <!-- Sơ đồ tổ chức (PrimeVue OrganizationChart) -->
+    <div class="bg-card border border-border rounded-2xl shadow-md p-4 sm:p-6 overflow-x-auto">
+      <template v-if="orgRoots.length">
+        <OrganizationChart
+          v-for="root in orgRoots"
+          :key="root.key"
+          :value="root"
+          collapsible
+          class="dept-org"
+        >
+          <template #default="slotProps">
+            <div class="dept-node text-center">
+              <div class="font-sans font-semibold text-foreground text-[14px] leading-tight">{{ slotProps.node.data.name }}</div>
+              <div class="flex items-center justify-center gap-2 mt-1">
+                <span class="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">{{ slotProps.node.data.code }}</span>
+                <span class="inline-block w-2 h-2 rounded-full" :class="slotProps.node.data.isActive ? 'bg-green-500' : 'bg-gray-300'"></span>
+              </div>
+              <div v-if="slotProps.node.data.managerName" class="text-[11px] text-muted-foreground mt-1">TP: {{ slotProps.node.data.managerName }}</div>
+              <div v-if="canManageSystem" class="dept-node-actions mt-2 flex items-center justify-center gap-1.5">
+                <button type="button" class="dept-act" @click.stop="openEditModal(slotProps.node.data.raw)">Sửa</button>
+                <button type="button" class="dept-act danger" :disabled="slotProps.node.data.hasChildren" @click.stop="confirmDelete(slotProps.node.data.raw)">Xóa</button>
+              </div>
             </div>
-            <div v-if="canManageSystem" class="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
-              <AButton type="text" size="small" @click.stop="openEditModal(node)">Sửa</AButton>
-              <AButton
-                type="text"
-                size="small"
-                danger
-                :disabled="!!(node.children && node.children.length)"
-                @click.stop="confirmDelete(node)"
-              >Xóa</AButton>
-            </div>
-          </div>
-        </template>
-      </ATree>
+          </template>
+        </OrganizationChart>
+      </template>
       <AEmpty v-else :image="undefined" description="Chưa có phòng ban" />
     </div>
 
@@ -230,11 +226,35 @@ async function executeDelete() {
 </template>
 
 <style scoped>
-.dept-tree :deep(.ant-tree-node-content-wrapper) {
-  width: 100%;
+.dept-org {
+  /* canh giữa sơ đồ trong khung */
+  margin: 0 auto;
 }
-.dept-tree :deep(.ant-tree-treenode) {
-  width: 100%;
-  padding-bottom: 4px;
+.dept-node {
+  min-width: 150px;
+}
+.dept-act {
+  font-size: 12px;
+  padding: 1px 10px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+  transition: all .15s;
+}
+.dept-act:hover { border-color: var(--accent, #0052ff); color: var(--accent, #0052ff); }
+.dept-act.danger:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
+.dept-act:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Ẩn action mặc định, hiện khi hover node */
+.dept-node-actions { opacity: 0; transition: opacity .2s; }
+.dept-org :deep(.p-organizationchart-node-content):hover .dept-node-actions { opacity: 1; }
+
+/* Bo tròn & viền nhẹ cho ô node của PrimeVue cho hợp tông app */
+.dept-org :deep(.p-organizationchart-node-content) {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 12px 16px;
 }
 </style>

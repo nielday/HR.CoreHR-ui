@@ -12,6 +12,9 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import '@mdi/font/css/materialdesignicons.css'
 
+import PrimeVue from 'primevue/config'
+import Aura from '@primevue/themes/aura'
+
 const customTheme = {
   dark: false,
   colors: {
@@ -42,5 +45,7 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 app.use(vuetify)
+// PrimeVue: dùng cho OrganizationChart (sơ đồ tổ chức). darkModeSelector không khớp → luôn light.
+app.use(PrimeVue, { theme: { preset: Aura, options: { darkModeSelector: '.app-dark-never' } } })
 
 app.mount('#app')
