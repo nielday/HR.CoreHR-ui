@@ -87,6 +87,13 @@ function renderChart() {
          const manager = managerName(item.managerEmployeeId)
          const isActiveColor = item.isActive ? 'background-color: #22c55e;' : 'background-color: #d1d5db;'
          
+         const managerHtml = manager ? `
+            <div class="flex items-center justify-center gap-1.5 mt-2.5 text-[13px] text-slate-600 bg-slate-50 py-1 px-3 rounded-full border border-slate-100 mx-auto w-max shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span class="font-medium tracking-tight">${manager}</span>
+            </div>
+         ` : ''
+         
          const actionsHtml = canManageSystem.value ? `
             <div class="dept-node-actions mt-3 flex items-center justify-center gap-2 transition-opacity duration-200">
                 <button type="button" class="dept-act" onclick="window.deptEdit('${item.id}')">Sửa</button>
@@ -101,7 +108,7 @@ function renderChart() {
                 <span class="font-mono text-[12px] uppercase tracking-wider text-slate-500">${item.departmentCode}</span>
                 <span class="inline-block w-2.5 h-2.5 rounded-full" style="${isActiveColor}"></span>
               </div>
-              ${manager ? `<div class="text-[13px] text-slate-500 mt-1.5">Trưởng phòng: ${manager}</div>` : ''}
+              ${managerHtml}
               ${actionsHtml}
            </div>
          `
