@@ -340,7 +340,7 @@ async function executeResign() {
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mã <span class="text-red-500">*</span></label>
-                <input v-model="newEmp.employeeCode" type="text" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="EMP-001" :disabled="isEditMode"/>
+                <input v-model="newEmp.employeeCode" type="text" required pattern="[0-9]+" inputmode="numeric" class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="1001" :disabled="isEditMode"/>
               </div>
               <div>
                 <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Ngày vào làm <span class="text-red-500">*</span></label>

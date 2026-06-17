@@ -108,8 +108,10 @@ onUnmounted(() => { clearInterval(clockTimer); clearInterval(statusTimer); if (c
           ref="inputRef"
           v-model="code"
           type="text"
+          inputmode="numeric"
+          pattern="[0-9]+"
           autocomplete="off"
-          placeholder="VD: EMP-001"
+          placeholder="VD: 1001"
           class="w-full h-24 px-6 rounded-3xl border-2 border-white/15 bg-white/5 focus:ring-4 focus:ring-accent/40 focus:border-accent outline-none font-mono text-4xl text-center tracking-widest text-white placeholder:text-white/20 transition-all"
           @keyup.enter="doCheck('in')"
         />
