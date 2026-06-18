@@ -73,9 +73,17 @@ const newEmp = ref({
 })
 
 const selectedEmployeeIds = ref<string[]>([])
+const isSelectionMode = ref(false)
 const isImportModalOpen = ref(false)
 const importFile = ref<File | null>(null)
 const importResult = ref<any>(null)
+
+function toggleSelectionMode() {
+  isSelectionMode.value = !isSelectionMode.value
+  if (!isSelectionMode.value) {
+    selectedEmployeeIds.value = []
+  }
+}
 
 function toggleSelection(id: string) {
   const index = selectedEmployeeIds.value.indexOf(id)
@@ -301,6 +309,10 @@ async function executeResign() {
         <p class="text-muted-foreground font-sans text-lg">{{ isEmployee ? 'Danh bạ đồng nghiệp trong phòng ban của bạn.' : 'Quản lý nhân sự, cập nhật hồ sơ và theo dõi trạng thái.' }}</p>
       </div>
       <div v-if="canManageSystem" class="flex flex-wrap items-center gap-2">
+        <Button variant="ghost" @click="toggleSelectionMode" :class="isSelectionMode ? 'bg-accent/10 text-accent' : 'text-muted-foreground hover:bg-muted'">
+          <CheckSquareIcon class="w-4 h-4 mr-2" />
+          {{ isSelectionMode ? 'Thoát chọn nhiều' : 'Chọn nhiều' }}
+        </Button>
         <Button variant="secondary" @click="triggerExport" :disabled="store.isLoading" class="border-border hover:bg-muted">
           <DownloadIcon class="w-4 h-4 mr-2" />
           Xuất Excel
@@ -356,14 +368,16 @@ async function executeResign() {
     </div>
 
     <!-- Batch Actions Toolbar -->
-    <div v-if="selectedEmployeeIds.length > 0 && canManageSystem" class="bg-warning/10 border border-warning/20 rounded-xl p-3 flex items-center justify-between mb-4">
+    <div v-if="isSelectionMode && canManageSystem" class="bg-warning/10 border border-warning/20 rounded-xl p-3 flex items-center justify-between mb-4 animate-in slide-in-from-top-2">
       <div class="flex items-center gap-2 text-warning font-medium text-sm">
         <CheckSquareIcon class="w-5 h-5" />
         Đã chọn {{ selectedEmployeeIds.length }} nhân viên
       </div>
       <div class="flex items-center gap-2">
-        <Button variant="ghost" size="sm" @click="selectedEmployeeIds = []" class="text-muted-foreground hover:text-foreground">Hủy chọn</Button>
-        <Button size="sm" @click="executeBatchResign" class="bg-warning hover:bg-warning/90 text-white border-transparent shadow-sm">
+        <Button variant="ghost" size="sm" @click="selectAll" class="text-muted-foreground hover:text-foreground">
+          {{ selectedEmployeeIds.length > 0 && selectedEmployeeIds.length === store.employees.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả' }}
+        </Button>
+        <Button size="sm" @click="executeBatchResign" :disabled="selectedEmployeeIds.length === 0" class="bg-warning hover:bg-warning/90 text-white border-transparent shadow-sm disabled:opacity-50">
           Đánh dấu nghỉ việc hàng loạt
         </Button>
       </div>
@@ -383,7 +397,7 @@ async function executeResign() {
             <a-card :bordered="false" class="shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl overflow-hidden h-full flex flex-col border border-border/50 group/card relative p-0" :bodyStyle="{ padding: 0, display: 'flex', flexDirection: 'column', height: '100%' }">
               
               <!-- Checkbox chọn nhiều (Góc trái) -->
-              <div v-if="canManageSystem" class="absolute top-4 left-4 z-20">
+              <div v-if="canManageSystem && isSelectionMode" class="absolute top-4 left-4 z-20">
                 <input 
                   type="checkbox" 
                   :checked="selectedEmployeeIds.includes(item.id as string)"
