@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { PlusIcon, PencilIcon, UserMinusIcon, ArrowRightLeftIcon, SearchIcon, EyeIcon, BriefcaseIcon, MailIcon, PhoneIcon } from 'lucide-vue-next'
+import { PlusIcon, PencilIcon, UserMinusIcon, ArrowRightLeftIcon, SearchIcon, EyeIcon, BriefcaseIcon, MailIcon, PhoneIcon, DownloadIcon, UploadIcon, CheckSquareIcon } from 'lucide-vue-next'
 import { Row as ARow, Col as ACol, Card as ACard, Avatar as AAvatar, Pagination as APagination, Spin as ASpin } from 'ant-design-vue'
 import { useEmployeeStore } from '../stores/employee'
 import { useDepartmentStore } from '../stores/department'
@@ -71,6 +71,56 @@ const newEmp = ref({
   contractEndDate: '',
   hireDate: new Date().toISOString().split('T')[0] as string
 })
+
+const selectedEmployeeIds = ref<string[]>([])
+const isImportModalOpen = ref(false)
+const importFile = ref<File | null>(null)
+const importResult = ref<any>(null)
+
+function toggleSelection(id: string) {
+  const index = selectedEmployeeIds.value.indexOf(id)
+  if (index === -1) selectedEmployeeIds.value.push(id)
+  else selectedEmployeeIds.value.splice(index, 1)
+}
+
+function selectAll() {
+  if (selectedEmployeeIds.value.length === store.employees.length) {
+    selectedEmployeeIds.value = []
+  } else {
+    selectedEmployeeIds.value = store.employees.map(e => e.id as string)
+  }
+}
+
+async function executeBatchResign() {
+  if (!confirm(`Bạn có chắc muốn đánh dấu nghỉ việc ${selectedEmployeeIds.value.length} nhân viên?`)) return
+  
+  const success = await store.resignBatch(selectedEmployeeIds.value, 'Nghỉ việc hàng loạt', new Date().toISOString())
+  if (success) {
+    selectedEmployeeIds.value = []
+    alert('Đã xử lý thành công!')
+  }
+}
+
+async function triggerExport() {
+  await store.exportExcel(searchParams.value)
+}
+
+function handleFileUpload(e: Event) {
+  const target = e.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    importFile.value = target.files[0]
+    importResult.value = null
+  }
+}
+
+async function executeImport() {
+  if (!importFile.value) return
+  const result = await store.importExcel(importFile.value)
+  if (result) {
+    importResult.value = result
+    if (result.successCount > 0) fetchData()
+  }
+}
 
 const searchParams = ref({
   keyword: '',
@@ -250,10 +300,20 @@ async function executeResign() {
         <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Nhân viên</h1>
         <p class="text-muted-foreground font-sans text-lg">{{ isEmployee ? 'Danh bạ đồng nghiệp trong phòng ban của bạn.' : 'Quản lý nhân sự, cập nhật hồ sơ và theo dõi trạng thái.' }}</p>
       </div>
-      <Button v-if="canManageSystem" @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
-        <PlusIcon class="w-4 h-4 mr-2" />
-        Thêm nhân viên
-      </Button>
+      <div v-if="canManageSystem" class="flex flex-wrap items-center gap-2">
+        <Button variant="outline" @click="triggerExport" :disabled="store.isLoading" class="border-border hover:bg-muted">
+          <DownloadIcon class="w-4 h-4 mr-2" />
+          Xuất Excel
+        </Button>
+        <Button variant="outline" @click="isImportModalOpen = true; importFile = null; importResult = null" class="border-border hover:bg-muted">
+          <UploadIcon class="w-4 h-4 mr-2" />
+          Nhập Excel
+        </Button>
+        <Button @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
+          <PlusIcon class="w-4 h-4 mr-2" />
+          Thêm nhân viên
+        </Button>
+      </div>
     </div>
 
     <!-- Filters Section -->
@@ -295,6 +355,20 @@ async function executeResign() {
       {{ store.error }}
     </div>
 
+    <!-- Batch Actions Toolbar -->
+    <div v-if="selectedEmployeeIds.length > 0 && canManageSystem" class="bg-warning/10 border border-warning/20 rounded-xl p-3 flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2 text-warning font-medium text-sm">
+        <CheckSquareIcon class="w-5 h-5" />
+        Đã chọn {{ selectedEmployeeIds.length }} nhân viên
+      </div>
+      <div class="flex items-center gap-2">
+        <Button variant="ghost" size="sm" @click="selectedEmployeeIds = []" class="text-muted-foreground hover:text-foreground">Hủy chọn</Button>
+        <Button size="sm" @click="executeBatchResign" class="bg-warning hover:bg-warning/90 text-white border-transparent shadow-sm">
+          Đánh dấu nghỉ việc hàng loạt
+        </Button>
+      </div>
+    </div>
+
     <!-- Data Grid -->
     <div class="relative group">
       <div class="absolute -top-24 -right-24 w-48 h-48 bg-accent/5 rounded-full blur-[80px] pointer-events-none transition-opacity duration-1000 opacity-50 group-hover:opacity-100"></div>
@@ -308,6 +382,16 @@ async function executeResign() {
           <a-col :xs="24" :sm="12" :lg="8" :xl="6" v-for="item in store.employees" :key="item.id">
             <a-card :bordered="false" class="shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl overflow-hidden h-full flex flex-col border border-border/50 group/card relative p-0" :bodyStyle="{ padding: 0, display: 'flex', flexDirection: 'column', height: '100%' }">
               
+              <!-- Checkbox chọn nhiều (Góc trái) -->
+              <div v-if="canManageSystem" class="absolute top-4 left-4 z-20">
+                <input 
+                  type="checkbox" 
+                  :checked="selectedEmployeeIds.includes(item.id as string)"
+                  @change="toggleSelection(item.id as string)"
+                  class="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent cursor-pointer"
+                />
+              </div>
+
               <!-- Tag trạng thái nổi góc phải -->
               <div class="absolute top-4 right-4 z-10">
                 <span v-if="item.workingStatus === 'Active' || item.workingStatus === 'Probation'" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono tracking-widest uppercase bg-green-50 text-green-600 border border-green-200 shadow-sm">
@@ -582,6 +666,42 @@ async function executeResign() {
           <Button type="submit" :disabled="store.isLoading" class="bg-warning hover:bg-warning/90 border-transparent shadow-md">Xác nhận nghỉ việc</Button>
         </div>
       </form>
+    </Modal>
+
+    <!-- Import Modal -->
+    <Modal :isOpen="isImportModalOpen" title="Nhập danh sách nhân viên từ file Excel" @close="isImportModalOpen = false">
+      <div class="space-y-4">
+        <p class="text-sm text-muted-foreground font-sans">
+          Vui lòng tải lên file Excel (.xlsx) với các cột đúng như file mẫu. Các nhân viên mới sẽ tự động được thêm vào hệ thống.
+        </p>
+        
+        <div class="p-4 bg-muted/50 rounded-xl border border-border border-dashed flex flex-col items-center justify-center gap-4">
+          <input type="file" accept=".xlsx" @change="handleFileUpload" class="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent/10 file:text-accent hover:file:bg-accent/20"/>
+        </div>
+
+        <div v-if="importResult" class="p-4 rounded-xl text-sm font-sans" :class="importResult.failedCount === 0 ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-orange-50 text-orange-700 border border-orange-200'">
+          <h4 class="font-bold mb-2">Kết quả nhập:</h4>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Tổng số dòng: <strong>{{ importResult.totalRows }}</strong></li>
+            <li>Thành công: <strong>{{ importResult.successCount }}</strong></li>
+            <li>Lỗi: <strong>{{ importResult.failedCount }}</strong></li>
+          </ul>
+          <div v-if="importResult.errors && importResult.errors.length > 0" class="mt-4 max-h-32 overflow-y-auto text-xs space-y-1">
+            <p v-for="(err, idx) in importResult.errors" :key="idx" class="text-red-600">{{ err }}</p>
+          </div>
+        </div>
+
+        <div v-if="store.error && isImportModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans">
+          {{ store.error }}
+        </div>
+
+        <div class="pt-4 flex justify-end gap-4">
+          <Button variant="ghost" type="button" @click="isImportModalOpen = false">Đóng</Button>
+          <Button @click="executeImport" :disabled="!importFile || store.isLoading" class="min-w-[120px]">
+            {{ store.isLoading ? 'Đang xử lý...' : 'Bắt đầu Nhập' }}
+          </Button>
+        </div>
+      </div>
     </Modal>
   </div>
 </template>

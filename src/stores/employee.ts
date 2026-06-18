@@ -188,10 +188,70 @@ export const useEmployeeStore = defineStore('employee', () => {
     }
   }
 
+  async function resignBatch(employeeIds: string[], reason: string, resignedDate: string) {
+    isLoading.value = true
+    error.value = null
+    try {
+      await api.delete('/Employees/batch', { data: { employeeIds, reason, resignedDate } })
+      await fetchEmployees()
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Lỗi khi đánh dấu nghỉ việc hàng loạt'
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function exportExcel(params: any = {}) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await api.get('/Employees/export', { 
+        params, 
+        responseType: 'blob' 
+      })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `Employees_${new Date().toISOString().split('T')[0]}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      return true
+    } catch (err: any) {
+      error.value = 'Lỗi khi xuất file Excel'
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function importExcel(file: File) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const response = await api.post('/Employees/import', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      await fetchEmployees()
+      return response.data
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Lỗi khi import file Excel'
+      return null
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     employees, allEmployees, totalItems, totalPages, currentPage, pageSize,
     isLoading, error, fetchEmployees, fetchAllEmployees, fetchEmployeeById, fetchDepartmentHistory,
-    createEmployee, updateEmployee, resignEmployee, transferEmployee,
-    fetchMyProfile, updateMyProfile
+    createEmployee, updateEmployee, resignEmployee, resignBatch, transferEmployee,
+    fetchMyProfile, updateMyProfile, exportExcel, importExcel
   }
 })
