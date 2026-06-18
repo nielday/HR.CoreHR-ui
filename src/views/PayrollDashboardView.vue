@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
-import { Statistic as AStatistic, Select as ASelect, Table as ATable, message } from 'ant-design-vue'
+import { Statistic as AStatistic, Select as ASelect, Table as ATable, Segmented as ASegmented, message } from 'ant-design-vue'
 import { Column } from '@antv/g2plot'
 import { CalculatorIcon, RefreshCwIcon, UsersIcon, WalletIcon, PlusCircleIcon, MinusCircleIcon } from 'lucide-vue-next'
 import { usePayrollStore } from '../stores/payroll'
@@ -32,8 +32,57 @@ const vnd = (n: number) => (n ?? 0).toLocaleString('vi-VN') + ' ₫'
 
 const byDept = computed(() => store.dashboard?.byDepartment ?? [])
 
+// ===== Gộp theo KHỐI (2 bậc: Ban Giám đốc + các khối cấp 1) =====
+const viewMode = ref<'khoi' | 'chitiet'>('khoi')
+const viewOptions = [
+  { label: 'Theo khối', value: 'khoi' },
+  { label: 'Chi tiết phòng', value: 'chitiet' },
+]
+
+// Map id -> department (kèm parentDepartmentId) để cuộn lên khối
+const deptById = computed<Record<string, any>>(() => {
+  const m: Record<string, any> = {}
+  for (const d of (deptStore.departments as any[])) if (d.id) m[d.id] = d
+  return m
+})
+
+// "Khối" = phòng cấp 1 (con trực tiếp của gốc). Phòng con/cháu cuộn lên khối; gốc tự là nhóm của nó.
+function rollupTargetId(deptId: string | null | undefined): string | null {
+  if (!deptId) return null
+  const map = deptById.value
+  let node = map[deptId]
+  if (!node) return deptId
+  // leo lên cho tới khi cha là GỐC (cha của cha = null)
+  while (node.parentDepartmentId && map[node.parentDepartmentId] && map[node.parentDepartmentId].parentDepartmentId) {
+    node = map[node.parentDepartmentId]
+  }
+  return node.id
+}
+
+// Cộng dồn quỹ lương/phụ cấp/khấu trừ/số NV của các phòng con vào khối
+const rolledUp = computed(() => {
+  const groups = new Map<string, any>()
+  for (const row of byDept.value as any[]) {
+    const tid = rollupTargetId(row.departmentId) || row.departmentName || 'unknown'
+    const name = deptById.value[tid]?.departmentName || resolveDeptName(row)
+    let g = groups.get(tid)
+    if (!g) {
+      g = { departmentId: tid, departmentName: name, employeeCount: 0, totalSalaryFund: 0, totalAllowances: 0, totalDeductions: 0 }
+      groups.set(tid, g)
+    }
+    g.employeeCount += row.employeeCount || 0
+    g.totalSalaryFund += row.totalSalaryFund || 0
+    g.totalAllowances += row.totalAllowances || 0
+    g.totalDeductions += row.totalDeductions || 0
+  }
+  return [...groups.values()].sort((a, b) => b.totalSalaryFund - a.totalSalaryFund)
+})
+
+// Dữ liệu đang hiển thị theo chế độ
+const displayData = computed(() => (viewMode.value === 'khoi' ? rolledUp.value : byDept.value))
+
 const deptColumns = [
-  { title: 'Phòng ban', dataIndex: 'departmentName', key: 'departmentName' },
+  { title: 'Khối / Phòng ban', dataIndex: 'departmentName', key: 'departmentName' },
   { title: 'Số NV', dataIndex: 'employeeCount', key: 'employeeCount', align: 'right' as const },
   { title: 'Quỹ lương', dataIndex: 'totalSalaryFund', key: 'totalSalaryFund', align: 'right' as const },
   { title: 'Phụ cấp', dataIndex: 'totalAllowances', key: 'totalAllowances', align: 'right' as const },
@@ -44,7 +93,7 @@ let chart: Column | null = null
 const chartEl = ref<HTMLElement | null>(null)
 
 function renderChart() {
-  const data = byDept.value.map(d => ({ department: resolveDeptName(d), value: d.totalSalaryFund }))
+  const data = displayData.value.map((d: any) => ({ department: resolveDeptName(d), value: d.totalSalaryFund }))
   if (!chartEl.value) return
   if (!chart) {
     chart = new Column(chartEl.value, {
@@ -87,6 +136,7 @@ async function runCalculate() {
 
 onMounted(load)
 watch([month, year], load)
+watch(viewMode, () => nextTick(renderChart))
 onBeforeUnmount(() => { chart?.destroy(); chart = null })
 </script>
 
@@ -141,7 +191,10 @@ onBeforeUnmount(() => { chart?.destroy(); chart = null })
 
     <!-- Chart -->
     <div class="bg-card border border-border rounded-2xl shadow-md p-6">
-      <h2 class="font-display text-xl mb-4 text-foreground">Quỹ lương theo phòng ban</h2>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <h2 class="font-display text-xl text-foreground">Quỹ lương {{ viewMode === 'khoi' ? 'theo khối' : 'theo phòng ban' }}</h2>
+        <ASegmented v-model:value="viewMode" :options="viewOptions" />
+      </div>
       <div v-if="byDept.length === 0" class="h-64 flex items-center justify-center text-muted-foreground font-sans text-sm">
         Chưa có dữ liệu lương cho tháng này. Bấm <strong class="mx-1">Tính lương</strong> để tạo.
       </div>
@@ -150,8 +203,8 @@ onBeforeUnmount(() => { chart?.destroy(); chart = null })
 
     <!-- Per-department table -->
     <div class="bg-card border border-border rounded-2xl shadow-md p-6">
-      <h2 class="font-display text-xl mb-4 text-foreground">Chi tiết theo phòng ban</h2>
-      <ATable :columns="deptColumns" :data-source="byDept" :pagination="false" :loading="store.isLoading" row-key="departmentName" size="middle">
+      <h2 class="font-display text-xl mb-4 text-foreground">Chi tiết {{ viewMode === 'khoi' ? 'theo khối' : 'theo phòng ban' }}</h2>
+      <ATable :columns="deptColumns" :data-source="displayData" :pagination="false" :loading="store.isLoading" :row-key="(r: any) => r.departmentId || r.departmentName" size="middle">
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'departmentName'"><span class="font-sans font-medium text-foreground">{{ resolveDeptName(record) }}</span></template>
           <template v-else-if="column.key === 'totalSalaryFund'"><span class="font-mono font-semibold text-accent">{{ vnd(record.totalSalaryFund) }}</span></template>
