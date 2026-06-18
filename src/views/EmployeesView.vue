@@ -108,7 +108,7 @@ async function triggerExport() {
 function handleFileUpload(e: Event) {
   const target = e.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
-    importFile.value = target.files[0]
+    importFile.value = target.files[0] || null
     importResult.value = null
   }
 }
@@ -301,11 +301,11 @@ async function executeResign() {
         <p class="text-muted-foreground font-sans text-lg">{{ isEmployee ? 'Danh bạ đồng nghiệp trong phòng ban của bạn.' : 'Quản lý nhân sự, cập nhật hồ sơ và theo dõi trạng thái.' }}</p>
       </div>
       <div v-if="canManageSystem" class="flex flex-wrap items-center gap-2">
-        <Button variant="outline" @click="triggerExport" :disabled="store.isLoading" class="border-border hover:bg-muted">
+        <Button variant="secondary" @click="triggerExport" :disabled="store.isLoading" class="border-border hover:bg-muted">
           <DownloadIcon class="w-4 h-4 mr-2" />
           Xuất Excel
         </Button>
-        <Button variant="outline" @click="isImportModalOpen = true; importFile = null; importResult = null" class="border-border hover:bg-muted">
+        <Button variant="secondary" @click="isImportModalOpen = true; importFile = null; importResult = null" class="border-border hover:bg-muted">
           <UploadIcon class="w-4 h-4 mr-2" />
           Nhập Excel
         </Button>
