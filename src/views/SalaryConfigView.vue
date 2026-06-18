@@ -23,7 +23,7 @@ const form = ref({
 
 // Chỉ hiển thị nhân viên đang làm việc — bỏ người đã nghỉ việc (Resigned).
 const employeeOptions = computed(() =>
-  (empStore.employees as any[])
+  (empStore.allEmployees as any[])
     .filter(e => e.workingStatus !== 'Resigned')
     .map(e => ({ value: e.id, label: `${e.fullName} (${e.employeeCode})` }))
 )
@@ -71,7 +71,7 @@ async function save() {
   else message.error(store.error || 'Lưu thất bại')
 }
 
-onMounted(() => { if (!empStore.employees.length) empStore.fetchEmployees({ pageSize: 1000 }) })
+onMounted(() => { if (!empStore.allEmployees.length) empStore.fetchAllEmployees() })
 </script>
 
 <template>

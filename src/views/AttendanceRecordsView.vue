@@ -22,15 +22,16 @@ const months = Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `Th�
 const years = Array.from({ length: 6 }, (_, i) => ({ value: now.getFullYear() - 3 + i, label: `${now.getFullYear() - 3 + i}` }))
 
 // ===== Map nhân viên: id -> { code, name, dept } =====
+// Dùng allEmployees (danh sách đầy đủ, ổn định) thay vì employees (phân trang, bị trang khác ghi đè)
 const empMap = computed<Record<string, { code: string; name: string; dept: string }>>(() => {
   const m: Record<string, { code: string; name: string; dept: string }> = {}
-  for (const e of empStore.employees as any[]) {
+  for (const e of empStore.allEmployees as any[]) {
     if (e.id) m[e.id] = { code: e.employeeCode, name: e.fullName, dept: e.departmentName || 'Chưa phân phòng' }
   }
   return m
 })
 const employeeOptions = computed(() =>
-  (empStore.employees as any[]).map((e) => ({ value: e.id, label: `${e.fullName} (${e.employeeCode})` }))
+  (empStore.allEmployees as any[]).map((e) => ({ value: e.id, label: `${e.fullName} (${e.employeeCode})` }))
 )
 
 // Lọc + tìm kiếm
@@ -38,7 +39,7 @@ const searchText = ref('')
 const deptFilter = ref<string>('')
 const departmentOptions = computed(() => {
   const set = new Set<string>()
-  for (const e of empStore.employees as any[]) set.add(e.departmentName || 'Chưa phân phòng')
+  for (const e of empStore.allEmployees as any[]) set.add(e.departmentName || 'Chưa phân phòng')
   return [{ value: '', label: 'Tất cả phòng ban' }, ...[...set].sort().map((d) => ({ value: d, label: d }))]
 })
 
@@ -127,7 +128,7 @@ async function submitManual() {
 }
 
 onMounted(async () => {
-  if (!empStore.employees.length) await empStore.fetchEmployees({ pageSize: 1000 })
+  if (!empStore.allEmployees.length) await empStore.fetchAllEmployees()
   await reload()
 })
 watch([month, year], reload)

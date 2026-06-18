@@ -21,7 +21,7 @@ const vnd = (n: number) => (n ?? 0).toLocaleString('vi-VN') + ' ₫'
 // map employeeId -> { code, name } để hiển thị tên thay vì GUID
 const empMap = computed<Record<string, { code: string; name: string }>>(() => {
   const m: Record<string, { code: string; name: string }> = {}
-  for (const e of empStore.employees as any[]) {
+  for (const e of empStore.allEmployees as any[]) {
     if (e.id) m[e.id] = { code: e.employeeCode, name: e.fullName }
   }
   return m
@@ -47,7 +47,7 @@ const columns = [
 async function load() {
   await Promise.all([
     store.fetchPayrolls(month.value, year.value),
-    empStore.employees.length ? Promise.resolve() : empStore.fetchEmployees({ pageSize: 1000 }),
+    empStore.allEmployees.length ? Promise.resolve() : empStore.fetchAllEmployees(),
   ])
 }
 
