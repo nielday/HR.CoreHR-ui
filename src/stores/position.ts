@@ -77,5 +77,46 @@ export const usePositionStore = defineStore('position', () => {
     }
   }
 
-  return { positions, isLoading, error, fetchPositions, createPosition, updatePosition, deletePosition }
+  async function exportExcel() {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await api.get('/Positions/export', { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'DanhSachChucVu.xlsx')
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (err: any) {
+      error.value = 'Lỗi khi tải file Excel'
+      console.error(err)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function importExcel(file: File) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const response = await api.post('/Positions/import', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      await fetchPositions()
+      return response.data
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Lỗi khi import dữ liệu'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  return { positions, isLoading, error, fetchPositions, createPosition, updatePosition, deletePosition, exportExcel, importExcel }
 })

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { PlusIcon, PencilIcon, TrashIcon } from 'lucide-vue-next'
+import { PlusIcon, PencilIcon, TrashIcon, DownloadIcon, UploadIcon, CheckSquareIcon } from 'lucide-vue-next'
 import { usePositionStore } from '../stores/position'
 import { useAuthStore } from '../stores/auth'
 import Button from '../components/ui/Button.vue'
@@ -15,6 +15,10 @@ const isEditMode = ref(false)
 const editingId = ref<string | null>(null)
 const isConfirmDeleteOpen = ref(false)
 const selectedPos = ref<any>(null)
+
+const isImportModalOpen = ref(false)
+const importFile = ref<File | null>(null)
+const importResult = ref<any>(null)
 
 const newPos = ref({
   positionCode: '',
@@ -94,6 +98,27 @@ async function executeDelete() {
     if (success) isConfirmDeleteOpen.value = false
   }
 }
+
+async function triggerExport() {
+  await store.exportExcel()
+}
+
+function handleFileUpload(e: Event) {
+  const target = e.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    importFile.value = target.files[0] || null
+    importResult.value = null
+  }
+}
+
+async function executeImport() {
+  if (!importFile.value) return
+  const result = await store.importExcel(importFile.value)
+  if (result) {
+    importResult.value = result
+    if (result.successCount > 0) store.fetchPositions()
+  }
+}
 </script>
 
 <template>
@@ -104,10 +129,18 @@ async function executeDelete() {
         <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Chức vụ</h1>
         <p class="text-muted-foreground font-sans text-lg">Quản lý chức danh và vị trí công việc trong công ty.</p>
       </div>
-      <Button v-if="canManageSystem" @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
-        <PlusIcon class="w-4 h-4 mr-2" />
-        Thêm chức vụ
-      </Button>
+      <div v-if="canManageSystem" class="flex flex-wrap gap-2">
+        <Button variant="ghost" @click="triggerExport" :disabled="store.isLoading" class="border border-border text-foreground hover:bg-accent/10">
+          <DownloadIcon class="w-4 h-4 mr-2" /> Xuất Excel
+        </Button>
+        <Button variant="ghost" @click="isImportModalOpen = true; importResult = null" :disabled="store.isLoading" class="border border-border text-foreground hover:bg-accent/10">
+          <UploadIcon class="w-4 h-4 mr-2" /> Nhập Excel
+        </Button>
+        <Button @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5 ml-0 sm:ml-2">
+          <PlusIcon class="w-4 h-4 mr-2" />
+          Thêm chức vụ
+        </Button>
+      </div>
     </div>
 
     <div v-if="store.error && !isModalOpen && !isConfirmDeleteOpen" class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
@@ -208,6 +241,45 @@ async function executeDelete() {
           <Button variant="ghost" @click="isConfirmDeleteOpen = false">Hủy</Button>
           <Button @click="executeDelete" :disabled="store.isLoading" class="bg-red-500 hover:bg-red-600 border-transparent text-white shadow-md">
             {{ store.isLoading ? 'Đang xóa...' : 'Xóa chức vụ' }}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+
+    <!-- Import Excel Modal -->
+    <Modal :isOpen="isImportModalOpen" title="Nhập danh sách chức vụ" @close="isImportModalOpen = false">
+      <div class="space-y-6">
+        <div class="p-4 border-2 border-dashed border-border rounded-xl text-center bg-muted/30">
+          <UploadIcon class="w-8 h-8 mx-auto text-muted-foreground mb-3" />
+          <p class="text-sm font-sans text-muted-foreground mb-2">Tải lên file Excel (.xlsx)</p>
+          <input type="file" accept=".xlsx" @change="handleFileUpload" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent/10 file:text-accent hover:file:bg-accent/20 cursor-pointer" />
+        </div>
+        
+        <div v-if="importResult" class="p-4 rounded-xl font-sans text-sm" :class="importResult.failedCount === 0 ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'">
+          <div class="flex items-center gap-2 font-medium mb-2">
+            <CheckSquareIcon class="w-5 h-5" /> Kết quả import
+          </div>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Tổng số dòng: {{ importResult.totalRows }}</li>
+            <li>Thành công: <strong>{{ importResult.successCount }}</strong></li>
+            <li>Thất bại: <strong>{{ importResult.failedCount }}</strong></li>
+          </ul>
+          <div v-if="importResult.errors && importResult.errors.length" class="mt-3 text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 max-h-40 overflow-y-auto">
+            <p class="font-medium mb-1">Chi tiết lỗi:</p>
+            <ul class="list-disc pl-5">
+              <li v-for="(err, i) in importResult.errors" :key="i">{{ err }}</li>
+            </ul>
+          </div>
+        </div>
+
+        <div v-if="store.error" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans mt-4">
+          {{ store.error }}
+        </div>
+
+        <div class="pt-4 flex justify-end gap-3 border-t border-border mt-4">
+          <Button variant="ghost" @click="isImportModalOpen = false">Đóng</Button>
+          <Button @click="executeImport" :disabled="!importFile || store.isLoading" class="min-w-[120px]">
+            {{ store.isLoading ? 'Đang xử lý...' : 'Tiến hành Nhập' }}
           </Button>
         </div>
       </div>
