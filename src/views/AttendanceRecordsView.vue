@@ -261,7 +261,14 @@ watch([month, year], reload)
     <!-- Banner -->
     <template #banner>
       <div v-if="store.error && !modalOpen" class="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
-        {{ store.error }}
+        Lỗi tải dữ liệu: {{ store.error }}
+      </div>
+      <div class="text-xs text-muted-foreground font-sans flex items-center gap-2">
+        <span v-if="store.isLoading">Đang tải…</span>
+        <span v-else>
+          Đã tải <strong>{{ store.attendanceList.length }}</strong> bản ghi chấm công cho tháng {{ month }}/{{ year }}
+          <template v-if="viewMode === 'detail'"> · hiển thị {{ detailFiltered.length }} dòng sau lọc</template>
+        </span>
       </div>
     </template>
 
