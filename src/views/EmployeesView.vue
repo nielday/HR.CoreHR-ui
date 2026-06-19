@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { PlusIcon, PencilIcon, UserMinusIcon, ArrowRightLeftIcon, EyeIcon, BriefcaseIcon, MailIcon, PhoneIcon, DownloadIcon, UploadIcon, XIcon } from 'lucide-vue-next'
-import { Row as ARow, Col as ACol, Card as ACard, Avatar as AAvatar, Tag as ATag, Segmented as ASegmented, Spin as ASpin, Select as ASelect } from 'ant-design-vue'
+import { Row as ARow, Col as ACol, Card as ACard, Tag as ATag, Segmented as ASegmented, Spin as ASpin, Select as ASelect } from 'ant-design-vue'
 import { useEmployeeStore } from '../stores/employee'
 import { useDepartmentStore } from '../stores/department'
 import { usePositionStore } from '../stores/position'
@@ -64,12 +64,20 @@ const newEmp = ref({
   gender: '',
   address: '',
   departmentId: '',
+  additionalDepartmentIds: [] as string[],
   positionId: '',
   contractTypeId: '',
   contractStartDate: '',
   contractEndDate: '',
   hireDate: new Date().toISOString().split('T')[0] as string
 })
+
+// Tuỳ chọn phòng ban kiêm nhiệm (loại trừ phòng ban chính đang chọn)
+const additionalDeptOptions = computed(() =>
+  deptStore.departments
+    .filter((d: any) => d.id !== newEmp.value.departmentId)
+    .map((d: any) => ({ label: `${d.departmentName} (${d.departmentCode})`, value: d.id })),
+)
 
 const selectedEmployeeIds = ref<string[]>([])
 const isImportModalOpen = ref(false)
@@ -160,10 +168,6 @@ function fmtDate(s?: string | null) {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
 }
 
-function initial(name?: string) {
-  return name?.split(' ').pop()?.[0] || 'NV'
-}
-
 async function reload() {
   await store.fetchAllEmployees()
 }
@@ -239,7 +243,7 @@ function openCreateModal() {
   newEmp.value = {
     employeeCode: '', fullName: '', email: '', phoneNumber: '',
     dateOfBirth: '', gender: '', address: '',
-    departmentId: '', positionId: '', contractTypeId: '',
+    departmentId: '', additionalDepartmentIds: [], positionId: '', contractTypeId: '',
     contractStartDate: '', contractEndDate: '',
     hireDate: new Date().toISOString().split('T')[0] as string
   }
@@ -258,6 +262,7 @@ function openEditModal(item: any) {
     gender: item.gender || '',
     address: item.address || '',
     departmentId: item.departmentId,
+    additionalDepartmentIds: Array.isArray(item.additionalDepartmentIds) ? [...item.additionalDepartmentIds] : [],
     positionId: item.positionId,
     contractTypeId: item.currentContractTypeId || '',
     contractStartDate: item.contractStartDate ? item.contractStartDate.split('T')[0] as string : '',
@@ -424,16 +429,19 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
     <!-- LIST: tuỳ biến ô trong bảng -->
     <template v-if="viewMode === 'list'" #bodyCell="{ column, record }">
       <template v-if="column.key === 'fullName'">
-        <div class="flex items-center gap-2.5">
-          <a-avatar :size="32" class="bg-gradient-to-tr from-accent to-accent-secondary text-white text-xs flex items-center justify-center shrink-0">
-            {{ initial(record.fullName) }}
-          </a-avatar>
-          <div class="leading-tight">
-            <div class="font-medium text-foreground flex items-center gap-1.5">
-              {{ record.fullName }}
-              <a-tag v-if="myDeptManagerId && record.id === myDeptManagerId" color="blue" size="small">Trưởng phòng</a-tag>
-            </div>
-            <div class="text-xs text-muted-foreground truncate max-w-[200px]">{{ record.email }}</div>
+        <div class="leading-tight">
+          <div class="font-medium text-foreground flex items-center gap-1.5">
+            {{ record.fullName }}
+            <a-tag v-if="myDeptManagerId && record.id === myDeptManagerId" color="blue" size="small">Trưởng phòng</a-tag>
+          </div>
+          <div class="text-xs text-muted-foreground truncate max-w-[240px]">{{ record.email }}</div>
+        </div>
+      </template>
+      <template v-else-if="column.key === 'departmentName'">
+        <div>
+          <div>{{ record.departmentName || '—' }}</div>
+          <div v-if="record.additionalDepartmentNames && record.additionalDepartmentNames.length" class="mt-0.5 flex flex-wrap gap-1">
+            <a-tag v-for="(n, i) in record.additionalDepartmentNames" :key="i" color="purple" class="!text-[10px] !leading-4 !px-1.5 !mr-0">+ {{ n }}</a-tag>
           </div>
         </div>
       </template>
@@ -476,10 +484,7 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
                 <a-tag :color="STATUS_META[item.workingStatus || '']?.color || 'default'">{{ STATUS_META[item.workingStatus || '']?.label || item.workingStatus }}</a-tag>
               </div>
               <div class="p-5 flex flex-col items-center text-center">
-                <a-avatar :size="64" class="bg-gradient-to-tr from-accent to-accent-secondary text-white text-2xl flex items-center justify-center shadow-md mb-3">
-                  {{ initial(item.fullName) }}
-                </a-avatar>
-                <h3 class="font-semibold text-foreground text-lg leading-tight">{{ item.fullName }}</h3>
+                <h3 class="font-semibold text-foreground text-lg leading-tight mt-1">{{ item.fullName }}</h3>
                 <span class="font-mono text-xs text-muted-foreground mt-1">{{ item.employeeCode }}</span>
               </div>
               <div class="px-5 pb-5 space-y-2.5">
@@ -596,6 +601,18 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
               <option value="" disabled>Chọn chức vụ</option>
               <option v-for="p in posStore.positions" :key="p.id" :value="p.id">{{ p.positionName }}</option>
             </select>
+          </div>
+          <div>
+            <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Phòng ban kiêm nhiệm</label>
+            <ASelect
+              v-model:value="newEmp.additionalDepartmentIds"
+              mode="multiple"
+              :options="additionalDeptOptions"
+              allow-clear
+              placeholder="Không kiêm nhiệm"
+              style="width: 100%"
+            />
+            <p class="text-[11px] text-muted-foreground mt-1">Phòng ban phụ ngoài phòng ban chính (nếu nhân viên kiêm nhiệm).</p>
           </div>
           <div class="pt-2">
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Loại hợp đồng</label>

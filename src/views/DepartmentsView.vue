@@ -72,7 +72,7 @@ const availableManagers = computed(() => {
 })
 
 // ===== Chế độ hiển thị: sơ đồ tổ chức hoặc bảng =====
-const viewMode = ref<'chart' | 'table'>('chart')
+const viewMode = ref<'chart' | 'table'>('table')
 const search = ref('')
 
 const deptName = (id?: string | null) => {
@@ -120,7 +120,7 @@ const isSearching = computed(() => search.value.trim().length > 0)
 const tableData = computed<any[]>(() => (isSearching.value ? (filteredDepartments.value as any[]) : treeData.value))
 
 const columns = computed<any[]>(() => [
-  { title: 'Mã', dataIndex: 'departmentCode', key: 'departmentCode', width: 120 },
+  { title: 'Mã', dataIndex: 'departmentCode', key: 'departmentCode', width: 220, ellipsis: true },
   { title: 'Tên phòng ban', dataIndex: 'departmentName', key: 'departmentName', sorter: (a: any, b: any) => (a.departmentName || '').localeCompare(b.departmentName || '') },
   { title: 'Phòng ban cha', key: 'parent' },
   { title: 'Trưởng phòng', key: 'manager' },
@@ -198,6 +198,11 @@ watch(() => [store.departments, employeeStore.allEmployees], () => {
     nextTick(renderChart)
   }
 }, { deep: true })
+
+// Khi chuyển sang chế độ sơ đồ, vẽ lại để chart fit đúng kích thước (vì container trước đó bị ẩn)
+watch(viewMode, (m) => {
+  if (m === 'chart' && store.departments.length > 0) nextTick(renderChart)
+})
 
 function openCreateModal() {
   isEditMode.value = false
@@ -287,7 +292,7 @@ async function executeDelete() {
         :loading="store.isLoading"
         row-key="id"
         :pagination="tablePagination"
-        :default-expand-all-rows="true"
+        :default-expand-all-rows="false"
         size="middle"
       >
         <template #bodyCell="{ column, record }">
