@@ -267,7 +267,7 @@ watch([month, year], reload)
 
     <!-- CHI TIẾT -->
     <div v-if="viewMode === 'detail'" class="bg-card border border-border rounded-xl shadow-sm overflow-hidden hr-table-wrap">
-      <a-table :columns="detailColumns" :data-source="detailFiltered" :loading="store.isLoading" row-key="id" :pagination="detailPagination" :scroll="{ x: 1080 }" size="middle">
+      <a-table :columns="detailColumns" :data-source="detailFiltered" :loading="store.isLoading" row-key="id" :pagination="detailPagination" :scroll="{ x: 1080 }" size="middle" :locale="{ emptyText: 'Chưa có dữ liệu chấm công cho kỳ/bộ lọc này' }">
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'workDate'"><span class="font-mono text-sm">{{ formatDate(record.workDate) }}</span></template>
           <template v-else-if="column.key === 'employee'">
@@ -288,7 +288,7 @@ watch([month, year], reload)
 
     <!-- TỔNG HỢP -->
     <div v-else class="bg-card border border-border rounded-xl shadow-sm overflow-hidden hr-table-wrap">
-      <a-table :columns="summaryColumns" :data-source="summaryRows" :loading="store.isLoading" row-key="id" :pagination="summaryPagination" :scroll="{ x: 900 }" size="middle">
+      <a-table :columns="summaryColumns" :data-source="summaryRows" :loading="store.isLoading" row-key="id" :pagination="summaryPagination" :scroll="{ x: 900 }" size="middle" :locale="{ emptyText: 'Chưa có nhân viên / dữ liệu cho bộ lọc này' }">
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'employee'">
             <div class="leading-tight"><div class="font-medium text-foreground">{{ record._name }}</div><div class="font-mono text-xs text-muted-foreground">{{ record._code }}</div></div>
