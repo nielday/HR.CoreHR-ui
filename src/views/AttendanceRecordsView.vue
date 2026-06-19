@@ -100,20 +100,6 @@ const detailFiltered = computed(() => {
 const statusOptions = [
   { value: 0, label: 'Có mặt' }, { value: 1, label: 'Vắng' }, { value: 2, label: 'Nghỉ phép' }, { value: 3, label: 'Ngày lễ' },
 ]
-const detailColumns = computed<any[]>(() => [
-  { title: 'Ngày', key: 'workDate', align: 'center', width: 110, sorter: (a: any, b: any) => String(a.workDate).localeCompare(String(b.workDate)), defaultSortOrder: 'ascend' },
-  { title: 'Nhân viên', key: 'employee', sorter: (a: any, b: any) => (a._name || '').localeCompare(b._name || '', 'vi') },
-  { title: 'Phòng ban', dataIndex: '_dept', key: 'dept', width: 150 },
-  { title: 'Ca', dataIndex: '_shift', key: 'shift', width: 120 },
-  { title: 'Giờ vào', key: 'checkInTime', align: 'center', width: 90 },
-  { title: 'Giờ ra', key: 'checkOutTime', align: 'center', width: 90 },
-  { title: 'Giờ làm', key: 'workedHours', align: 'right', width: 90, sorter: (a: any, b: any) => (a.workedHours || 0) - (b.workedHours || 0) },
-  { title: 'Tăng ca', key: 'overtimeHours', align: 'right', width: 90 },
-  { title: 'Đi muộn', key: 'lateMinutes', align: 'right', width: 100 },
-  { title: 'Trạng thái', dataIndex: 'status', key: 'status', align: 'center', width: 120, filters: statusOptions.map((s) => ({ text: s.label, value: s.value })), onFilter: (val: any, rec: any) => rec.status === val },
-  { title: '', key: 'actions', align: 'right', width: 60 },
-])
-const detailPagination = { pageSize: 20, showSizeChanger: true, pageSizeOptions: ['20', '50', '100'], showTotal: (t: number) => `${t} dòng` }
 
 // ===== TỔNG HỢP THÁNG (mỗi NV một dòng) =====
 const summaryEmployees = computed(() =>
@@ -141,18 +127,6 @@ const summaryRows = computed(() =>
     }
   })
 )
-const summaryColumns = computed<any[]>(() => [
-  { title: 'Nhân viên', key: 'employee', width: 220, sorter: (a: any, b: any) => (a._name || '').localeCompare(b._name || '', 'vi') },
-  { title: 'Phòng ban', dataIndex: '_dept', key: '_dept' },
-  { title: 'Ngày công', dataIndex: 'present', key: 'present', align: 'right', width: 100, sorter: (a: any, b: any) => a.present - b.present },
-  { title: 'Tổng giờ', dataIndex: 'worked', key: 'worked', align: 'right', width: 100 },
-  { title: 'Tăng ca', dataIndex: 'ot', key: 'ot', align: 'right', width: 100 },
-  { title: 'Nghỉ phép', dataIndex: 'leave', key: 'leave', align: 'right', width: 100 },
-  { title: 'Vắng', dataIndex: 'absent', key: 'absent', align: 'right', width: 80 },
-  { title: 'Đi muộn', dataIndex: 'late', key: 'late', align: 'right', width: 90 },
-])
-const summaryPagination = { pageSize: 20, showSizeChanger: true, pageSizeOptions: ['20', '50', '100'], showTotal: (t: number) => `${t} nhân viên` }
-
 async function reload() {
   await store.fetchAttendance(undefined, month.value, year.value)
 }
@@ -273,37 +247,87 @@ watch([month, year], reload)
     </template>
 
     <!-- CHI TIẾT -->
-    <div v-if="viewMode === 'detail'" class="bg-card border border-border rounded-xl shadow-sm overflow-hidden hr-table-wrap">
-      <a-table :columns="detailColumns" :data-source="detailFiltered" :loading="store.isLoading" row-key="id" :pagination="detailPagination" :scroll="{ x: 1080 }" size="middle" :locale="{ emptyText: 'Chưa có dữ liệu chấm công cho kỳ/bộ lọc này' }">
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'workDate'"><span class="font-mono text-sm">{{ formatDate(record.workDate) }}</span></template>
-          <template v-else-if="column.key === 'employee'">
-            <div class="leading-tight"><div class="font-medium text-foreground">{{ record._name }}</div><div class="font-mono text-xs text-muted-foreground">{{ record._code }}</div></div>
-          </template>
-          <template v-else-if="column.key === 'checkInTime'"><span class="font-mono text-sm">{{ formatTime(record.checkInTime) }}</span></template>
-          <template v-else-if="column.key === 'checkOutTime'"><span class="font-mono text-sm">{{ formatTime(record.checkOutTime) }}</span></template>
-          <template v-else-if="column.key === 'workedHours'"><span class="font-mono text-sm">{{ formatHours(record.workedHours) }}</span></template>
-          <template v-else-if="column.key === 'overtimeHours'"><span class="font-mono text-sm">{{ formatHours(record.overtimeHours) }}</span></template>
-          <template v-else-if="column.key === 'lateMinutes'"><span class="font-mono text-sm" :class="record.lateMinutes > 0 ? 'text-red-600' : 'text-muted-foreground'">{{ formatHours(record.lateMinutes) }} phút</span></template>
-          <template v-else-if="column.key === 'status'"><ATag :color="ATTENDANCE_STATUS[record.status]?.color">{{ ATTENDANCE_STATUS[record.status]?.label || record.status }}</ATag></template>
-          <template v-else-if="column.key === 'actions'">
-            <button @click="openEdit(record)" class="p-1.5 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-all" title="Sửa chấm công"><PencilIcon class="w-4 h-4" /></button>
-          </template>
-        </template>
-      </a-table>
+    <div v-if="viewMode === 'detail'" class="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+      <div class="overflow-x-auto hr-scroll">
+        <table class="w-full text-sm border-collapse min-w-[1000px]">
+          <thead>
+            <tr class="bg-muted/40 text-left">
+              <th class="hr-th text-center w-[110px]">Ngày</th>
+              <th class="hr-th">Nhân viên</th>
+              <th class="hr-th">Phòng ban</th>
+              <th class="hr-th">Ca</th>
+              <th class="hr-th text-center">Giờ vào</th>
+              <th class="hr-th text-center">Giờ ra</th>
+              <th class="hr-th text-right">Giờ làm</th>
+              <th class="hr-th text-right">Tăng ca</th>
+              <th class="hr-th text-right">Đi muộn</th>
+              <th class="hr-th text-center">Trạng thái</th>
+              <th class="hr-th"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="r in detailFiltered" :key="r.id" class="border-b border-border/60 hover:bg-muted/20">
+              <td class="hr-td text-center font-mono">{{ formatDate(r.workDate) }}</td>
+              <td class="hr-td">
+                <div class="font-medium text-foreground">{{ r._name }}</div>
+                <div class="font-mono text-xs text-muted-foreground">{{ r._code }}</div>
+              </td>
+              <td class="hr-td">{{ r._dept }}</td>
+              <td class="hr-td">{{ r._shift }}</td>
+              <td class="hr-td text-center font-mono">{{ formatTime(r.checkInTime) }}</td>
+              <td class="hr-td text-center font-mono">{{ formatTime(r.checkOutTime) }}</td>
+              <td class="hr-td text-right font-mono">{{ formatHours(r.workedHours) }}</td>
+              <td class="hr-td text-right font-mono text-emerald-600">{{ formatHours(r.overtimeHours) }}</td>
+              <td class="hr-td text-right font-mono" :class="r.lateMinutes > 0 ? 'text-red-600' : 'text-muted-foreground'">{{ formatHours(r.lateMinutes) }}'</td>
+              <td class="hr-td text-center"><ATag :color="ATTENDANCE_STATUS[r.status]?.color">{{ ATTENDANCE_STATUS[r.status]?.label || r.status }}</ATag></td>
+              <td class="hr-td text-right">
+                <button @click="openEdit(r)" class="p-1.5 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-all" title="Sửa chấm công"><PencilIcon class="w-4 h-4" /></button>
+              </td>
+            </tr>
+            <tr v-if="detailFiltered.length === 0">
+              <td colspan="11" class="text-center py-10 text-muted-foreground text-sm">Chưa có dữ liệu chấm công cho kỳ/bộ lọc này</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- TỔNG HỢP -->
-    <div v-else class="bg-card border border-border rounded-xl shadow-sm overflow-hidden hr-table-wrap">
-      <a-table :columns="summaryColumns" :data-source="summaryRows" :loading="store.isLoading" row-key="id" :pagination="summaryPagination" :scroll="{ x: 900 }" size="middle" :locale="{ emptyText: 'Chưa có nhân viên / dữ liệu cho bộ lọc này' }">
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'employee'">
-            <div class="leading-tight"><div class="font-medium text-foreground">{{ record._name }}</div><div class="font-mono text-xs text-muted-foreground">{{ record._code }}</div></div>
-          </template>
-          <template v-else-if="column.key === 'worked'"><span class="font-mono">{{ formatHours(record.worked) }}</span></template>
-          <template v-else-if="column.key === 'absent'"><span class="font-mono" :class="record.absent > 0 ? 'text-red-600' : ''">{{ record.absent }}</span></template>
-        </template>
-      </a-table>
+    <div v-else class="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+      <div class="overflow-x-auto hr-scroll">
+        <table class="w-full text-sm border-collapse min-w-[860px]">
+          <thead>
+            <tr class="bg-muted/40 text-left">
+              <th class="hr-th">Nhân viên</th>
+              <th class="hr-th">Phòng ban</th>
+              <th class="hr-th text-right">Ngày công</th>
+              <th class="hr-th text-right">Tổng giờ</th>
+              <th class="hr-th text-right">Tăng ca</th>
+              <th class="hr-th text-right">Nghỉ phép</th>
+              <th class="hr-th text-right">Vắng</th>
+              <th class="hr-th text-right">Đi muộn</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="r in summaryRows" :key="r.id" class="border-b border-border/60 hover:bg-muted/20">
+              <td class="hr-td">
+                <div class="font-medium text-foreground">{{ r._name }}</div>
+                <div class="font-mono text-xs text-muted-foreground">{{ r._code }}</div>
+              </td>
+              <td class="hr-td">{{ r._dept }}</td>
+              <td class="hr-td text-right font-mono">{{ r.present }}</td>
+              <td class="hr-td text-right font-mono">{{ formatHours(r.worked) }}</td>
+              <td class="hr-td text-right font-mono text-emerald-600">{{ formatHours(r.ot) }}</td>
+              <td class="hr-td text-right font-mono">{{ r.leave }}</td>
+              <td class="hr-td text-right font-mono" :class="r.absent > 0 ? 'text-red-600' : ''">{{ r.absent }}</td>
+              <td class="hr-td text-right font-mono">{{ r.late }}</td>
+            </tr>
+            <tr v-if="summaryRows.length === 0">
+              <td colspan="8" class="text-center py-10 text-muted-foreground text-sm">Chưa có nhân viên / dữ liệu cho bộ lọc này</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </DataTableShell>
 
@@ -359,6 +383,30 @@ watch([month, year], reload)
 .hr-multi :deep(.ant-select-selector) {
   border-radius: 0.5rem;
   min-height: 36px;
+}
+.hr-scroll {
+  max-height: calc(100vh - 360px);
+  overflow: auto;
+}
+.hr-th {
+  padding: 0.5rem 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  background: #f1f5f9;
+  z-index: 5;
+}
+.hr-td {
+  padding: 0.5rem 0.75rem;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 .hr-table-wrap :deep(.ant-table-thead > tr > th) {
   font-family: 'JetBrains Mono', monospace;
