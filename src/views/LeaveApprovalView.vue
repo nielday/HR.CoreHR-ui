@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Table as ATable, Popconfirm as APopconfirm, message } from 'ant-design-vue'
+import { Popconfirm as APopconfirm, Tag as ATag, message } from 'ant-design-vue'
 import { CheckIcon, XIcon, RefreshCwIcon } from 'lucide-vue-next'
-import { useAttendanceStore, LEAVE_TYPE } from '../stores/attendance'
+import { useAttendanceStore, LEAVE_STATUS } from '../stores/attendance'
 import { useEmployeeStore } from '../stores/employee'
+import DataTableShell from '../components/ui/DataTableShell.vue'
 import Modal from '../components/ui/Modal.vue'
 import Button from '../components/ui/Button.vue'
 
@@ -21,6 +22,8 @@ const empMap = computed<Record<string, { code: string; name: string }>>(() => {
 
 const empName = (employeeId: string) =>
   empMap.value[employeeId]?.name || 'NV ' + employeeId.slice(0, 8)
+const empCode = (employeeId: string) =>
+  empMap.value[employeeId]?.code || employeeId.slice(0, 8)
 
 // Helper định dạng ngày 'YYYY-MM-DD' -> 'DD/MM/YYYY'
 const formatDate = (s: string | null | undefined) => {
@@ -30,15 +33,40 @@ const formatDate = (s: string | null | undefined) => {
   return `${d[2]}/${d[1]}/${d[0]}`
 }
 
-const columns = [
-  { title: 'Nhân viên', key: 'employee' },
-  { title: 'Loại', key: 'leaveType', align: 'center' as const, width: 130 },
-  { title: 'Từ ngày', key: 'fromDate', align: 'center' as const, width: 120 },
-  { title: 'Đến ngày', key: 'toDate', align: 'center' as const, width: 120 },
-  { title: 'Số ngày', key: 'totalDays', align: 'center' as const, width: 100 },
-  { title: 'Lý do', key: 'reason' },
-  { title: '', key: 'actions', align: 'right' as const, width: 180 },
-]
+// ===== Tìm kiếm + bộ lọc (client-side) =====
+const search = ref('')
+const statusFilter = ref<string>('') // '' = tất cả, '0'|'1'|'2'
+
+const filteredLeaves = computed<any[]>(() => {
+  const kw = search.value.trim().toLowerCase()
+  return (store.pendingLeaves as any[]).filter((r) => {
+    if (statusFilter.value !== '' && String(r.status) !== statusFilter.value) return false
+    if (kw) {
+      const name = empName(r.employeeId).toLowerCase()
+      const code = empCode(r.employeeId).toLowerCase()
+      if (!name.includes(kw) && !code.includes(kw)) return false
+    }
+    return true
+  })
+})
+
+const columns = computed<any[]>(() => [
+  { title: 'Nhân viên', key: 'employee', sorter: (a: any, b: any) => empName(a.employeeId).localeCompare(empName(b.employeeId)) },
+  { title: 'Loại nghỉ', dataIndex: 'leaveTypeName', key: 'leaveType', align: 'center', width: 130 },
+  { title: 'Từ ngày', dataIndex: 'fromDate', key: 'fromDate', align: 'center', width: 120, sorter: (a: any, b: any) => String(a.fromDate || '').localeCompare(String(b.fromDate || '')) },
+  { title: 'Đến ngày', dataIndex: 'toDate', key: 'toDate', align: 'center', width: 120 },
+  { title: 'Số ngày', dataIndex: 'totalDays', key: 'totalDays', align: 'center', width: 100, sorter: (a: any, b: any) => (a.totalDays || 0) - (b.totalDays || 0) },
+  { title: 'Lý do', dataIndex: 'reason', key: 'reason' },
+  { title: 'Trạng thái', dataIndex: 'status', key: 'status', align: 'center', width: 120 },
+  { title: '', key: 'actions', align: 'right', width: 200 },
+])
+
+const pagination = {
+  pageSize: 15,
+  showSizeChanger: true,
+  pageSizeOptions: ['15', '30', '50'],
+  showTotal: (t: number) => `${t} đơn`,
+}
 
 // ===== Modal từ chối =====
 const rejectModalOpen = ref(false)
@@ -89,63 +117,99 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="space-y-8 motion-safe:animate-in motion-safe:fade-in duration-700 pb-12">
-    <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
-      <div>
-        <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Duyệt nghỉ phép</h1>
-        <p class="text-muted-foreground font-sans text-lg">Xem và xử lý các đơn xin nghỉ phép đang chờ duyệt.</p>
-      </div>
-      <button @click="reload" class="p-3 rounded-xl border border-border text-muted-foreground hover:text-accent hover:bg-accent/10 transition-colors" title="Tải lại">
+  <DataTableShell
+    title="Duyệt nghỉ phép"
+    subtitle="Xem và xử lý các đơn xin nghỉ phép đang chờ duyệt."
+    :columns="columns"
+    :data-source="filteredLeaves"
+    :loading="store.isLoading"
+    row-key="id"
+    :pagination="pagination"
+    :scroll-x="1100"
+  >
+    <!-- Header actions -->
+    <template #actions>
+      <button @click="reload" class="p-2.5 rounded-lg border border-border text-muted-foreground hover:text-accent hover:bg-accent/10 transition-colors" title="Tải lại">
         <RefreshCwIcon class="w-4 h-4" />
       </button>
-    </div>
+    </template>
 
-    <div v-if="store.error" class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">{{ store.error }}</div>
-
-    <div class="bg-card border border-border rounded-2xl shadow-md p-6">
-      <ATable :columns="columns" :data-source="store.pendingLeaves" :loading="store.isLoading" row-key="id" :pagination="{ pageSize: 10 }">
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'employee'">
-            <div class="font-sans">
-              <div class="font-medium text-foreground">{{ empName(record.employeeId) }}</div>
-              <div class="font-mono text-xs text-muted-foreground">{{ empMap[record.employeeId]?.code || record.employeeId.slice(0, 8) }}</div>
-            </div>
-          </template>
-          <template v-else-if="column.key === 'leaveType'">
-            <span class="font-sans text-sm">{{ record.leaveTypeName }}</span>
-          </template>
-          <template v-else-if="column.key === 'fromDate'"><span class="font-mono text-sm">{{ formatDate(record.fromDate) }}</span></template>
-          <template v-else-if="column.key === 'toDate'"><span class="font-mono text-sm">{{ formatDate(record.toDate) }}</span></template>
-          <template v-else-if="column.key === 'totalDays'"><span class="font-mono text-sm font-semibold text-accent">{{ record.totalDays }}</span></template>
-          <template v-else-if="column.key === 'reason'"><span class="font-sans text-sm text-muted-foreground">{{ record.reason || '-' }}</span></template>
-          <template v-else-if="column.key === 'actions'">
-            <div class="inline-flex items-center gap-1 justify-end">
-              <APopconfirm title="Duyệt đơn này?" ok-text="Duyệt" cancel-text="Hủy" @confirm="approve(record.id)">
-                <button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-600 hover:bg-emerald-50 transition-colors"><CheckIcon class="w-3.5 h-3.5" /> Duyệt</button>
-              </APopconfirm>
-              <button @click="openReject(record.id)" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"><XIcon class="w-3.5 h-3.5" /> Từ chối</button>
-            </div>
-          </template>
-        </template>
-      </ATable>
-    </div>
-
-    <Modal :is-open="rejectModalOpen" title="Từ chối đơn nghỉ phép" @close="closeReject">
-      <div class="space-y-4 font-sans">
-        <div>
-          <label class="block text-sm font-medium text-foreground mb-2">Lý do từ chối</label>
-          <textarea
-            v-model="rejectReason"
-            rows="4"
-            placeholder="Nhập lý do từ chối đơn..."
-            class="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 transition-shadow"
-          ></textarea>
-        </div>
-        <div class="flex justify-end gap-3 pt-2">
-          <button @click="closeReject" class="px-4 py-2 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-muted transition-colors">Hủy</button>
-          <Button @click="confirmReject" :disabled="store.isLoading" class="bg-red-600 hover:bg-red-700">Xác nhận từ chối</Button>
-        </div>
+    <!-- Filters -->
+    <template #filters>
+      <div class="relative w-full sm:w-64">
+        <input
+          v-model="search"
+          type="text"
+          placeholder="Tìm theo tên, mã nhân viên..."
+          class="w-full h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"
+        />
       </div>
-    </Modal>
-  </div>
+      <select v-model="statusFilter" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
+        <option value="">Tất cả trạng thái</option>
+        <option value="0">Chờ duyệt</option>
+        <option value="1">Đã duyệt</option>
+        <option value="2">Đã từ chối</option>
+      </select>
+    </template>
+
+    <!-- Banner: lỗi -->
+    <template #banner>
+      <div v-if="store.error && !rejectModalOpen" class="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
+        {{ store.error }}
+      </div>
+    </template>
+
+    <!-- Body cells -->
+    <template #bodyCell="{ column, record }">
+      <template v-if="column.key === 'employee'">
+        <div class="font-sans">
+          <div class="font-medium text-foreground">{{ empName(record.employeeId) }}</div>
+          <div class="font-mono text-xs text-muted-foreground">{{ empCode(record.employeeId) }}</div>
+        </div>
+      </template>
+      <template v-else-if="column.key === 'leaveType'">
+        <span class="font-sans text-sm">{{ record.leaveTypeName }}</span>
+      </template>
+      <template v-else-if="column.key === 'fromDate'"><span class="font-mono text-sm">{{ formatDate(record.fromDate) }}</span></template>
+      <template v-else-if="column.key === 'toDate'"><span class="font-mono text-sm">{{ formatDate(record.toDate) }}</span></template>
+      <template v-else-if="column.key === 'totalDays'"><span class="font-mono text-sm font-semibold text-accent">{{ record.totalDays }}</span></template>
+      <template v-else-if="column.key === 'reason'"><span class="font-sans text-sm text-muted-foreground">{{ record.reason || '-' }}</span></template>
+      <template v-else-if="column.key === 'status'">
+        <a-tag :color="LEAVE_STATUS[record.status]?.color || 'default'">
+          {{ LEAVE_STATUS[record.status]?.label || record.status }}
+        </a-tag>
+      </template>
+      <template v-else-if="column.key === 'actions'">
+        <div v-if="record.status === 0" class="inline-flex items-center gap-1 justify-end">
+          <APopconfirm title="Duyệt đơn này?" ok-text="Duyệt" cancel-text="Hủy" @confirm="approve(record.id)">
+            <a-button size="small" type="primary">
+              <CheckIcon class="w-3.5 h-3.5 inline-block mr-1 align-text-bottom" /> Duyệt
+            </a-button>
+          </APopconfirm>
+          <a-button size="small" danger @click="openReject(record.id)">
+            <XIcon class="w-3.5 h-3.5 inline-block mr-1 align-text-bottom" /> Từ chối
+          </a-button>
+        </div>
+        <span v-else class="text-xs text-muted-foreground">—</span>
+      </template>
+    </template>
+  </DataTableShell>
+
+  <Modal :is-open="rejectModalOpen" title="Từ chối đơn nghỉ phép" @close="closeReject">
+    <div class="space-y-4 font-sans">
+      <div>
+        <label class="block text-sm font-medium text-foreground mb-2">Lý do từ chối</label>
+        <textarea
+          v-model="rejectReason"
+          rows="4"
+          placeholder="Nhập lý do từ chối đơn..."
+          class="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 transition-shadow"
+        ></textarea>
+      </div>
+      <div class="flex justify-end gap-3 pt-2">
+        <button @click="closeReject" class="px-4 py-2 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-muted transition-colors">Hủy</button>
+        <Button @click="confirmReject" :disabled="store.isLoading" class="bg-red-600 hover:bg-red-700">Xác nhận từ chối</Button>
+      </div>
+    </div>
+  </Modal>
 </template>

@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed, nextTick, watch } from 'vue'
-import { Empty as AEmpty } from 'ant-design-vue'
+import { Empty as AEmpty, Tag as ATag, Segmented as ASegmented, Table as ATable } from 'ant-design-vue'
+import { PlusIcon, PencilIcon, Trash2Icon } from 'lucide-vue-next'
 import { OrgChart } from 'd3-org-chart'
 import { useDepartmentStore } from '../stores/department'
 import { useEmployeeStore } from '../stores/employee'
 import { useAuthStore } from '../stores/auth'
 import Button from '../components/ui/Button.vue'
 import Modal from '../components/ui/Modal.vue'
+import DataTableShell from '../components/ui/DataTableShell.vue'
 
 const store = useDepartmentStore()
 const employeeStore = useEmployeeStore()
@@ -68,6 +70,35 @@ const availableManagers = computed(() => {
   }
   return []
 })
+
+// ===== Chế độ hiển thị: sơ đồ tổ chức hoặc bảng =====
+const viewMode = ref<'chart' | 'table'>('chart')
+const search = ref('')
+
+const deptName = (id?: string | null) => {
+  if (!id) return null
+  return (store.departments as any[]).find((d) => d.id === id)?.departmentName || null
+}
+const hasChildren = (id?: string) => (store.departments as any[]).some((d) => d.parentDepartmentId === id)
+
+const filteredDepartments = computed(() => {
+  const kw = search.value.trim().toLowerCase()
+  if (!kw) return store.departments
+  return (store.departments as any[]).filter(
+    (d) => (d.departmentName || '').toLowerCase().includes(kw) || (d.departmentCode || '').toLowerCase().includes(kw),
+  )
+})
+
+const columns = computed<any[]>(() => [
+  { title: 'Mã', dataIndex: 'departmentCode', key: 'departmentCode', width: 120 },
+  { title: 'Tên phòng ban', dataIndex: 'departmentName', key: 'departmentName', sorter: (a: any, b: any) => (a.departmentName || '').localeCompare(b.departmentName || '') },
+  { title: 'Phòng ban cha', key: 'parent' },
+  { title: 'Trưởng phòng', key: 'manager' },
+  { title: 'Trạng thái', key: 'isActive', width: 120, align: 'center' },
+  ...(canManageSystem.value ? [{ title: '', key: 'actions', width: 100, align: 'right' }] : []),
+])
+
+const tablePagination = { pageSize: 15, showSizeChanger: true, pageSizeOptions: ['15', '30', '50'], showTotal: (t: number) => `${t} phòng ban` }
 
 function renderChart() {
   if (!chartContainer.value) return
@@ -187,26 +218,64 @@ async function executeDelete() {
 </script>
 
 <template>
-  <div class="space-y-8 motion-safe:animate-in motion-safe:fade-in duration-700 pb-12">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
-      <div>
-        <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Phòng ban</h1>
-        <p class="text-muted-foreground font-sans text-lg">Sơ đồ tổ chức phân cấp từ trên xuống.</p>
-      </div>
-      <Button v-if="canManageSystem" @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
-        Thêm phòng ban
+  <DataTableShell
+    title="Phòng ban"
+    subtitle="Cơ cấu tổ chức — xem dạng sơ đồ hoặc bảng."
+    :columns="columns"
+    :data-source="filteredDepartments"
+    :loading="store.isLoading"
+    row-key="id"
+    :show-search="viewMode === 'table'"
+    :search="search"
+    search-placeholder="Tìm theo tên, mã phòng ban..."
+    @update:search="search = $event"
+  >
+    <template #actions>
+      <ASegmented v-model:value="viewMode" :options="[{ label: 'Sơ đồ', value: 'chart' }, { label: 'Bảng', value: 'table' }]" />
+      <Button v-if="canManageSystem" @click="openCreateModal">
+        <PlusIcon class="w-4 h-4 mr-2" /> Thêm phòng ban
       </Button>
-    </div>
+    </template>
 
-    <div v-if="store.error && !isModalOpen && !isConfirmDeleteOpen" class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
-      {{ store.error }}
-    </div>
+    <template #banner>
+      <div v-if="store.error && !isModalOpen && !isConfirmDeleteOpen" class="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
+        {{ store.error }}
+      </div>
+    </template>
 
-    <!-- Sơ đồ tổ chức (d3-org-chart) -->
-    <div class="bg-card border border-border rounded-2xl shadow-md p-4 sm:p-6 dept-org-wrap overflow-hidden h-[calc(100vh-200px)] min-h-[600px] flex flex-col">
+    <!-- Sơ đồ tổ chức (giữ DOM bằng v-show để không phải dựng lại chart) + Bảng -->
+    <div v-show="viewMode === 'chart'" class="bg-card border border-border rounded-xl shadow-sm p-4 sm:p-6 dept-org-wrap overflow-hidden h-[calc(100vh-220px)] min-h-[560px] flex flex-col">
       <div v-if="store.departments.length" ref="chartContainer" class="w-full flex-1 bg-[#f8fafc] rounded-xl overflow-hidden border border-slate-100"></div>
       <AEmpty v-else :image="undefined" description="Chưa có phòng ban" class="m-auto" />
+    </div>
+
+    <div v-if="viewMode === 'table'" class="bg-card border border-border rounded-xl shadow-sm overflow-hidden dept-table-wrap">
+      <a-table
+        :columns="columns"
+        :data-source="filteredDepartments"
+        :loading="store.isLoading"
+        row-key="id"
+        :pagination="tablePagination"
+        size="middle"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'parent'">{{ deptName(record.parentDepartmentId) || '—' }}</template>
+          <template v-else-if="column.key === 'manager'">{{ managerName(record.managerEmployeeId) || '—' }}</template>
+          <template v-else-if="column.key === 'isActive'">
+            <a-tag :color="record.isActive ? 'green' : 'default'">{{ record.isActive ? 'Hoạt động' : 'Ngừng' }}</a-tag>
+          </template>
+          <template v-else-if="column.key === 'actions'">
+            <div class="flex items-center justify-end gap-1">
+              <button @click="openEditModal(record)" class="p-1.5 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-all" title="Sửa">
+                <PencilIcon class="w-4 h-4" />
+              </button>
+              <button :disabled="hasChildren(record.id)" @click="confirmDelete(record)" class="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed" :title="hasChildren(record.id) ? 'Không thể xóa: còn phòng ban con' : 'Xóa'">
+                <Trash2Icon class="w-4 h-4" />
+              </button>
+            </div>
+          </template>
+        </template>
+      </a-table>
     </div>
 
     <!-- Create / Edit Modal -->
@@ -276,7 +345,7 @@ async function executeDelete() {
         </div>
       </div>
     </Modal>
-  </div>
+  </DataTableShell>
 </template>
 
 <style scoped>

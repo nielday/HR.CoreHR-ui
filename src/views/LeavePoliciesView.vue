@@ -1,16 +1,22 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { Table as ATable, Tag as ATag, Popconfirm as APopconfirm, message } from 'ant-design-vue'
+import { onMounted, ref, computed } from 'vue'
+import { Tag as ATag, Popconfirm as APopconfirm, message } from 'ant-design-vue'
 import { PencilIcon, PlusIcon, TrashIcon } from 'lucide-vue-next'
 import { useAttendanceStore } from '../stores/attendance'
 import Button from '../components/ui/Button.vue'
 import Modal from '../components/ui/Modal.vue'
+import DataTableShell from '../components/ui/DataTableShell.vue'
 
 const store = useAttendanceStore()
 
 const isModalOpen = ref(false)
 const isEdit = ref(false)
 const editingId = ref<string | null>(null)
+
+const search = ref('')
+const paidFilter = ref('')
+const statusFilter = ref('')
+
 const form = ref({
   name: '',
   isPaid: true,
@@ -19,14 +25,29 @@ const form = ref({
   isActive: true,
 })
 
-const columns = [
-  { title: 'Tên loại nghỉ', key: 'name' },
+const columns = computed<any[]>(() => [
+  { title: 'Tên loại nghỉ', key: 'name', sorter: (a: any, b: any) => (a.name || '').localeCompare(b.name || '') },
   { title: 'Có lương', key: 'isPaid', align: 'center' as const, width: 110 },
   { title: 'Hạn mức/năm', key: 'annualQuotaDays', align: 'center' as const, width: 140 },
   { title: 'Mô tả', key: 'description' },
   { title: 'Trạng thái', key: 'isActive', align: 'center' as const, width: 130 },
   { title: 'Thao tác', key: 'actions', align: 'right' as const, width: 110 },
-]
+])
+
+const filtered = computed<any[]>(() => {
+  const kw = search.value.trim().toLowerCase()
+  return store.leavePolicies.filter((p: any) => {
+    if (paidFilter.value === 'paid' && !p.isPaid) return false
+    if (paidFilter.value === 'unpaid' && p.isPaid) return false
+    if (statusFilter.value === 'active' && !p.isActive) return false
+    if (statusFilter.value === 'inactive' && p.isActive) return false
+    if (!kw) return true
+    return (
+      (p.name || '').toLowerCase().includes(kw) ||
+      (p.description || '').toLowerCase().includes(kw)
+    )
+  })
+})
 
 function openCreate() {
   isEdit.value = false
@@ -81,94 +102,113 @@ onMounted(() => store.fetchLeavePolicies())
 </script>
 
 <template>
-  <div class="space-y-8 motion-safe:animate-in motion-safe:fade-in duration-700 pb-12">
-    <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
-      <div>
-        <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Loại nghỉ phép</h1>
-        <p class="text-muted-foreground font-sans text-lg">Quản lý các loại nghỉ, hạn mức ngày/năm và trạng thái áp dụng.</p>
-      </div>
+  <DataTableShell
+    title="Loại nghỉ phép"
+    subtitle="Quản lý các loại nghỉ, hạn mức ngày/năm và trạng thái áp dụng."
+    :columns="columns"
+    :data-source="filtered"
+    :loading="store.isLoading"
+    row-key="id"
+    show-search
+    search-placeholder="Tìm theo tên loại nghỉ, mô tả..."
+    :search="search"
+    @update:search="search = $event"
+    :pagination="{ pageSize: 15, showSizeChanger: true, pageSizeOptions: ['15','30','50'], showTotal: (t:number)=>`${t} mục` }"
+  >
+    <template #actions>
       <Button @click="openCreate" class="shadow-accent">
         <PlusIcon class="w-4 h-4 mr-2" /> Thêm loại nghỉ
       </Button>
-    </div>
+    </template>
 
-    <div v-if="store.error && !isModalOpen" class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
-      {{ store.error }}
-    </div>
+    <template #filters>
+      <select v-model="paidFilter" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
+        <option value="">Tất cả (lương)</option>
+        <option value="paid">Có lương</option>
+        <option value="unpaid">Không lương</option>
+      </select>
+      <select v-model="statusFilter" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
+        <option value="">Tất cả trạng thái</option>
+        <option value="active">Đang áp dụng</option>
+        <option value="inactive">Tạm ngừng</option>
+      </select>
+    </template>
 
-    <div class="bg-card border border-border rounded-2xl shadow-md p-6">
-      <ATable :columns="columns" :data-source="store.leavePolicies" :loading="store.isLoading" :pagination="false" row-key="id" class="font-sans">
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'name'">
-            <span class="font-sans font-medium text-foreground">{{ record.name }}</span>
-          </template>
-          <template v-else-if="column.key === 'isPaid'">
-            <ATag :color="record.isPaid ? 'green' : 'default'">{{ record.isPaid ? 'Có lương' : 'Không lương' }}</ATag>
-          </template>
-          <template v-else-if="column.key === 'annualQuotaDays'">
-            <span class="font-mono text-sm">
-              {{ record.annualQuotaDays === null || record.annualQuotaDays === undefined ? 'Không giới hạn' : `${record.annualQuotaDays} ngày` }}
-            </span>
-          </template>
-          <template v-else-if="column.key === 'description'">
-            <span class="font-sans text-sm text-muted-foreground">{{ record.description || '—' }}</span>
-          </template>
-          <template v-else-if="column.key === 'isActive'">
-            <ATag :color="record.isActive ? 'green' : 'default'">{{ record.isActive ? 'Đang áp dụng' : 'Tạm ngừng' }}</ATag>
-          </template>
-          <template v-else-if="column.key === 'actions'">
-            <div class="flex items-center justify-end gap-1">
-              <button @click="openEdit(record)" class="p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors" title="Sửa">
-                <PencilIcon class="w-4 h-4" />
-              </button>
-              <APopconfirm title="Xóa loại nghỉ này?" ok-text="Xóa" cancel-text="Hủy" @confirm="remove(record.id)">
-                <button class="p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Xóa">
-                  <TrashIcon class="w-4 h-4" />
-                </button>
-              </APopconfirm>
-            </div>
-          </template>
-        </template>
-      </ATable>
-    </div>
+    <template #banner>
+      <div v-if="store.error && !isModalOpen" class="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
+        {{ store.error }}
+      </div>
+    </template>
 
-    <Modal :isOpen="isModalOpen" :title="isEdit ? 'Sửa loại nghỉ' : 'Thêm loại nghỉ'" @close="isModalOpen = false">
-      <form @submit.prevent="submit" class="space-y-5">
-        <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Tên loại nghỉ <span class="text-red-500">*</span></label>
-          <input v-model="form.name" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="VD: Phép năm, Nghỉ cưới..." />
+    <template #bodyCell="{ column, record }">
+      <template v-if="column.key === 'name'">
+        <span class="font-sans font-medium text-foreground">{{ record.name }}</span>
+      </template>
+      <template v-else-if="column.key === 'isPaid'">
+        <ATag :color="record.isPaid ? 'green' : 'default'">{{ record.isPaid ? 'Có lương' : 'Không lương' }}</ATag>
+      </template>
+      <template v-else-if="column.key === 'annualQuotaDays'">
+        <span class="font-mono text-sm">
+          {{ record.annualQuotaDays === null || record.annualQuotaDays === undefined ? 'Không giới hạn' : `${record.annualQuotaDays} ngày` }}
+        </span>
+      </template>
+      <template v-else-if="column.key === 'description'">
+        <span class="font-sans text-sm text-muted-foreground">{{ record.description || '—' }}</span>
+      </template>
+      <template v-else-if="column.key === 'isActive'">
+        <ATag :color="record.isActive ? 'green' : 'default'">{{ record.isActive ? 'Đang áp dụng' : 'Tạm ngừng' }}</ATag>
+      </template>
+      <template v-else-if="column.key === 'actions'">
+        <div class="flex items-center justify-end gap-1">
+          <button @click="openEdit(record)" class="p-1.5 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-all" title="Sửa">
+            <PencilIcon class="w-4 h-4" />
+          </button>
+          <APopconfirm title="Xóa loại nghỉ này?" ok-text="Xóa" cancel-text="Hủy" @confirm="remove(record.id)">
+            <button class="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Xóa">
+              <TrashIcon class="w-4 h-4" />
+            </button>
+          </APopconfirm>
         </div>
+      </template>
+    </template>
+  </DataTableShell>
 
-        <div class="flex items-center gap-3">
-          <input id="leaveIsPaid" v-model="form.isPaid" type="checkbox" class="w-4 h-4 rounded text-accent focus:ring-accent accent-accent" />
-          <label for="leaveIsPaid" class="font-sans text-sm text-foreground">Nghỉ có lương (tính vào ngày phép có lương khi chốt công)</label>
-        </div>
+  <Modal :isOpen="isModalOpen" :title="isEdit ? 'Sửa loại nghỉ' : 'Thêm loại nghỉ'" @close="isModalOpen = false">
+    <form @submit.prevent="submit" class="space-y-5">
+      <div>
+        <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Tên loại nghỉ <span class="text-red-500">*</span></label>
+        <input v-model="form.name" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="VD: Phép năm, Nghỉ cưới..." />
+      </div>
 
-        <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Hạn mức ngày/năm</label>
-          <input v-model.number="form.annualQuotaDays" type="number" min="0" step="0.5" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="Để trống = không giới hạn" />
-          <p class="mt-2 text-xs text-muted-foreground font-sans">Để trống nếu không giới hạn (vd nghỉ không lương).</p>
-        </div>
+      <div class="flex items-center gap-3">
+        <input id="leaveIsPaid" v-model="form.isPaid" type="checkbox" class="w-4 h-4 rounded text-accent focus:ring-accent accent-accent" />
+        <label for="leaveIsPaid" class="font-sans text-sm text-foreground">Nghỉ có lương (tính vào ngày phép có lương khi chốt công)</label>
+      </div>
 
-        <div>
-          <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mô tả</label>
-          <textarea v-model="form.description" rows="2" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm resize-none" placeholder="Mô tả..."></textarea>
-        </div>
+      <div>
+        <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Hạn mức ngày/năm</label>
+        <input v-model.number="form.annualQuotaDays" type="number" min="0" step="0.5" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="Để trống = không giới hạn" />
+        <p class="mt-2 text-xs text-muted-foreground font-sans">Để trống nếu không giới hạn (vd nghỉ không lương).</p>
+      </div>
 
-        <div v-if="isEdit" class="flex items-center gap-3 pt-2">
-          <input id="leavePolicyActive" v-model="form.isActive" type="checkbox" class="w-4 h-4 rounded text-accent focus:ring-accent accent-accent" />
-          <label for="leavePolicyActive" class="font-sans text-sm text-foreground">Đang áp dụng</label>
-        </div>
+      <div>
+        <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mô tả</label>
+        <textarea v-model="form.description" rows="2" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm resize-none" placeholder="Mô tả..."></textarea>
+      </div>
 
-        <div v-if="store.error && isModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans">{{ store.error }}</div>
+      <div v-if="isEdit" class="flex items-center gap-3 pt-2">
+        <input id="leavePolicyActive" v-model="form.isActive" type="checkbox" class="w-4 h-4 rounded text-accent focus:ring-accent accent-accent" />
+        <label for="leavePolicyActive" class="font-sans text-sm text-foreground">Đang áp dụng</label>
+      </div>
 
-        <div class="pt-6 border-t border-border flex justify-end gap-4 mt-6">
-          <Button variant="ghost" type="button" @click="isModalOpen = false">Hủy</Button>
-          <Button type="submit" :disabled="store.isLoading" class="min-w-[150px]">
-            {{ store.isLoading ? 'Đang lưu...' : (isEdit ? 'Lưu thay đổi' : 'Thêm') }}
-          </Button>
-        </div>
-      </form>
-    </Modal>
-  </div>
+      <div v-if="store.error && isModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans">{{ store.error }}</div>
+
+      <div class="pt-6 border-t border-border flex justify-end gap-4 mt-6">
+        <Button variant="ghost" type="button" @click="isModalOpen = false">Hủy</Button>
+        <Button type="submit" :disabled="store.isLoading" class="min-w-[150px]">
+          {{ store.isLoading ? 'Đang lưu...' : (isEdit ? 'Lưu thay đổi' : 'Thêm') }}
+        </Button>
+      </div>
+    </form>
+  </Modal>
 </template>
