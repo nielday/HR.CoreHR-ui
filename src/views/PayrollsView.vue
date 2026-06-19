@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
-import { Tag as ATag, Popconfirm as APopconfirm, message } from 'ant-design-vue'
-import { CalculatorIcon, RefreshCwIcon, CheckIcon, BanknoteIcon } from 'lucide-vue-next'
+import { Tag as ATag, Popconfirm as APopconfirm, Select as ASelect, message } from 'ant-design-vue'
+import { CalculatorIcon, RefreshCwIcon, CheckIcon, BanknoteIcon, XIcon } from 'lucide-vue-next'
 import { usePayrollStore } from '../stores/payroll'
 import { useEmployeeStore } from '../stores/employee'
 import Button from '../components/ui/Button.vue'
@@ -21,7 +21,20 @@ const vnd = (n: number) => (n ?? 0).toLocaleString('vi-VN') + ' ₫'
 
 // Tìm kiếm + lọc client-side
 const keyword = ref('')
-const statusFilter = ref<string>('')
+// Lọc trạng thái: chọn nhiều (multi-select), mảng rỗng = không lọc
+const fStatuses = ref<number[]>([])
+const statusOptions = [
+  { label: 'Chờ duyệt', value: 0 },
+  { label: 'Đã duyệt', value: 1 },
+  { label: 'Đã chi trả', value: 2 },
+]
+
+const hasFilter = computed(() => !!keyword.value || fStatuses.value.length > 0)
+
+function clearFilters() {
+  keyword.value = ''
+  fStatuses.value = []
+}
 
 // map employeeId -> { code, name } để hiển thị tên thay vì GUID
 const empMap = computed<Record<string, { code: string; name: string }>>(() => {
@@ -42,7 +55,7 @@ const STATUS: Record<number, { label: string; color: string }> = {
 const filteredPayrolls = computed<any[]>(() => {
   const kw = keyword.value.trim().toLowerCase()
   return (store.payrolls as any[]).filter((p) => {
-    if (statusFilter.value !== '' && p.status !== Number(statusFilter.value)) return false
+    if (fStatuses.value.length && !fStatuses.value.includes(p.status)) return false
     if (!kw) return true
     const info = empMap.value[p.employeeId]
     const name = (info?.name || '').toLowerCase()
@@ -133,12 +146,18 @@ watch([month, year], () => store.fetchPayrolls(month.value, year.value))
       <select v-model="year" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
         <option v-for="y in years" :key="y.value" :value="y.value">{{ y.label }}</option>
       </select>
-      <select v-model="statusFilter" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-        <option value="">Tất cả trạng thái</option>
-        <option value="0">Chờ duyệt</option>
-        <option value="1">Đã duyệt</option>
-        <option value="2">Đã chi trả</option>
-      </select>
+      <ASelect
+        v-model:value="fStatuses" mode="multiple" :options="statusOptions" allow-clear :max-tag-count="2"
+        placeholder="Trạng thái" class="hr-multi" style="min-width: 180px"
+      />
+      <button
+        v-if="hasFilter"
+        @click="clearFilters"
+        class="h-9 px-3 inline-flex items-center gap-1 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted text-sm transition-all"
+        title="Xóa toàn bộ bộ lọc"
+      >
+        <XIcon class="w-4 h-4" /> Xóa lọc
+      </button>
     </template>
 
     <!-- Banner: lỗi -->
@@ -176,3 +195,10 @@ watch([month, year], () => store.fetchPayrolls(month.value, year.value))
     </template>
   </DataTableShell>
 </template>
+
+<style scoped>
+.hr-multi :deep(.ant-select-selector) {
+  border-radius: 0.5rem;
+  min-height: 36px;
+}
+</style>

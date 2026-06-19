@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Popconfirm as APopconfirm, Tag as ATag, message } from 'ant-design-vue'
+import { Popconfirm as APopconfirm, Tag as ATag, Select as ASelect, message } from 'ant-design-vue'
 import { CheckIcon, XIcon, RefreshCwIcon } from 'lucide-vue-next'
-import { useAttendanceStore, LEAVE_STATUS } from '../stores/attendance'
+import { useAttendanceStore, LEAVE_STATUS, LEAVE_TYPE } from '../stores/attendance'
 import { useEmployeeStore } from '../stores/employee'
 import DataTableShell from '../components/ui/DataTableShell.vue'
 import Modal from '../components/ui/Modal.vue'
@@ -33,14 +33,50 @@ const formatDate = (s: string | null | undefined) => {
   return `${d[2]}/${d[1]}/${d[0]}`
 }
 
-// ===== Tìm kiếm + bộ lọc (client-side) =====
+// ===== Tìm kiếm + bộ lọc (chọn nhiều — multi-select, lọc phía client) =====
 const search = ref('')
-const statusFilter = ref<string>('') // '' = tất cả, '0'|'1'|'2'
+const fStatuses = ref<number[]>([]) // LEAVE_STATUS 0/1/2 — mảng rỗng = không lọc
+const fLeaveTypes = ref<number[]>([]) // LEAVE_TYPE 0/1/2
+const fEmployeeIds = ref<string[]>([])
+
+const statusOptions = Object.entries(LEAVE_STATUS).map(([value, meta]) => ({
+  label: meta.label,
+  value: Number(value),
+}))
+const leaveTypeOptions = Object.entries(LEAVE_TYPE).map(([value, label]) => ({
+  label,
+  value: Number(value),
+}))
+// Danh sách nhân viên đang có đơn nghỉ (để lọc nhiều nhân viên cùng lúc)
+const employeeOptions = computed<{ label: string; value: string }[]>(() => {
+  const ids = new Set<string>()
+  for (const r of store.pendingLeaves as any[]) ids.add(r.employeeId)
+  return [...ids]
+    .map((id) => ({ label: `${empName(id)} (${empCode(id)})`, value: id }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+})
+
+const hasFilter = computed(
+  () =>
+    !!search.value.trim() ||
+    fStatuses.value.length > 0 ||
+    fLeaveTypes.value.length > 0 ||
+    fEmployeeIds.value.length > 0,
+)
+
+function clearFilters() {
+  search.value = ''
+  fStatuses.value = []
+  fLeaveTypes.value = []
+  fEmployeeIds.value = []
+}
 
 const filteredLeaves = computed<any[]>(() => {
   const kw = search.value.trim().toLowerCase()
   return (store.pendingLeaves as any[]).filter((r) => {
-    if (statusFilter.value !== '' && String(r.status) !== statusFilter.value) return false
+    if (fStatuses.value.length && !fStatuses.value.includes(r.status)) return false
+    if (fLeaveTypes.value.length && !fLeaveTypes.value.includes(r.leaveType)) return false
+    if (fEmployeeIds.value.length && !fEmployeeIds.value.includes(r.employeeId)) return false
     if (kw) {
       const name = empName(r.employeeId).toLowerCase()
       const code = empCode(r.employeeId).toLowerCase()
@@ -134,7 +170,7 @@ onMounted(async () => {
       </button>
     </template>
 
-    <!-- Filters -->
+    <!-- Filters (multi-select) -->
     <template #filters>
       <div class="relative w-full sm:w-64">
         <input
@@ -144,12 +180,27 @@ onMounted(async () => {
           class="w-full h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"
         />
       </div>
-      <select v-model="statusFilter" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-        <option value="">Tất cả trạng thái</option>
-        <option value="0">Chờ duyệt</option>
-        <option value="1">Đã duyệt</option>
-        <option value="2">Đã từ chối</option>
-      </select>
+      <ASelect
+        v-model:value="fStatuses" mode="multiple" :options="statusOptions" allow-clear :max-tag-count="2"
+        placeholder="Trạng thái" class="hr-multi" style="min-width: 180px"
+      />
+      <ASelect
+        v-model:value="fLeaveTypes" mode="multiple" :options="leaveTypeOptions" allow-clear :max-tag-count="2"
+        placeholder="Loại nghỉ" class="hr-multi" style="min-width: 180px"
+      />
+      <ASelect
+        v-model:value="fEmployeeIds" mode="multiple" :options="employeeOptions" allow-clear :max-tag-count="1"
+        placeholder="Nhân viên" class="hr-multi" style="min-width: 200px"
+        :filter-option="(input: string, opt: any) => String(opt.label).toLowerCase().includes(input.toLowerCase())"
+      />
+      <button
+        v-if="hasFilter"
+        @click="clearFilters"
+        class="h-9 px-3 inline-flex items-center gap-1 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted text-sm transition-all"
+        title="Xóa toàn bộ bộ lọc"
+      >
+        <XIcon class="w-4 h-4" /> Xóa lọc
+      </button>
     </template>
 
     <!-- Banner: lỗi -->
@@ -213,3 +264,10 @@ onMounted(async () => {
     </div>
   </Modal>
 </template>
+
+<style scoped>
+.hr-multi :deep(.ant-select-selector) {
+  border-radius: 0.5rem;
+  min-height: 36px;
+}
+</style>

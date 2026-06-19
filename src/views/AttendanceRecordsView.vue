@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { Select as ASelect, Tag as ATag, message } from 'ant-design-vue'
-import { PlusIcon, PencilIcon } from 'lucide-vue-next'
+import { PlusIcon, PencilIcon, XIcon } from 'lucide-vue-next'
 import { useAttendanceStore, ATTENDANCE_STATUS } from '../stores/attendance'
 import { useEmployeeStore } from '../stores/employee'
 import Button from '../components/ui/Button.vue'
@@ -40,19 +40,25 @@ const shiftMap = computed<Record<string, string>>(() => {
   return m
 })
 
-// ===== Lọc + tìm kiếm =====
+// ===== Lọc + tìm kiếm (Phòng ban / Nhân viên: chọn nhiều — multi-select) =====
 const searchText = ref('')
-const deptFilter = ref<string>('')
-const employeeFilter = ref<string>('')
-const departmentOptions = computed(() => {
+const fDeptNames = ref<string[]>([])
+const fEmpIds = ref<string[]>([])
+const departmentOptions = computed<any[]>(() => {
   const set = new Set<string>()
   for (const e of empStore.allEmployees as any[]) set.add(e.departmentName || 'Chưa phân phòng')
-  return [{ value: '', label: 'Tất cả phòng ban' }, ...[...set].sort().map((d) => ({ value: d, label: d }))]
+  return [...set].sort().map((d) => ({ value: d, label: d }))
 })
-const employeeFilterOptions = computed(() => [
-  { value: '', label: 'Tất cả nhân viên' },
-  ...employeeOptions.value,
-])
+const employeeFilterOptions = computed<any[]>(() => employeeOptions.value)
+
+const hasFilter = computed(() =>
+  !!searchText.value.trim() || fDeptNames.value.length > 0 || fEmpIds.value.length > 0,
+)
+function clearFilters() {
+  searchText.value = ''
+  fDeptNames.value = []
+  fEmpIds.value = []
+}
 
 // Gắn thông tin NV vào từng bản ghi
 const enriched = computed(() =>
@@ -69,9 +75,9 @@ const enriched = computed(() =>
 )
 const filtered = computed(() => {
   const q = searchText.value.trim().toLowerCase()
-  return enriched.value.filter((r) => {
-    if (deptFilter.value && r._dept !== deptFilter.value) return false
-    if (employeeFilter.value && r.employeeId !== employeeFilter.value) return false
+  return enriched.value.filter((r: any) => {
+    if (fDeptNames.value.length && !fDeptNames.value.includes(r._dept)) return false
+    if (fEmpIds.value.length && !fEmpIds.value.includes(r.employeeId)) return false
     if (q && !`${r._name} ${r._code}`.toLowerCase().includes(q)) return false
     return true
   })
@@ -201,17 +207,24 @@ watch([month, year], reload)
       </div>
       <ASelect v-model:value="month" :options="months" class="min-w-[120px]" />
       <ASelect v-model:value="year" :options="years" class="min-w-[100px]" />
-      <select v-model="deptFilter" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-        <option v-for="d in departmentOptions" :key="d.value" :value="d.value">{{ d.label }}</option>
-      </select>
       <ASelect
-        v-model:value="employeeFilter"
-        :options="employeeFilterOptions"
+        v-model:value="fDeptNames" mode="multiple" :options="departmentOptions" allow-clear :max-tag-count="2"
+        placeholder="Phòng ban" class="hr-multi" style="min-width: 200px"
+      />
+      <ASelect
+        v-model:value="fEmpIds" mode="multiple" :options="employeeFilterOptions" allow-clear :max-tag-count="2"
         show-search
         :filter-option="(input: string, option: any) => option.label.toLowerCase().includes(input.toLowerCase())"
-        class="min-w-[220px]"
-        placeholder="Tất cả nhân viên"
+        placeholder="Nhân viên" class="hr-multi" style="min-width: 220px"
       />
+      <button
+        v-if="hasFilter"
+        @click="clearFilters"
+        class="h-9 px-3 inline-flex items-center gap-1 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted text-sm transition-all"
+        title="Xóa toàn bộ bộ lọc"
+      >
+        <XIcon class="w-4 h-4" /> Xóa lọc
+      </button>
     </template>
 
     <!-- Banner: lỗi -->
@@ -307,3 +320,10 @@ watch([month, year], reload)
     </form>
   </Modal>
 </template>
+
+<style scoped>
+.hr-multi :deep(.ant-select-selector) {
+  border-radius: 0.5rem;
+  min-height: 36px;
+}
+</style>

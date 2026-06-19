@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { PlusIcon, PencilIcon, UserMinusIcon, ArrowRightLeftIcon, EyeIcon, BriefcaseIcon, MailIcon, PhoneIcon, DownloadIcon, UploadIcon } from 'lucide-vue-next'
-import { Row as ARow, Col as ACol, Card as ACard, Avatar as AAvatar, Tag as ATag, Segmented as ASegmented, Spin as ASpin } from 'ant-design-vue'
+import { PlusIcon, PencilIcon, UserMinusIcon, ArrowRightLeftIcon, EyeIcon, BriefcaseIcon, MailIcon, PhoneIcon, DownloadIcon, UploadIcon, XIcon } from 'lucide-vue-next'
+import { Row as ARow, Col as ACol, Card as ACard, Avatar as AAvatar, Tag as ATag, Segmented as ASegmented, Spin as ASpin, Select as ASelect } from 'ant-design-vue'
 import { useEmployeeStore } from '../stores/employee'
 import { useDepartmentStore } from '../stores/department'
 import { usePositionStore } from '../stores/position'
@@ -25,15 +25,13 @@ const isEmployee = computed(() => authStore.userRole === 'Employee')
 // Chế độ hiển thị: bảng (mặc định cho nghiệp vụ) hoặc lưới thẻ
 const viewMode = ref<'list' | 'kanban'>('list')
 
-// Nhân viên thường chỉ thấy đồng nghiệp cùng phòng + được mở chi tiết của riêng mình.
 function canViewDetail(item: any) {
   return !isEmployee.value || item.id === authStore.employeeId
 }
 
-// Trưởng phòng (cấp trên) của phòng ban mà nhân viên đang xem — để làm nổi bật trong danh sách.
 const myDeptManagerId = computed<string | null>(() => {
   if (!isEmployee.value) return null
-  const deptId = store.employees[0]?.departmentId
+  const deptId = filtered.value[0]?.departmentId
   if (!deptId) return null
   const dept = deptStore.departments.find((d: any) => d.id === deptId)
   return dept?.managerEmployeeId || null
@@ -43,7 +41,6 @@ const isModalOpen = ref(false)
 const isEditMode = ref(false)
 const editingId = ref<string | null>(null)
 
-// Modals
 const isResignModalOpen = ref(false)
 const isTransferModalOpen = ref(false)
 const selectedEmp = ref<any>(null)
@@ -79,7 +76,6 @@ const isImportModalOpen = ref(false)
 const importFile = ref<File | null>(null)
 const importResult = ref<any>(null)
 
-// Chọn nhiều qua bảng (Ant Design rowSelection)
 const rowSelection = computed(() =>
   canManageSystem.value
     ? {
@@ -89,17 +85,125 @@ const rowSelection = computed(() =>
     : undefined,
 )
 
-async function executeBatchResign() {
-  if (!confirm(`Bạn có chắc muốn đánh dấu nghỉ việc ${selectedEmployeeIds.value.length} nhân viên?`)) return
-  const success = await store.resignBatch(selectedEmployeeIds.value, 'Nghỉ việc hàng loạt', new Date().toISOString())
-  if (success) {
-    selectedEmployeeIds.value = []
-    alert('Đã xử lý thành công!')
-  }
+// ===== BỘ LỌC (chọn nhiều — multi-select, lọc phía client) =====
+const fKeyword = ref('')
+const fDeptIds = ref<string[]>([])
+const fPosIds = ref<string[]>([])
+const fContractIds = ref<string[]>([])
+const fStatuses = ref<string[]>([])
+
+const deptOptions = computed(() => deptStore.departments.map((d: any) => ({ label: d.departmentName, value: d.id })))
+const posOptions = computed(() => posStore.positions.map((p: any) => ({ label: p.positionName, value: p.id })))
+const contractOptions = computed(() => contractStore.contracts.map((c: any) => ({ label: c.contractTypeName, value: c.id })))
+const statusOptions = [
+  { label: 'Đang làm việc', value: 'Active' },
+  { label: 'Thử việc', value: 'Probation' },
+  { label: 'Tạm ngưng', value: 'Suspended' },
+  { label: 'Đã nghỉ việc', value: 'Resigned' },
+]
+
+const hasFilter = computed(() =>
+  !!fKeyword.value || fDeptIds.value.length > 0 || fPosIds.value.length > 0 || fContractIds.value.length > 0 || fStatuses.value.length > 0,
+)
+
+function clearFilters() {
+  fKeyword.value = ''
+  fDeptIds.value = []
+  fPosIds.value = []
+  fContractIds.value = []
+  fStatuses.value = []
 }
 
-async function triggerExport() {
-  await store.exportExcel(searchParams.value)
+const filtered = computed(() => {
+  const kw = fKeyword.value.trim().toLowerCase()
+  return (store.allEmployees as any[]).filter((e) => {
+    if (kw && !`${e.fullName || ''} ${e.employeeCode || ''} ${e.email || ''}`.toLowerCase().includes(kw)) return false
+    if (fDeptIds.value.length && !fDeptIds.value.includes(e.departmentId)) return false
+    if (fPosIds.value.length && !fPosIds.value.includes(e.positionId)) return false
+    if (fContractIds.value.length && !fContractIds.value.includes(e.currentContractTypeId || e.contractTypeId)) return false
+    if (fStatuses.value.length && !fStatuses.value.includes(e.workingStatus)) return false
+    return true
+  })
+})
+
+const tablePagination = {
+  pageSize: 15,
+  showSizeChanger: true,
+  pageSizeOptions: ['15', '30', '50', '100'],
+  showTotal: (t: number) => `${t} nhân viên`,
+}
+
+const STATUS_META: Record<string, { label: string; color: string }> = {
+  Active: { label: 'Đang làm', color: 'green' },
+  Probation: { label: 'Thử việc', color: 'gold' },
+  Suspended: { label: 'Tạm ngưng', color: 'orange' },
+  Resigned: { label: 'Đã nghỉ', color: 'default' },
+}
+
+const columns = computed<any[]>(() => [
+  { title: 'Mã', dataIndex: 'employeeCode', key: 'employeeCode', width: 90, sorter: (a: any, b: any) => (a.employeeCode || '').localeCompare(b.employeeCode || '') },
+  { title: 'Nhân viên', dataIndex: 'fullName', key: 'fullName', sorter: (a: any, b: any) => (a.fullName || '').localeCompare(b.fullName || '') },
+  { title: 'Phòng ban', dataIndex: 'departmentName', key: 'departmentName' },
+  { title: 'Chức vụ', dataIndex: 'positionName', key: 'positionName' },
+  { title: 'Loại HĐ', dataIndex: 'currentContractTypeName', key: 'currentContractTypeName', width: 120 },
+  { title: 'SĐT', dataIndex: 'phoneNumber', key: 'phoneNumber', width: 130 },
+  { title: 'Ngày vào', dataIndex: 'hireDate', key: 'hireDate', width: 110 },
+  { title: 'Trạng thái', dataIndex: 'workingStatus', key: 'workingStatus', width: 120, align: 'center' },
+  { title: '', key: 'actions', width: canManageSystem.value ? 150 : 60, align: 'right' },
+])
+
+function fmtDate(s?: string | null) {
+  if (!s) return '—'
+  const d = new Date(s)
+  if (isNaN(d.getTime())) return String(s)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
+}
+
+function initial(name?: string) {
+  return name?.split(' ').pop()?.[0] || 'NV'
+}
+
+async function reload() {
+  await store.fetchAllEmployees()
+}
+
+onMounted(async () => {
+  if (authStore.userRole !== 'Employee') {
+    if (deptStore.departments.length === 0) await deptStore.fetchDepartments()
+    if (posStore.positions.length === 0) await posStore.fetchPositions()
+    if (contractStore.contracts.length === 0) await contractStore.fetchContracts()
+  } else {
+    if (deptStore.departments.length === 0) await deptStore.fetchDepartments()
+  }
+  await reload()
+})
+
+// ===== XUẤT FILE (CSV mở được bằng Excel) — theo đúng bộ lọc hiện tại =====
+function csvCell(v: any) {
+  const s = (v ?? '').toString()
+  return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
+}
+
+function triggerExport() {
+  const rows = filtered.value
+  const head = ['Mã', 'Họ tên', 'Email', 'SĐT', 'Phòng ban', 'Chức vụ', 'Loại HĐ', 'Ngày vào', 'Trạng thái']
+  const lines = [head.join(',')]
+  for (const e of rows as any[]) {
+    lines.push([
+      e.employeeCode, e.fullName, e.email, e.phoneNumber, e.departmentName, e.positionName,
+      e.currentContractTypeName, fmtDate(e.hireDate), STATUS_META[e.workingStatus]?.label || e.workingStatus,
+    ].map(csvCell).join(','))
+  }
+  const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', `NhanVien_${new Date().toISOString().split('T')[0]}.csv`)
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.URL.revokeObjectURL(url)
 }
 
 function handleFileUpload(e: Event) {
@@ -115,108 +219,18 @@ async function executeImport() {
   const result = await store.importExcel(importFile.value)
   if (result) {
     importResult.value = result
-    if (result.successCount > 0) fetchData()
+    if (result.successCount > 0) await reload()
   }
 }
 
-const searchParams = ref({
-  keyword: '',
-  departmentId: '',
-  positionId: '',
-  contractTypeId: '',
-  workingStatus: ''
-})
-
-const pagination = ref({
-  page: 1,
-  itemsPerPage: 15
-})
-
-const tablePagination = computed(() => ({
-  current: pagination.value.page,
-  pageSize: pagination.value.itemsPerPage,
-  total: store.totalItems,
-  showSizeChanger: true,
-  pageSizeOptions: ['15', '30', '50', '100'],
-  showTotal: (t: number) => `${t} nhân viên`,
-}))
-
-const STATUS_META: Record<string, { label: string; color: string }> = {
-  Active: { label: 'Đang làm', color: 'green' },
-  Probation: { label: 'Thử việc', color: 'gold' },
-  Suspended: { label: 'Tạm ngưng', color: 'orange' },
-  Resigned: { label: 'Đã nghỉ', color: 'default' },
-}
-
-const columns = computed(() => {
-  const cols: any[] = [
-    { title: 'Mã', dataIndex: 'employeeCode', key: 'employeeCode', width: 90 },
-    { title: 'Nhân viên', dataIndex: 'fullName', key: 'fullName', sorter: (a: any, b: any) => (a.fullName || '').localeCompare(b.fullName || '') },
-    { title: 'Phòng ban', dataIndex: 'departmentName', key: 'departmentName' },
-    { title: 'Chức vụ', dataIndex: 'positionName', key: 'positionName' },
-    { title: 'Loại HĐ', dataIndex: 'currentContractTypeName', key: 'currentContractTypeName', width: 120 },
-    { title: 'SĐT', dataIndex: 'phoneNumber', key: 'phoneNumber', width: 130 },
-    { title: 'Ngày vào', dataIndex: 'hireDate', key: 'hireDate', width: 110 },
-    { title: 'Trạng thái', dataIndex: 'workingStatus', key: 'workingStatus', width: 120, align: 'center' },
-    { title: '', key: 'actions', width: canManageSystem.value ? 150 : 60, align: 'right' },
-  ]
-  return cols
-})
-
-function fmtDate(s?: string | null) {
-  if (!s) return '—'
-  const d = new Date(s)
-  if (isNaN(d.getTime())) return String(s)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
-}
-
-function initial(name?: string) {
-  return name?.split(' ').pop()?.[0] || 'NV'
-}
-
-onMounted(async () => {
-  if (authStore.userRole !== 'Employee') {
-    if (deptStore.departments.length === 0) await deptStore.fetchDepartments()
-    if (posStore.positions.length === 0) await posStore.fetchPositions()
-    if (contractStore.contracts.length === 0) await contractStore.fetchContracts()
-  } else {
-    if (deptStore.departments.length === 0) await deptStore.fetchDepartments()
+async function executeBatchResign() {
+  if (!confirm(`Bạn có chắc muốn đánh dấu nghỉ việc ${selectedEmployeeIds.value.length} nhân viên?`)) return
+  const success = await store.resignBatch(selectedEmployeeIds.value, 'Nghỉ việc hàng loạt', new Date().toISOString())
+  if (success) {
+    selectedEmployeeIds.value = []
+    await reload()
+    alert('Đã xử lý thành công!')
   }
-  fetchData()
-})
-
-function onTableChange(pag: any) {
-  pagination.value.page = pag.current
-  pagination.value.itemsPerPage = pag.pageSize
-  fetchData()
-}
-
-function fetchData() {
-  store.fetchEmployees({
-    page: pagination.value.page,
-    pageSize: pagination.value.itemsPerPage,
-    keyword: searchParams.value.keyword || undefined,
-    departmentId: searchParams.value.departmentId || undefined,
-    positionId: searchParams.value.positionId || undefined,
-    contractTypeId: searchParams.value.contractTypeId || undefined,
-    workingStatus: searchParams.value.workingStatus || undefined
-  })
-}
-
-// Search debounce
-let timeout: any
-function onSearchInput() {
-  clearTimeout(timeout)
-  timeout = setTimeout(() => {
-    pagination.value.page = 1
-    fetchData()
-  }, 500)
-}
-
-function onFilterChange() {
-  pagination.value.page = 1
-  fetchData()
 }
 
 function openCreateModal() {
@@ -272,7 +286,7 @@ async function submitCreateOrUpdate() {
 
   if (success) {
     isModalOpen.value = false
-    fetchData()
+    await reload()
   }
 }
 
@@ -297,7 +311,7 @@ async function executeTransfer() {
     })
     if (success) {
       isTransferModalOpen.value = false
-      fetchData()
+      await reload()
     }
   }
 }
@@ -314,7 +328,7 @@ async function executeResign() {
     const success = await store.resignEmployee(selectedEmp.value.id, resignReason.value, new Date(resignDate.value).toISOString())
     if (success) {
       isResignModalOpen.value = false
-      fetchData()
+      await reload()
     }
   }
 }
@@ -327,13 +341,12 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
     title="Nhân viên"
     :subtitle="isEmployee ? 'Danh bạ đồng nghiệp trong phòng ban của bạn.' : 'Quản lý nhân sự, cập nhật hồ sơ và theo dõi trạng thái.'"
     :columns="columns"
-    :data-source="store.employees"
+    :data-source="filtered"
     :loading="store.isLoading"
     row-key="id"
     :pagination="viewMode === 'list' ? tablePagination : false"
     :row-selection="viewMode === 'list' ? rowSelection : undefined"
     :scroll-x="1100"
-    @change="onTableChange"
   >
     <!-- Header actions -->
     <template #actions>
@@ -342,8 +355,8 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
         :options="[{ label: 'Danh sách', value: 'list' }, { label: 'Lưới', value: 'kanban' }]"
       />
       <template v-if="canManageSystem">
-        <Button variant="secondary" @click="triggerExport" :disabled="store.isLoading">
-          <DownloadIcon class="w-4 h-4 mr-2" /> Xuất Excel
+        <Button variant="secondary" @click="triggerExport" :disabled="store.isLoading" title="Xuất danh sách đang lọc ra file (mở bằng Excel)">
+          <DownloadIcon class="w-4 h-4 mr-2" /> Xuất file
         </Button>
         <Button variant="secondary" @click="isImportModalOpen = true; importFile = null; importResult = null">
           <UploadIcon class="w-4 h-4 mr-2" /> Nhập Excel
@@ -354,44 +367,50 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
       </template>
     </template>
 
-    <!-- Filters -->
+    <!-- Filters (multi-select) -->
     <template #filters>
-      <div class="relative w-full sm:w-64">
-        <input
-          v-model="searchParams.keyword"
-          @input="onSearchInput"
-          type="text"
-          placeholder="Tìm theo tên, mã, email..."
-          class="w-full h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"
-        />
-      </div>
+      <input
+        v-model="fKeyword"
+        type="text"
+        placeholder="Tìm theo tên, mã, email..."
+        class="w-full sm:w-56 h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"
+      />
       <template v-if="!isEmployee">
-        <select v-model="searchParams.departmentId" @change="onFilterChange" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-          <option value="">Tất cả phòng ban</option>
-          <option v-for="d in deptStore.departments" :key="d.id" :value="d.id">{{ d.departmentName }}</option>
-        </select>
-        <select v-model="searchParams.positionId" @change="onFilterChange" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-          <option value="">Tất cả chức vụ</option>
-          <option v-for="p in posStore.positions" :key="p.id" :value="p.id">{{ p.positionName }}</option>
-        </select>
-        <select v-model="searchParams.contractTypeId" @change="onFilterChange" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-          <option value="">Tất cả hợp đồng</option>
-          <option v-for="c in contractStore.contracts" :key="c.id" :value="c.id">{{ c.contractTypeName }}</option>
-        </select>
-        <select v-model="searchParams.workingStatus" @change="onFilterChange" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-          <option value="">Tất cả trạng thái</option>
-          <option value="Active">Đang làm việc</option>
-          <option value="Probation">Thử việc</option>
-          <option value="Suspended">Tạm ngưng</option>
-          <option value="Resigned">Đã nghỉ việc</option>
-        </select>
+        <ASelect
+          v-model:value="fDeptIds" mode="multiple" :options="deptOptions" allow-clear :max-tag-count="2"
+          placeholder="Phòng ban" class="hr-multi" style="min-width: 200px"
+        />
+        <ASelect
+          v-model:value="fPosIds" mode="multiple" :options="posOptions" allow-clear :max-tag-count="1"
+          placeholder="Chức vụ" class="hr-multi" style="min-width: 180px"
+        />
+        <ASelect
+          v-model:value="fContractIds" mode="multiple" :options="contractOptions" allow-clear :max-tag-count="1"
+          placeholder="Loại hợp đồng" class="hr-multi" style="min-width: 180px"
+        />
+        <ASelect
+          v-model:value="fStatuses" mode="multiple" :options="statusOptions" allow-clear :max-tag-count="2"
+          placeholder="Trạng thái" class="hr-multi" style="min-width: 180px"
+        />
+        <button
+          v-if="hasFilter"
+          @click="clearFilters"
+          class="h-9 px-3 inline-flex items-center gap-1 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted text-sm transition-all"
+          title="Xóa toàn bộ bộ lọc"
+        >
+          <XIcon class="w-4 h-4" /> Xóa lọc
+        </button>
       </template>
     </template>
 
-    <!-- Banner: lỗi + thanh thao tác hàng loạt -->
+    <!-- Banner: lỗi + thanh thao tác hàng loạt + đếm kết quả lọc -->
     <template #banner>
       <div v-if="store.error && !isModalOpen && !isResignModalOpen && !isTransferModalOpen" class="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
         {{ store.error }}
+      </div>
+      <div v-if="hasFilter" class="text-xs text-muted-foreground font-sans">
+        Đang lọc: <strong>{{ filtered.length }}</strong> / {{ store.allEmployees.length }} nhân viên
+        <span v-if="canManageSystem">— nút “Xuất file” sẽ kết xuất đúng {{ filtered.length }} nhân viên này.</span>
       </div>
       <div v-if="selectedEmployeeIds.length > 0 && canManageSystem" class="bg-warning/10 border border-warning/20 rounded-xl p-3 flex items-center justify-between">
         <span class="text-warning font-medium text-sm">Đã chọn {{ selectedEmployeeIds.length }} nhân viên</span>
@@ -451,7 +470,7 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
       </div>
       <div v-else>
         <a-row :gutter="[16, 16]">
-          <a-col :xs="24" :sm="12" :lg="8" :xl="6" v-for="item in store.employees" :key="item.id">
+          <a-col :xs="24" :sm="12" :lg="8" :xl="6" v-for="item in filtered" :key="item.id">
             <a-card :bordered="false" class="shadow-sm hover:shadow-md transition-all rounded-2xl overflow-hidden h-full border border-border/50 relative p-0" :bodyStyle="{ padding: 0 }">
               <div class="absolute top-3 right-3 z-10">
                 <a-tag :color="STATUS_META[item.workingStatus || '']?.color || 'default'">{{ STATUS_META[item.workingStatus || '']?.label || item.workingStatus }}</a-tag>
@@ -497,12 +516,11 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
             </a-card>
           </a-col>
         </a-row>
-        <div v-if="store.employees.length === 0" class="py-12 bg-card rounded-2xl border border-border flex justify-center text-muted-foreground text-sm mt-4">
+        <div v-if="filtered.length === 0" class="py-12 bg-card rounded-2xl border border-border flex justify-center text-muted-foreground text-sm mt-4">
           Không tìm thấy nhân viên nào
         </div>
       </div>
     </template>
-
   </DataTableShell>
 
   <!-- Create / Edit Employee Modal -->
@@ -704,3 +722,10 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
     </div>
   </Modal>
 </template>
+
+<style scoped>
+.hr-multi :deep(.ant-select-selector) {
+  border-radius: 0.5rem;
+  min-height: 36px;
+}
+</style>

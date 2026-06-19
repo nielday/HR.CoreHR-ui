@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { Tag as ATag, Select as ASelect, Popconfirm as APopconfirm, message } from 'ant-design-vue'
-import { KeyRoundIcon, LockIcon, UnlockIcon, UserCogIcon } from 'lucide-vue-next'
+import { KeyRoundIcon, LockIcon, UnlockIcon, UserCogIcon, XIcon } from 'lucide-vue-next'
 import api from '../utils/axios'
 import { useEmployeeStore } from '../stores/employee'
 import { useAuthStore } from '../stores/auth'
@@ -17,8 +17,8 @@ const loading = ref(false)
 const error = ref('')
 
 const search = ref('')
-const roleFilter = ref('')
-const statusFilter = ref('')
+const fRoles = ref<string[]>([])
+const fStatuses = ref<string[]>([])
 
 const isAdmin = computed(() => authStore.userRole === 'Admin')
 const roleOptions = computed(() => {
@@ -33,13 +33,31 @@ const roleOptions = computed(() => {
 const roleLabel: Record<string, string> = { Admin: 'Quản trị viên', HR: 'Nhân sự', Manager: 'Quản lý', Employee: 'Nhân viên' }
 const roleColor: Record<string, string> = { Admin: 'red', HR: 'blue', Manager: 'gold', Employee: 'default' }
 
-// Lọc client-side theo từ khoá + vai trò + trạng thái
+// ===== BỘ LỌC (chọn nhiều — multi-select, lọc phía client) =====
+const roleFilterOptions = [
+  { value: 'Admin', label: 'Quản trị viên' },
+  { value: 'HR', label: 'Nhân sự' },
+  { value: 'Manager', label: 'Quản lý' },
+  { value: 'Employee', label: 'Nhân viên' },
+]
+const statusFilterOptions = [
+  { value: 'active', label: 'Đang dùng' },
+  { value: 'locked', label: 'Đã khóa' },
+]
+
+const hasFilter = computed(() => !!search.value || fRoles.value.length > 0 || fStatuses.value.length > 0)
+
+function clearFilters() {
+  fRoles.value = []
+  fStatuses.value = []
+}
+
+// Lọc client-side theo từ khoá + vai trò + trạng thái (mảng rỗng = không lọc)
 const filtered = computed<any[]>(() => {
   const q = search.value.trim().toLowerCase()
   return users.value.filter((u) => {
-    if (roleFilter.value && u.role !== roleFilter.value) return false
-    if (statusFilter.value === 'active' && !u.isActive) return false
-    if (statusFilter.value === 'locked' && u.isActive) return false
+    if (fRoles.value.length && !fRoles.value.includes(u.role)) return false
+    if (fStatuses.value.length && !fStatuses.value.includes(u.isActive ? 'active' : 'locked')) return false
     if (q) {
       const hay = `${u.username || ''} ${u.employeeName || ''} ${u.employeeCode || ''}`.toLowerCase()
       if (!hay.includes(q)) return false
@@ -130,20 +148,24 @@ onMounted(async () => {
     search-placeholder="Tìm theo tài khoản, tên nhân viên..."
     @update:search="search = $event"
   >
-    <!-- Filters -->
+    <!-- Filters (multi-select) -->
     <template #filters>
-      <select v-model="roleFilter" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-        <option value="">Tất cả vai trò</option>
-        <option value="Admin">Quản trị viên</option>
-        <option value="HR">Nhân sự</option>
-        <option value="Manager">Quản lý</option>
-        <option value="Employee">Nhân viên</option>
-      </select>
-      <select v-model="statusFilter" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-        <option value="">Tất cả trạng thái</option>
-        <option value="active">Đang dùng</option>
-        <option value="locked">Đã khóa</option>
-      </select>
+      <ASelect
+        v-model:value="fRoles" mode="multiple" :options="roleFilterOptions" allow-clear :max-tag-count="2"
+        placeholder="Vai trò" class="hr-multi" style="min-width: 180px"
+      />
+      <ASelect
+        v-model:value="fStatuses" mode="multiple" :options="statusFilterOptions" allow-clear :max-tag-count="2"
+        placeholder="Trạng thái" class="hr-multi" style="min-width: 180px"
+      />
+      <button
+        v-if="hasFilter"
+        @click="clearFilters"
+        class="h-9 px-3 inline-flex items-center gap-1 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted text-sm transition-all"
+        title="Xóa toàn bộ bộ lọc"
+      >
+        <XIcon class="w-4 h-4" /> Xóa lọc
+      </button>
     </template>
 
     <!-- Banner: lỗi -->
@@ -213,3 +235,10 @@ onMounted(async () => {
     </form>
   </Modal>
 </template>
+
+<style scoped>
+.hr-multi :deep(.ant-select-selector) {
+  border-radius: 0.5rem;
+  min-height: 36px;
+}
+</style>
