@@ -89,11 +89,42 @@ const filteredDepartments = computed(() => {
   )
 })
 
+// Đếm số nhân viên trực thuộc một phòng ban
+const empCount = (id?: string) => (employeeStore.allEmployees as any[]).filter((e) => e.departmentId === id).length
+
+// Dựng cây phân cấp từ danh sách phẳng store.departments
+const treeData = computed<any[]>(() => {
+  const list = store.departments as any[]
+  const allIds = new Set(list.map((d) => d.id))
+  // clone nông để gắn children mà không đụng store
+  const nodes = new Map<string, any>()
+  list.forEach((d) => nodes.set(d.id, { ...d, children: undefined }))
+
+  const roots: any[] = []
+  nodes.forEach((node) => {
+    const parentId = node.parentDepartmentId
+    if (parentId && allIds.has(parentId)) {
+      const parent = nodes.get(parentId)
+      if (!parent.children) parent.children = []
+      parent.children.push(node)
+    } else {
+      // không có parent hoặc parent không tồn tại trong danh sách => node gốc
+      roots.push(node)
+    }
+  })
+  return roots
+})
+
+// Nguồn dữ liệu bảng: tìm kiếm => danh sách phẳng đã lọc; ngược lại => cây
+const isSearching = computed(() => search.value.trim().length > 0)
+const tableData = computed<any[]>(() => (isSearching.value ? (filteredDepartments.value as any[]) : treeData.value))
+
 const columns = computed<any[]>(() => [
   { title: 'Mã', dataIndex: 'departmentCode', key: 'departmentCode', width: 120 },
   { title: 'Tên phòng ban', dataIndex: 'departmentName', key: 'departmentName', sorter: (a: any, b: any) => (a.departmentName || '').localeCompare(b.departmentName || '') },
   { title: 'Phòng ban cha', key: 'parent' },
   { title: 'Trưởng phòng', key: 'manager' },
+  { title: 'Số NV', key: 'empCount', width: 90, align: 'center' },
   { title: 'Trạng thái', key: 'isActive', width: 120, align: 'center' },
   ...(canManageSystem.value ? [{ title: '', key: 'actions', width: 100, align: 'right' }] : []),
 ])
@@ -252,15 +283,19 @@ async function executeDelete() {
     <div v-if="viewMode === 'table'" class="bg-card border border-border rounded-xl shadow-sm overflow-hidden dept-table-wrap">
       <a-table
         :columns="columns"
-        :data-source="filteredDepartments"
+        :data-source="tableData"
         :loading="store.isLoading"
         row-key="id"
         :pagination="tablePagination"
+        :default-expand-all-rows="true"
         size="middle"
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'parent'">{{ deptName(record.parentDepartmentId) || '—' }}</template>
           <template v-else-if="column.key === 'manager'">{{ managerName(record.managerEmployeeId) || '—' }}</template>
+          <template v-else-if="column.key === 'empCount'">
+            <a-tag>{{ empCount(record.id) }}</a-tag>
+          </template>
           <template v-else-if="column.key === 'isActive'">
             <a-tag :color="record.isActive ? 'green' : 'default'">{{ record.isActive ? 'Hoạt động' : 'Ngừng' }}</a-tag>
           </template>

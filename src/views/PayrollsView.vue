@@ -36,11 +36,11 @@ function clearFilters() {
   fStatuses.value = []
 }
 
-// map employeeId -> { code, name } để hiển thị tên thay vì GUID
-const empMap = computed<Record<string, { code: string; name: string }>>(() => {
-  const m: Record<string, { code: string; name: string }> = {}
+// map employeeId -> { code, name, department } để hiển thị tên thay vì GUID
+const empMap = computed<Record<string, { code: string; name: string; department: string }>>(() => {
+  const m: Record<string, { code: string; name: string; department: string }> = {}
   for (const e of empStore.allEmployees as any[]) {
-    if (e.id) m[e.id] = { code: e.employeeCode, name: e.fullName }
+    if (e.id) m[e.id] = { code: e.employeeCode, name: e.fullName, department: e.departmentName || '' }
   }
   return m
 })
@@ -64,8 +64,22 @@ const filteredPayrolls = computed<any[]>(() => {
   })
 })
 
+// Dòng tổng (sổ lương): cộng dồn trên đúng tập đang lọc
+const totals = computed(() => {
+  const t = { count: 0, baseSalary: 0, totalAllowances: 0, totalDeductions: 0, netSalary: 0 }
+  for (const p of filteredPayrolls.value) {
+    t.count++
+    t.baseSalary += p.baseSalary ?? 0
+    t.totalAllowances += p.totalAllowances ?? 0
+    t.totalDeductions += p.totalDeductions ?? 0
+    t.netSalary += p.netSalary ?? 0
+  }
+  return t
+})
+
 const columns = computed<any[]>(() => [
   { title: 'Nhân viên', key: 'employee', dataIndex: 'employeeId' },
+  { title: 'Phòng ban', key: 'department', align: 'left', width: 160, sorter: (a: any, b: any) => (empMap.value[a.employeeId]?.department || '').localeCompare(empMap.value[b.employeeId]?.department || '') },
   { title: 'Kỳ', key: 'period', align: 'center', width: 100, sorter: (a: any, b: any) => (a.year - b.year) || (a.month - b.month) },
   { title: 'Lương cơ bản', key: 'baseSalary', dataIndex: 'baseSalary', align: 'right', sorter: (a: any, b: any) => (a.baseSalary ?? 0) - (b.baseSalary ?? 0) },
   { title: 'Phụ cấp', key: 'totalAllowances', dataIndex: 'totalAllowances', align: 'right', sorter: (a: any, b: any) => (a.totalAllowances ?? 0) - (b.totalAllowances ?? 0) },
@@ -117,7 +131,7 @@ watch([month, year], () => store.fetchPayrolls(month.value, year.value))
     :loading="store.isLoading"
     row-key="id"
     :pagination="tablePagination"
-    :scroll-x="1100"
+    :scroll-x="1260"
   >
     <!-- Header actions -->
     <template #actions>
@@ -160,10 +174,35 @@ watch([month, year], () => store.fetchPayrolls(month.value, year.value))
       </button>
     </template>
 
-    <!-- Banner: lỗi -->
+    <!-- Banner: lỗi + dòng tổng (sổ lương) -->
     <template #banner>
       <div v-if="store.error" class="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
         {{ store.error }}
+      </div>
+
+      <div class="bg-card border border-border rounded-xl p-3 font-sans">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div>
+            <div class="text-xs text-muted-foreground">Số bảng lương</div>
+            <div class="text-base font-semibold text-foreground">{{ totals.count }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted-foreground">Tổng lương cơ bản</div>
+            <div class="text-base font-mono font-medium text-foreground">{{ vnd(totals.baseSalary) }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted-foreground">Tổng phụ cấp</div>
+            <div class="text-base font-mono font-medium text-emerald-600">{{ vnd(totals.totalAllowances) }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted-foreground">Tổng khấu trừ</div>
+            <div class="text-base font-mono font-medium text-red-600">{{ vnd(totals.totalDeductions) }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-muted-foreground">Tổng thực lãnh</div>
+            <div class="text-base font-mono font-bold text-accent">{{ vnd(totals.netSalary) }}</div>
+          </div>
+        </div>
       </div>
     </template>
 
@@ -174,6 +213,9 @@ watch([month, year], () => store.fetchPayrolls(month.value, year.value))
           <div class="font-medium text-foreground">{{ empMap[record.employeeId]?.name || 'NV chưa đồng bộ' }}</div>
           <div class="font-mono text-xs text-muted-foreground">{{ empMap[record.employeeId]?.code || record.employeeId.slice(0, 8) }}</div>
         </div>
+      </template>
+      <template v-else-if="column.key === 'department'">
+        <span class="font-sans text-sm text-foreground">{{ empMap[record.employeeId]?.department || '—' }}</span>
       </template>
       <template v-else-if="column.key === 'period'"><span class="font-mono text-sm">{{ record.month }}/{{ record.year }}</span></template>
       <template v-else-if="column.key === 'baseSalary'"><span class="font-mono text-sm">{{ vnd(record.baseSalary) }}</span></template>
