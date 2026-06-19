@@ -118,6 +118,66 @@ async function pay(id: string) {
   ok ? message.success('Đã chi trả') : message.error(store.error || 'Chi trả thất bại')
 }
 
+// ===== CHỌN NHIỀU + THAO TÁC HÀNG LOẠT =====
+const selectedIds = ref<string[]>([])
+const rowSelection = computed(() => ({
+  selectedRowKeys: selectedIds.value,
+  onChange: (keys: any[]) => { selectedIds.value = keys as string[] },
+}))
+
+// map id -> record để xác định trạng thái dòng đã chọn
+const payrollById = computed<Record<string, any>>(() => {
+  const m: Record<string, any> = {}
+  for (const p of store.payrolls as any[]) m[p.id] = p
+  return m
+})
+
+// Danh sách id đủ điều kiện cho từng thao tác (lọc theo trạng thái dòng đã chọn)
+const approvableIds = computed<string[]>(() =>
+  selectedIds.value.filter((id) => payrollById.value[id]?.status === 0),
+)
+const payableIds = computed<string[]>(() =>
+  selectedIds.value.filter((id) => payrollById.value[id]?.status === 1),
+)
+
+const batchRunning = ref(false)
+
+async function runBatch(ids: string[], fn: (id: string) => Promise<boolean>) {
+  let ok = 0
+  for (const id of ids) {
+    if (await fn(id)) ok++
+  }
+  return ok
+}
+
+async function batchApprove() {
+  const ids = [...approvableIds.value]
+  if (!ids.length) return
+  batchRunning.value = true
+  try {
+    const approved = await runBatch(ids, (id) => store.approvePayroll(id))
+    await load()
+    selectedIds.value = []
+    message.success(`Đã duyệt ${approved}/${ids.length} phiếu`)
+  } finally {
+    batchRunning.value = false
+  }
+}
+
+async function batchPay() {
+  const ids = [...payableIds.value]
+  if (!ids.length) return
+  batchRunning.value = true
+  try {
+    const paid = await runBatch(ids, (id) => store.payPayroll(id))
+    await load()
+    selectedIds.value = []
+    message.success(`Đã chi trả ${paid}/${ids.length} phiếu`)
+  } finally {
+    batchRunning.value = false
+  }
+}
+
 onMounted(load)
 watch([month, year], () => store.fetchPayrolls(month.value, year.value))
 </script>
@@ -131,6 +191,7 @@ watch([month, year], () => store.fetchPayrolls(month.value, year.value))
     :loading="store.isLoading"
     row-key="id"
     :pagination="tablePagination"
+    :row-selection="rowSelection"
     :scroll-x="1260"
   >
     <!-- Header actions -->
@@ -178,6 +239,45 @@ watch([month, year], () => store.fetchPayrolls(month.value, year.value))
     <template #banner>
       <div v-if="store.error" class="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
         {{ store.error }}
+      </div>
+
+      <!-- Thanh thao tác hàng loạt -->
+      <div v-if="selectedIds.length > 0" class="bg-accent/10 border border-accent/20 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 font-sans">
+        <span class="text-accent font-medium text-sm">Đã chọn {{ selectedIds.length }} phiếu lương</span>
+        <div class="flex items-center gap-2">
+          <APopconfirm
+            :title="`Duyệt ${approvableIds.length} phiếu đang chờ duyệt?`"
+            ok-text="Duyệt" cancel-text="Hủy"
+            :disabled="batchRunning || approvableIds.length === 0"
+            @confirm="batchApprove"
+          >
+            <button
+              :disabled="batchRunning || approvableIds.length === 0"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-blue-600 border border-blue-200 hover:bg-blue-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <CheckIcon class="w-4 h-4" /> Duyệt {{ approvableIds.length }} phiếu
+            </button>
+          </APopconfirm>
+          <APopconfirm
+            :title="`Chi trả ${payableIds.length} phiếu đã duyệt?`"
+            ok-text="Chi trả" cancel-text="Hủy"
+            :disabled="batchRunning || payableIds.length === 0"
+            @confirm="batchPay"
+          >
+            <button
+              :disabled="batchRunning || payableIds.length === 0"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-emerald-600 border border-emerald-200 hover:bg-emerald-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <BanknoteIcon class="w-4 h-4" /> Chi trả {{ payableIds.length }} phiếu
+            </button>
+          </APopconfirm>
+          <button
+            @click="selectedIds = []"
+            class="px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            Bỏ chọn
+          </button>
+        </div>
       </div>
 
       <div class="bg-card border border-border rounded-xl p-3 font-sans">

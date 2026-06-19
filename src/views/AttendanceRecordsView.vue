@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { Select as ASelect, Tag as ATag, Segmented as ASegmented, message } from 'ant-design-vue'
-import { PlusIcon, PencilIcon, XIcon } from 'lucide-vue-next'
+import { PlusIcon, PencilIcon, XIcon, TriangleAlertIcon } from 'lucide-vue-next'
 import { useAttendanceStore, ATTENDANCE_STATUS } from '../stores/attendance'
 import { useEmployeeStore } from '../stores/employee'
 import Button from '../components/ui/Button.vue'
@@ -43,6 +43,12 @@ const searchText = ref('')
 const fDeptNames = ref<string[]>([])
 const fEmpIds = ref<string[]>([])
 const fDays = ref<number[]>([])
+const onlyExceptions = ref(false)
+
+// Bản ghi "cần xử lý": vắng, đi muộn, về sớm, hoặc quên check-out
+function isException(r: any) {
+  return r.status === 1 || (r.lateMinutes || 0) > 0 || (r.earlyLeaveMinutes || 0) > 0 || (!!r.checkInTime && !r.checkOutTime)
+}
 
 const daysInMonth = computed(() => new Date(year.value, month.value, 0).getDate())
 const dayOptions = computed<any[]>(() =>
@@ -54,9 +60,9 @@ const departmentOptions = computed<any[]>(() => {
   return [...set].sort().map((d) => ({ value: d, label: d }))
 })
 const hasFilter = computed(() =>
-  !!searchText.value.trim() || fDeptNames.value.length > 0 || fEmpIds.value.length > 0 || fDays.value.length > 0,
+  !!searchText.value.trim() || fDeptNames.value.length > 0 || fEmpIds.value.length > 0 || fDays.value.length > 0 || onlyExceptions.value,
 )
-function clearFilters() { searchText.value = ''; fDeptNames.value = []; fEmpIds.value = []; fDays.value = [] }
+function clearFilters() { searchText.value = ''; fDeptNames.value = []; fEmpIds.value = []; fDays.value = []; onlyExceptions.value = false }
 
 // reset ngày đã chọn nếu vượt quá số ngày của tháng mới
 watch(daysInMonth, (n) => { fDays.value = fDays.value.filter((d) => d <= n) })
@@ -93,6 +99,7 @@ const detailFiltered = computed(() => {
     if (fDeptNames.value.length && !fDeptNames.value.includes(r._dept)) return false
     if (fEmpIds.value.length && !fEmpIds.value.includes(r.employeeId)) return false
     if (fDays.value.length && !fDays.value.includes(dayOf(r.workDate))) return false
+    if (onlyExceptions.value && !isException(r)) return false
     if (q && !`${r._name} ${r._code}`.toLowerCase().includes(q)) return false
     return true
   })
@@ -223,6 +230,16 @@ watch([month, year], reload)
         :filter-option="(input: string, option: any) => option.label.toLowerCase().includes(input.toLowerCase())"
         placeholder="Nhân viên" class="hr-multi" style="min-width: 200px"
       />
+      <button
+        v-if="viewMode === 'detail'"
+        type="button"
+        @click="onlyExceptions = !onlyExceptions"
+        class="h-9 px-3 inline-flex items-center gap-1 rounded-lg border text-sm transition-all"
+        :class="onlyExceptions ? 'border-amber-400 bg-amber-50 text-amber-700' : 'border-border text-muted-foreground hover:text-foreground hover:bg-muted'"
+        title="Chỉ hiện bản ghi cần xử lý: vắng, đi muộn, về sớm, quên check-out"
+      >
+        <TriangleAlertIcon class="w-4 h-4" /> Chỉ cần xử lý
+      </button>
       <button
         v-if="hasFilter"
         @click="clearFilters"

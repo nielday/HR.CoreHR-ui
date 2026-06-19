@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
+import { useAttendanceStore } from '../../stores/attendance'
 
 const props = defineProps({
   modelValue: {
@@ -31,6 +32,13 @@ const canManageSystem = computed(() => ['Admin', 'HR'].includes(userRole.value |
 const canViewAll = computed(() => ['Admin', 'HR', 'Manager'].includes(userRole.value || ''))
 const isEmployee = computed(() => userRole.value === 'Employee')
 const isManager = computed(() => userRole.value === 'Manager')
+
+// Badge "việc cần xử lý": số đơn nghỉ phép đang chờ duyệt
+const attStore = useAttendanceStore()
+const pendingLeaveCount = computed(() => attStore.pendingLeaves.length)
+onMounted(() => {
+  if (canViewAll.value) attStore.fetchPendingLeaves()
+})
 </script>
 
 <template>
@@ -154,6 +162,7 @@ const isManager = computed(() => userRole.value === 'Manager')
           <RouterLink to="/attendance/leave-approval" class="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm relative">
             <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
             <span class="font-sans font-medium text-sm">Duyệt nghỉ phép</span>
+            <span v-if="pendingLeaveCount > 0" class="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[11px] font-semibold">{{ pendingLeaveCount }}</span>
           </RouterLink>
         </template>
 

@@ -35,7 +35,7 @@ const formatDate = (s: string | null | undefined) => {
 
 // ===== Tìm kiếm + bộ lọc (chọn nhiều — multi-select, lọc phía client) =====
 const search = ref('')
-const fStatuses = ref<number[]>([]) // LEAVE_STATUS 0/1/2 — mảng rỗng = không lọc
+const fStatuses = ref<number[]>([0]) // LEAVE_STATUS 0/1/2 — mặc định lọc "Chờ duyệt" (0)
 const fLeaveTypes = ref<number[]>([]) // LEAVE_TYPE 0/1/2
 const fEmployeeIds = ref<string[]>([])
 
@@ -86,6 +86,19 @@ const filteredLeaves = computed<any[]>(() => {
   })
 })
 
+// Số đơn đang chờ duyệt (status 0) — hiển thị ở subtitle động
+const pendingCount = computed<number>(
+  () => (store.pendingLeaves as any[]).filter((r) => r.status === 0).length,
+)
+
+// ===== Chọn nhiều (bulk) — chỉ cho chọn đơn đang Chờ duyệt (status 0) =====
+const selectedIds = ref<string[]>([])
+const rowSelection = computed(() => ({
+  selectedRowKeys: selectedIds.value,
+  onChange: (keys: any[]) => { selectedIds.value = keys as string[] },
+  getCheckboxProps: (r: any) => ({ disabled: r.status !== 0 }),
+}))
+
 const columns = computed<any[]>(() => [
   { title: 'Nhân viên', key: 'employee', sorter: (a: any, b: any) => empName(a.employeeId).localeCompare(empName(b.employeeId)) },
   { title: 'Loại nghỉ', dataIndex: 'leaveTypeName', key: 'leaveType', align: 'center', width: 130 },
@@ -104,19 +117,22 @@ const pagination = {
   showTotal: (t: number) => `${t} đơn`,
 }
 
-// ===== Modal từ chối =====
+// ===== Modal từ chối (dùng chung cho từng dòng & hàng loạt) =====
 const rejectModalOpen = ref(false)
-const rejectId = ref<string | null>(null)
+const rejectId = ref<string | null>(null) // null = chế độ hàng loạt
 const rejectReason = ref('')
+const rejectBulk = ref(false)
 
 function openReject(id: string) {
   rejectId.value = id
+  rejectBulk.value = false
   rejectReason.value = ''
   rejectModalOpen.value = true
 }
 function closeReject() {
   rejectModalOpen.value = false
   rejectId.value = null
+  rejectBulk.value = false
   rejectReason.value = ''
 }
 
@@ -142,8 +158,54 @@ async function reject(id: string, reason: string) {
 }
 
 function confirmReject() {
+  if (rejectBulk.value) { bulkRejectConfirm(); return }
   if (!rejectId.value) return
   reject(rejectId.value, rejectReason.value)
+}
+
+// ===== Thao tác hàng loạt =====
+const bulkLoading = ref(false)
+
+async function bulkApprove() {
+  const ids = [...selectedIds.value]
+  if (!ids.length || bulkLoading.value) return
+  bulkLoading.value = true
+  let ok = 0, fail = 0
+  for (const id of ids) {
+    const r = await store.approveLeave(id)
+    if (r) ok++; else fail++
+  }
+  bulkLoading.value = false
+  selectedIds.value = []
+  await reload()
+  if (fail === 0) message.success(`Đã duyệt ${ok} đơn`)
+  else message.warning(`Đã duyệt ${ok} đơn, ${fail} đơn thất bại`)
+}
+
+function openBulkReject() {
+  if (!selectedIds.value.length) return
+  rejectId.value = null
+  rejectBulk.value = true
+  rejectReason.value = ''
+  rejectModalOpen.value = true
+}
+
+async function bulkRejectConfirm() {
+  const ids = [...selectedIds.value]
+  if (!ids.length || bulkLoading.value) return
+  const reason = rejectReason.value
+  bulkLoading.value = true
+  let ok = 0, fail = 0
+  for (const id of ids) {
+    const r = await store.rejectLeave(id, reason)
+    if (r) ok++; else fail++
+  }
+  bulkLoading.value = false
+  closeReject()
+  selectedIds.value = []
+  await reload()
+  if (fail === 0) message.success(`Đã từ chối ${ok} đơn`)
+  else message.warning(`Đã từ chối ${ok} đơn, ${fail} đơn thất bại`)
 }
 
 onMounted(async () => {
@@ -155,12 +217,13 @@ onMounted(async () => {
 <template>
   <DataTableShell
     title="Duyệt nghỉ phép"
-    subtitle="Xem và xử lý các đơn xin nghỉ phép đang chờ duyệt."
+    :subtitle="`Đang chờ duyệt: ${pendingCount} đơn`"
     :columns="columns"
     :data-source="filteredLeaves"
     :loading="store.isLoading"
     row-key="id"
     :pagination="pagination"
+    :row-selection="rowSelection"
     :scroll-x="1100"
   >
     <!-- Header actions -->
@@ -203,10 +266,24 @@ onMounted(async () => {
       </button>
     </template>
 
-    <!-- Banner: lỗi -->
+    <!-- Banner: lỗi + thanh thao tác hàng loạt -->
     <template #banner>
       <div v-if="store.error && !rejectModalOpen" class="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
         {{ store.error }}
+      </div>
+      <div v-if="selectedIds.length > 0" class="bg-accent/10 border border-accent/20 rounded-xl p-3 flex items-center justify-between">
+        <span class="text-accent font-medium text-sm">Đã chọn {{ selectedIds.length }} đơn (Chờ duyệt)</span>
+        <div class="flex items-center gap-2">
+          <Button variant="ghost" @click="selectedIds = []" :disabled="bulkLoading" class="text-muted-foreground">Bỏ chọn</Button>
+          <APopconfirm :title="`Duyệt ${selectedIds.length} đơn đã chọn?`" ok-text="Duyệt" cancel-text="Hủy" @confirm="bulkApprove">
+            <a-button type="primary" :loading="bulkLoading">
+              <CheckIcon class="w-3.5 h-3.5 inline-block mr-1 align-text-bottom" /> Duyệt {{ selectedIds.length }} đơn
+            </a-button>
+          </APopconfirm>
+          <a-button danger :loading="bulkLoading" @click="openBulkReject">
+            <XIcon class="w-3.5 h-3.5 inline-block mr-1 align-text-bottom" /> Từ chối {{ selectedIds.length }} đơn
+          </a-button>
+        </div>
       </div>
     </template>
 
@@ -246,8 +323,11 @@ onMounted(async () => {
     </template>
   </DataTableShell>
 
-  <Modal :is-open="rejectModalOpen" title="Từ chối đơn nghỉ phép" @close="closeReject">
+  <Modal :is-open="rejectModalOpen" :title="rejectBulk ? `Từ chối ${selectedIds.length} đơn nghỉ phép` : 'Từ chối đơn nghỉ phép'" @close="closeReject">
     <div class="space-y-4 font-sans">
+      <p v-if="rejectBulk" class="text-sm text-muted-foreground">
+        Lý do dưới đây sẽ áp dụng cho tất cả <strong>{{ selectedIds.length }}</strong> đơn đã chọn.
+      </p>
       <div>
         <label class="block text-sm font-medium text-foreground mb-2">Lý do từ chối</label>
         <textarea
@@ -259,7 +339,9 @@ onMounted(async () => {
       </div>
       <div class="flex justify-end gap-3 pt-2">
         <button @click="closeReject" class="px-4 py-2 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-muted transition-colors">Hủy</button>
-        <Button @click="confirmReject" :disabled="store.isLoading" class="bg-red-600 hover:bg-red-700">Xác nhận từ chối</Button>
+        <Button @click="confirmReject" :disabled="store.isLoading || bulkLoading" class="bg-red-600 hover:bg-red-700">
+          {{ rejectBulk ? `Xác nhận từ chối ${selectedIds.length} đơn` : 'Xác nhận từ chối' }}
+        </Button>
       </div>
     </div>
   </Modal>
