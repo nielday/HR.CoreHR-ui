@@ -35,8 +35,8 @@ onMounted(refresh)
 <template>
   <div class="space-y-8 motion-safe:animate-in motion-safe:fade-in duration-700 pb-12">
     <div>
-      <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Quản lý Kiosk chấm công</h1>
-      <p class="text-muted-foreground font-sans text-lg">Bật/tắt máy chấm công công cộng và mở màn hình đặt tại cổng.</p>
+      <h1 class="font-display text-2xl text-foreground leading-tight">Quản lý Kiosk chấm công</h1>
+      <p class="text-muted-foreground font-sans text-sm mt-0.5">Bật/tắt máy chấm công công cộng và mở màn hình đặt tại cổng.</p>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

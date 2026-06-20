@@ -120,10 +120,10 @@ onMounted(async () => {
   <div class="space-y-6 motion-safe:animate-in motion-safe:fade-in duration-700 pb-12">
     <!-- Lời chào -->
     <div>
-      <h1 class="font-display text-4xl mb-1 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+      <h1 class="font-display text-2xl text-foreground leading-tight">
         Xin chào{{ profile?.fullName ? ', ' + profile.fullName : '' }}
       </h1>
-      <p class="text-muted-foreground font-sans text-lg" v-if="profile">
+      <p class="text-muted-foreground font-sans text-sm mt-0.5" v-if="profile">
         {{ profile.positionName || '—' }} · {{ profile.departmentName || '—' }} · Mã NV {{ profile.employeeCode }}
       </p>
     </div>

@@ -62,8 +62,8 @@ watch([month, year], reload)
   <div class="space-y-8 motion-safe:animate-in motion-safe:fade-in duration-700 pb-12">
     <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
       <div>
-        <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Chốt công</h1>
-        <p class="text-muted-foreground font-sans text-lg">Tổng hợp công tháng và chốt sổ chấm công cho toàn bộ nhân viên.</p>
+        <h1 class="font-display text-2xl text-foreground leading-tight">Chốt công</h1>
+        <p class="text-muted-foreground font-sans text-sm mt-0.5">Tổng hợp công tháng và chốt sổ chấm công cho toàn bộ nhân viên.</p>
       </div>
       <div class="flex items-center gap-3">
         <ASelect v-model:value="month" :options="months" style="width: 120px" size="large" />

@@ -55,7 +55,7 @@ watch(
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        class="relative z-10 flex w-full max-h-[calc(100dvh-2rem)] flex-col overflow-hidden rounded-2xl bg-card shadow-xl border border-border motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 duration-200"
+        class="relative z-10 flex w-full max-h-[calc(100dvh-2rem)] flex-col overflow-hidden rounded-xl bg-card shadow-xl border border-border motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 duration-200"
         :class="{
           'max-w-sm': maxWidth === 'sm',
           'max-w-md': maxWidth === 'md',
@@ -68,7 +68,7 @@ watch(
       >
         <header class="shrink-0 p-6 pb-4">
           <div class="flex justify-between items-center">
-            <h3 id="modal-title" class="font-display text-2xl text-foreground">{{ title }}</h3>
+            <h3 id="modal-title" class="font-display text-lg font-semibold text-foreground">{{ title }}</h3>
             <button type="button" @click="emit('close')" aria-label="Close modal" class="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-full hover:bg-muted">
               <XIcon class="w-5 h-5" />
             </button>

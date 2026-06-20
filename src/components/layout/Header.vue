@@ -14,7 +14,7 @@ function logout() {
 </script>
 
 <template>
-  <v-app-bar elevation="0" class="bg-background/80 backdrop-blur-xl border-b border-border px-2 md:px-6">
+  <v-app-bar elevation="0" class="!bg-card border-b border-border px-2 md:px-6">
     <template v-slot:prepend>
       <!-- Mobile menu toggle -->
       <button @click="$emit('toggle-drawer')" class="lg:hidden p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors mr-2">

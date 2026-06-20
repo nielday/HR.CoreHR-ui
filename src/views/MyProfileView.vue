@@ -74,8 +74,8 @@ onMounted(load)
 <template>
   <div class="space-y-8 motion-safe:animate-in motion-safe:fade-in duration-700 pb-12">
     <div>
-      <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Hồ sơ của tôi</h1>
-      <p class="text-muted-foreground font-sans text-lg">Xem thông tin công việc và cập nhật thông tin cá nhân của bạn.</p>
+      <h1 class="font-display text-2xl text-foreground leading-tight">Hồ sơ của tôi</h1>
+      <p class="text-muted-foreground font-sans text-sm mt-0.5">Xem thông tin công việc và cập nhật thông tin cá nhân của bạn.</p>
     </div>
 
     <div v-if="store.error && loaded && !profile" class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
