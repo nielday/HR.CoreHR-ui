@@ -12,23 +12,8 @@
  *  - bodyCell:     forward nguyên slot bodyCell của a-table ({ column, record, index, text })
  *  - default:      thay cho bảng (vd hiển thị Kanban / sơ đồ thay vì bảng)
  */
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
 import { Table as ATable } from 'ant-design-vue'
 import { SearchIcon } from 'lucide-vue-next'
-
-// Breadcrumb: suy ra "nhóm" từ đường dẫn hiện tại (kiểu Ant Design Pro)
-const route = useRoute()
-const sectionCrumb = computed(() => {
-  const p = route.path
-  if (p.includes('/attendance/leave') || p.includes('leave-policies')) return 'Nghỉ phép'
-  if (p.startsWith('/attendance')) return 'Chấm công'
-  if (p.startsWith('/payroll') || p.includes('/payslip')) return 'Lương'
-  if (p.startsWith('/users')) return 'Quản trị'
-  if (p.includes('dashboard')) return 'Tổng quan'
-  if (p.startsWith('/employees') || p.startsWith('/departments') || p.startsWith('/positions') || p.startsWith('/contracts') || p.includes('/contracts')) return 'Nhân sự'
-  return ''
-})
 
 withDefaults(
   defineProps<{
@@ -75,11 +60,6 @@ const emit = defineEmits<{
       class="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
     >
       <div v-if="title">
-        <nav v-if="sectionCrumb" class="flex items-center gap-1.5 text-xs text-muted-foreground mb-1 font-sans">
-          <span>{{ sectionCrumb }}</span>
-          <span class="opacity-50">/</span>
-          <span class="text-foreground/70">{{ title }}</span>
-        </nav>
         <h1 class="font-display text-2xl text-foreground leading-tight">{{ title }}</h1>
         <p v-if="subtitle" class="text-muted-foreground font-sans text-sm mt-0.5">{{ subtitle }}</p>
       </div>
@@ -91,7 +71,7 @@ const emit = defineEmits<{
     <!-- Toolbar: search + filters -->
     <div
       v-if="showSearch || $slots.filters"
-      class="bg-card border border-border rounded-lg shadow-sm p-3 flex flex-col lg:flex-row gap-3 lg:items-center"
+      class="bg-card border border-border rounded-xl shadow-sm p-3 flex flex-col lg:flex-row gap-3 lg:items-center"
     >
       <div v-if="showSearch" class="relative w-full lg:w-72 shrink-0">
         <SearchIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -115,7 +95,7 @@ const emit = defineEmits<{
 
     <!-- Nội dung: bảng mặc định, hoặc slot default tuỳ biến (Kanban/sơ đồ) -->
     <slot>
-      <div class="bg-card border border-border rounded-lg shadow-sm overflow-hidden hr-table-wrap">
+      <div class="bg-card border border-border rounded-xl shadow-sm overflow-hidden hr-table-wrap">
         <a-table
           :columns="columns"
           :data-source="dataSource"

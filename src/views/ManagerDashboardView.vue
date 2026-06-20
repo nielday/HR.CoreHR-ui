@@ -67,8 +67,8 @@ onMounted(async () => {
   <div class="space-y-6 motion-safe:animate-in motion-safe:fade-in duration-700 pb-12 flex flex-col min-h-[calc(100vh-100px)]">
     <!-- Header -->
     <div>
-      <h1 class="font-display text-2xl text-foreground leading-tight">Tổng quan quản lý</h1>
-      <p class="text-muted-foreground font-sans text-sm mt-0.5">
+      <h1 class="font-display text-4xl mb-1 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Tổng quan quản lý</h1>
+      <p class="text-muted-foreground font-sans text-lg">
         Phòng ban phụ trách:
         <span v-if="managedDeptNames.length" class="text-foreground font-medium">{{ managedDeptNames.join(', ') }}</span>
         <span v-else>—</span>

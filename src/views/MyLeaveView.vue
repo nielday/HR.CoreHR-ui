@@ -80,8 +80,8 @@ onMounted(() => {
     <!-- Header -->
     <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
       <div>
-        <h1 class="font-display text-2xl text-foreground leading-tight">Đơn nghỉ phép của tôi</h1>
-        <p class="text-muted-foreground font-sans text-sm mt-0.5">Tạo và theo dõi các đơn xin nghỉ phép của bạn.</p>
+        <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Đơn nghỉ phép của tôi</h1>
+        <p class="text-muted-foreground font-sans text-lg">Tạo và theo dõi các đơn xin nghỉ phép của bạn.</p>
       </div>
       <Button @click="openCreateModal" class="shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5">
         <PlusIcon class="w-4 h-4 mr-2" />

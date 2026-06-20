@@ -74,8 +74,8 @@ watch([month, year], load)
     <!-- Header -->
     <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
       <div>
-        <h1 class="font-display text-2xl text-foreground leading-tight">Bảng lương của tôi</h1>
-        <p class="text-muted-foreground font-sans text-sm mt-0.5">Xem chi tiết lương theo từng tháng của bạn.</p>
+        <h1 class="font-display text-4xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">Bảng lương của tôi</h1>
+        <p class="text-muted-foreground font-sans text-lg">Xem chi tiết lương theo từng tháng của bạn.</p>
       </div>
       <div class="flex items-center gap-3">
         <ASelect v-model:value="month" :options="months" style="width: 120px" size="large" />

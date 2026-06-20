@@ -10,8 +10,6 @@ const theme = {
     colorInfo: '#0052FF',
     colorLink: '#0052FF',
     borderRadius: 8,
-    fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-    colorBgLayout: '#F0F2F5',
   },
 }
 </script>
