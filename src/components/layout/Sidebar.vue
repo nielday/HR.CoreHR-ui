@@ -151,7 +151,7 @@ watch(
       </div>
 
       <!-- Navigation -->
-      <nav class="flex-1 px-3 py-5 space-y-1 relative z-10 overflow-y-auto custom-scrollbar">
+      <nav class="sidebar-nav flex-1 px-3 py-5 space-y-1 relative z-10 overflow-y-auto custom-scrollbar">
         <!-- Tổng quan (cấp 1) -->
         <RouterLink :to="dashboardPath" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-white/90 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm">
           <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
@@ -228,6 +228,16 @@ watch(
 a.router-link-exact-active > span:first-child {
   background-color: var(--accent, #0052FF) !important;
   box-shadow: 0 0 8px var(--accent, #0052FF);
+}
+
+/* Ép màu chữ menu sáng — đè màu tối mặc định của Vuetify navigation-drawer */
+nav.sidebar-nav a,
+nav.sidebar-nav button {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+nav.sidebar-nav a:hover,
+nav.sidebar-nav button:hover {
+  color: #ffffff !important;
 }
 
 /* Hiệu ứng xổ/thu submenu */
