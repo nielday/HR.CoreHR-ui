@@ -153,7 +153,7 @@ watch(
       <!-- Navigation -->
       <nav class="flex-1 px-3 py-5 space-y-1 relative z-10 overflow-y-auto custom-scrollbar">
         <!-- Tổng quan (cấp 1) -->
-        <RouterLink :to="dashboardPath" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm">
+        <RouterLink :to="dashboardPath" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-white/90 hover:text-white hover:bg-white/5 transition-all duration-200 group" active-class="!text-white bg-white/10 shadow-sm">
           <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-accent/50 transition-colors"></span>
           <span class="font-sans font-medium text-sm">Tổng quan</span>
         </RouterLink>
@@ -164,7 +164,7 @@ watch(
             type="button"
             @click="toggle(g.key)"
             class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl hover:bg-white/5 transition-all duration-200"
-            :class="isOpen(g.key) ? 'text-white' : 'text-white/75 hover:text-white'"
+            :class="isOpen(g.key) ? 'text-white' : 'text-white/90 hover:text-white'"
           >
             <span class="font-sans font-medium text-sm">{{ g.label }}</span>
             <span v-if="!isOpen(g.key) && groupBadge(g) > 0" class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-semibold">{{ groupBadge(g) }}</span>
@@ -177,7 +177,7 @@ watch(
                 v-for="c in g.children"
                 :key="c.to"
                 :to="c.to"
-                class="flex items-center gap-3 px-3 py-2 rounded-lg text-white/65 hover:text-white hover:bg-white/5 transition-all duration-200 group"
+                class="flex items-center gap-3 px-3 py-2 rounded-lg text-white/85 hover:text-white hover:bg-white/5 transition-all duration-200 group"
                 active-class="!text-white bg-white/10"
               >
                 <span class="w-1.5 h-1.5 rounded-full bg-white/20 group-hover:bg-accent/60 transition-colors shrink-0"></span>
