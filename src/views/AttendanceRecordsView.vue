@@ -78,6 +78,15 @@ function formatTime(v?: string | null) {
   const d = new Date(v); return isNaN(d.getTime()) ? '—' : `${pad2(d.getHours())}:${pad2(d.getMinutes())}`
 }
 const formatHours = (n?: number | null) => (n ?? 0).toLocaleString('vi-VN')
+// Đi muộn/về sớm: <1 giờ ghi phút, ≥1 giờ ghi giờ (+ phút lẻ)
+function formatLate(n?: number | null) {
+  const m = Math.round(n ?? 0)
+  if (m <= 0) return '0 phút'
+  if (m < 60) return `${m} phút`
+  const h = Math.floor(m / 60)
+  const r = m % 60
+  return r ? `${h} giờ ${r} phút` : `${h} giờ`
+}
 const dayOf = (v: any) => Number(String(v).slice(8, 10))
 
 // ===== CHI TIẾT (danh sách phẳng từng bản ghi) =====
@@ -254,13 +263,6 @@ watch([month, year], reload)
       <div v-if="store.error && !modalOpen" class="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">
         Lỗi tải dữ liệu: {{ store.error }}
       </div>
-      <div class="text-xs text-muted-foreground font-sans flex items-center gap-2">
-        <span v-if="store.isLoading">Đang tải…</span>
-        <span v-else>
-          Đã tải <strong>{{ store.attendanceList.length }}</strong> bản ghi chấm công cho tháng {{ month }}/{{ year }}
-          <template v-if="viewMode === 'detail'"> · hiển thị {{ detailFiltered.length }} dòng sau lọc</template>
-        </span>
-      </div>
     </template>
 
     <!-- CHI TIẾT -->
@@ -295,7 +297,7 @@ watch([month, year], reload)
               <td class="hr-td text-center font-mono">{{ formatTime(r.checkOutTime) }}</td>
               <td class="hr-td text-right font-mono">{{ formatHours(r.workedHours) }}</td>
               <td class="hr-td text-right font-mono text-emerald-600">{{ formatHours(r.overtimeHours) }}</td>
-              <td class="hr-td text-right font-mono" :class="r.lateMinutes > 0 ? 'text-red-600' : 'text-muted-foreground'">{{ formatHours(r.lateMinutes) }}'</td>
+              <td class="hr-td text-right font-mono" :class="r.lateMinutes > 0 ? 'text-red-600' : 'text-muted-foreground'">{{ formatLate(r.lateMinutes) }}</td>
               <td class="hr-td text-center"><ATag :color="ATTENDANCE_STATUS[r.status]?.color">{{ ATTENDANCE_STATUS[r.status]?.label || r.status }}</ATag></td>
               <td class="hr-td text-right">
                 <button @click="openEdit(r)" class="p-1.5 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-all" title="Sửa chấm công"><PencilIcon class="w-4 h-4" /></button>
