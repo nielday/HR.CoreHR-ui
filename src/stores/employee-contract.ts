@@ -17,8 +17,21 @@ export interface EmployeeContract {
 
 export const useEmployeeContractStore = defineStore('employeeContract', () => {
   const contracts = ref<EmployeeContract[]>([])
+  const allContracts = ref<EmployeeContract[]>([])
   const isLoading = ref<boolean>(false)
   const error = ref<string | null>(null)
+
+  // Toàn bộ hợp đồng (Admin/HR) — dùng cho dashboard HĐ sắp hết hạn
+  async function fetchAllContracts() {
+    try {
+      const response = await api.get('/EmployeeContracts')
+      allContracts.value = response.data
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.message || err.message || 'Failed to fetch contracts'
+      return false
+    }
+  }
 
   async function fetchContractsByEmployee(employeeId: string) {
     isLoading.value = true
@@ -91,8 +104,8 @@ export const useEmployeeContractStore = defineStore('employeeContract', () => {
     }
   }
 
-  return { 
-    contracts, isLoading, error, 
-    fetchContractsByEmployee, createContract, updateContract, terminateContract, renewContract 
+  return {
+    contracts, allContracts, isLoading, error,
+    fetchAllContracts, fetchContractsByEmployee, createContract, updateContract, terminateContract, renewContract
   }
 })

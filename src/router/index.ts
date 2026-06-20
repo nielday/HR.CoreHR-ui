@@ -52,7 +52,7 @@ const router = createRouter({
         {
           path: 'dashboard',
           name: 'dashboard',
-          component: () => import('../views/PayrollDashboardView.vue'),
+          component: () => import('../views/AdminDashboardView.vue'),
           meta: { roles: ['Admin', 'HR'] }
         },
         {
