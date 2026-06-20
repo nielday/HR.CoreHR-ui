@@ -6,8 +6,11 @@ import { useEmployeeStore } from '../stores/employee'
 import { useEmployeeContractStore } from '../stores/employee-contract'
 import { useContractStore } from '../stores/contract'
 import { useAuthStore } from '../stores/auth'
+import { Input as AInput, Select as ASelect } from 'ant-design-vue'
 import Button from '../components/ui/Button.vue'
 import Modal from '../components/ui/Modal.vue'
+
+const ATextarea = AInput.TextArea
 
 const route = useRoute()
 const router = useRouter()
@@ -19,6 +22,19 @@ const authStore = useAuthStore()
 const canManageSystem = computed(() => ['Admin', 'HR'].includes(authStore.userRole || ''))
 const activeContract = computed(() => empContractStore.contracts.find((contract) => contract.status === 1))
 const hasActiveContract = computed(() => Boolean(activeContract.value))
+
+const statusSelectOptions = computed(() => {
+  const opts: { label: string; value: number }[] = [{ label: 'Chờ duyệt', value: 0 }]
+  if (!hasActiveContract.value || (isEditContractMode.value && editingContractId.value === activeContract.value?.id)) {
+    opts.push({ label: 'Đang hiệu lực', value: 1 })
+  }
+  opts.push(
+    { label: 'Hết hạn', value: 2 },
+    { label: 'Đã hủy', value: 3 },
+    { label: 'Đã chấm dứt', value: 4 },
+  )
+  return opts
+})
 
 const employeeId = route.params.id as string
 const employee = ref<any>(null)
@@ -392,30 +408,16 @@ async function executeTerminate() {
 
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Loại hợp đồng <span class="text-red-500">*</span></label>
-          <select v-model="newContract.contractTypeId" :disabled="isEditContractMode" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-            <option value="" disabled>Chọn loại</option>
-            <option v-for="c in contractTypeStore.contracts" :key="c.id" :value="c.id">{{ c.contractTypeName }}</option>
-          </select>
+          <a-select v-model:value="newContract.contractTypeId" :options="contractTypeStore.contracts.map((c:any)=>({label: c.contractTypeName, value: c.id}))" :disabled="isEditContractMode" placeholder="Chọn loại" style="width:100%" />
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mã hợp đồng <span class="text-red-500">*</span></label>
-            <input v-model="newContract.contractCode" type="text" :disabled="isEditContractMode" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"/>
+            <a-input v-model:value="newContract.contractCode" :disabled="isEditContractMode" style="width:100%" />
           </div>
           <div v-if="!isRenewContractMode">
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Trạng thái <span class="text-red-500">*</span></label>
-            <select v-model="newContract.status" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-              <option :value="0">Chờ duyệt</option>
-              <option
-                v-if="!hasActiveContract || (isEditContractMode && editingContractId === activeContract?.id)"
-                :value="1"
-              >
-                Đang hiệu lực
-              </option>
-              <option :value="2">Hết hạn</option>
-              <option :value="3">Đã hủy</option>
-              <option :value="4">Đã chấm dứt</option>
-            </select>
+            <a-select v-model:value="newContract.status" :options="statusSelectOptions" placeholder="Chọn..." style="width:100%" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
@@ -430,7 +432,7 @@ async function executeTerminate() {
         </div>
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Ghi chú</label>
-          <textarea v-model="newContract.note" rows="2" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Ghi chú tùy chọn..."></textarea>
+          <a-textarea v-model:value="newContract.note" :rows="2" placeholder="Ghi chú tùy chọn..." />
         </div>
         
         <div v-if="empContractStore.error && isContractModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans">
@@ -460,7 +462,7 @@ async function executeTerminate() {
 
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Lý do <span class="text-red-500">*</span></label>
-          <textarea v-model="terminateData.reason" required rows="3" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-red-500 outline-none font-sans text-sm" placeholder="Lý do chấm dứt..."></textarea>
+          <a-textarea v-model:value="terminateData.reason" :rows="3" placeholder="Lý do chấm dứt..." />
         </div>
 
         <div v-if="empContractStore.error && isTerminateModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans mt-4">

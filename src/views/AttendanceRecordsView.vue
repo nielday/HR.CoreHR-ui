@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
-import { Select as ASelect, Tag as ATag, Segmented as ASegmented, message } from 'ant-design-vue'
+import { Input as AInput, Select as ASelect, Tag as ATag, Segmented as ASegmented, message } from 'ant-design-vue'
+const ATextarea = AInput.TextArea
 import { PlusIcon, PencilIcon, XIcon, TriangleAlertIcon } from 'lucide-vue-next'
 import { useAttendanceStore, ATTENDANCE_STATUS } from '../stores/attendance'
 import { useEmployeeStore } from '../stores/employee'
@@ -215,12 +216,7 @@ watch([month, year], reload)
     <!-- Filters -->
     <template #filters>
       <div class="relative w-full sm:w-52">
-        <input
-          v-model="searchText"
-          type="text"
-          placeholder="Tìm theo tên/mã nhân viên..."
-          class="w-full h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"
-        />
+        <a-input v-model:value="searchText" placeholder="Tìm theo tên/mã nhân viên..." style="width:100%" />
       </div>
       <ASelect v-model:value="month" :options="months" class="min-w-[120px]" />
       <ASelect v-model:value="year" :options="years" class="min-w-[100px]" />
@@ -388,7 +384,7 @@ watch([month, year], reload)
       </div>
       <div>
         <label class="block text-sm font-medium text-foreground mb-1.5">Ghi chú</label>
-        <textarea v-model="form.note" rows="3" placeholder="Ghi chú (tùy chọn)" class="w-full px-3 py-2 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent resize-none"></textarea>
+        <a-textarea v-model:value="form.note" :rows="3" placeholder="Ghi chú (tùy chọn)" />
       </div>
       <div class="flex justify-end gap-3 pt-2">
         <Button variant="secondary" type="button" @click="modalOpen = false">Hủy</Button>

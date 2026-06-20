@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { Tag as ATag } from 'ant-design-vue'
+import { Tag as ATag, Input as AInput, InputNumber as AInputNumber } from 'ant-design-vue'
+const ATextarea = AInput.TextArea
 import { PlusIcon, PencilIcon, Trash2Icon, DownloadIcon, UploadIcon, CheckSquareIcon } from 'lucide-vue-next'
 import { usePositionStore } from '../stores/position'
 import { useAuthStore } from '../stores/auth'
@@ -27,7 +28,7 @@ const search = ref('')
 const newPos = ref({
   positionCode: '',
   positionName: '',
-  level: null as number | null,
+  level: null as any,
   description: '',
   isActive: true
 })
@@ -204,19 +205,19 @@ async function executeImport() {
     <form @submit.prevent="submitCreateOrUpdate" class="space-y-5">
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mã <span class="text-red-500">*</span></label>
-        <input v-model="newPos.positionCode" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="e.g. DEV" :disabled="isEditMode"/>
+        <a-input v-model:value="newPos.positionCode" placeholder="e.g. DEV" :disabled="isEditMode" style="width:100%" />
       </div>
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Tên <span class="text-red-500">*</span></label>
-        <input v-model="newPos.positionName" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Developer"/>
+        <a-input v-model:value="newPos.positionName" placeholder="Developer" style="width:100%" />
       </div>
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Cấp bậc</label>
-        <input v-model="newPos.level" type="number" min="0" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="e.g. 1" />
+        <a-input-number v-model:value="newPos.level" :min="0" placeholder="e.g. 1" style="width:100%" />
       </div>
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mô tả</label>
-        <textarea v-model="newPos.description" rows="3" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm resize-none" placeholder="Software development..."></textarea>
+        <a-textarea v-model:value="newPos.description" :rows="3" placeholder="Software development..." />
       </div>
 
       <div v-if="isEditMode" class="flex items-center gap-3 pt-2">

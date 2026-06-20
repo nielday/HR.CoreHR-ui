@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { PlusIcon, PencilIcon, UserMinusIcon, ArrowRightLeftIcon, EyeIcon, BriefcaseIcon, MailIcon, PhoneIcon, DownloadIcon, UploadIcon, XIcon } from 'lucide-vue-next'
-import { Row as ARow, Col as ACol, Card as ACard, Tag as ATag, Segmented as ASegmented, Spin as ASpin, Select as ASelect } from 'ant-design-vue'
+import { Row as ARow, Col as ACol, Card as ACard, Tag as ATag, Segmented as ASegmented, Spin as ASpin, Select as ASelect, Input as AInput } from 'ant-design-vue'
+const ATextarea = AInput.TextArea
 import { useEmployeeStore } from '../stores/employee'
 import { useDepartmentStore } from '../stores/department'
 import { usePositionStore } from '../stores/position'
@@ -108,6 +109,11 @@ const statusOptions = [
   { label: 'Thử việc', value: 'Probation' },
   { label: 'Tạm ngưng', value: 'Suspended' },
   { label: 'Đã nghỉ việc', value: 'Resigned' },
+]
+const genderOptions = [
+  { label: 'Nam', value: 'Male' },
+  { label: 'Nữ', value: 'Female' },
+  { label: 'Khác', value: 'Other' },
 ]
 
 const hasFilter = computed(() =>
@@ -374,11 +380,11 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
 
     <!-- Filters (multi-select) -->
     <template #filters>
-      <input
-        v-model="fKeyword"
-        type="text"
+      <a-input
+        v-model:value="fKeyword"
         placeholder="Tìm theo tên, mã, email..."
-        class="w-full sm:w-56 h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"
+        class="w-full sm:w-56"
+        allow-clear
       />
       <template v-if="!isEmployee">
         <ASelect
@@ -540,7 +546,7 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mã <span class="text-red-500">*</span></label>
-              <input v-model="newEmp.employeeCode" type="text" required pattern="[0-9]+" inputmode="numeric" class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="1001" :disabled="isEditMode"/>
+              <a-input v-model:value="newEmp.employeeCode" placeholder="1001" :disabled="isEditMode" style="width:100%" />
             </div>
             <div>
               <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Ngày vào làm <span class="text-red-500">*</span></label>
@@ -549,11 +555,11 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
           </div>
           <div>
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Họ và tên <span class="text-red-500">*</span></label>
-            <input v-model="newEmp.fullName" type="text" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Nguyễn Văn A"/>
+            <a-input v-model:value="newEmp.fullName" placeholder="Nguyễn Văn A" style="width:100%" />
           </div>
           <div>
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Email <span class="text-red-500">*</span></label>
-            <input v-model="newEmp.email" type="email" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="john.doe@company.com"/>
+            <a-input v-model:value="newEmp.email" placeholder="john.doe@company.com" style="width:100%" />
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
@@ -562,22 +568,17 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
             </div>
             <div>
               <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Giới tính</label>
-              <select v-model="newEmp.gender" class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-                <option value="">Chọn</option>
-                <option value="Male">Nam</option>
-                <option value="Female">Nữ</option>
-                <option value="Other">Khác</option>
-              </select>
+              <a-select v-model:value="newEmp.gender" :options="genderOptions" placeholder="Chọn..." style="width:100%" allow-clear />
             </div>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Số điện thoại</label>
-              <input v-model="newEmp.phoneNumber" type="tel" class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="+84 912 345 678"/>
+              <a-input v-model:value="newEmp.phoneNumber" placeholder="+84 912 345 678" style="width:100%" />
             </div>
             <div>
               <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Địa chỉ</label>
-              <input v-model="newEmp.address" type="text" class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Thành phố, Quốc gia"/>
+              <a-input v-model:value="newEmp.address" placeholder="Thành phố, Quốc gia" style="width:100%" />
             </div>
           </div>
         </div>
@@ -589,18 +590,12 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
           </div>
           <div>
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Phòng ban <span class="text-red-500">*</span></label>
-            <select v-model="newEmp.departmentId" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" :disabled="isEditMode">
-              <option value="" disabled>Chọn phòng ban</option>
-              <option v-for="d in deptStore.departments" :key="d.id" :value="d.id">{{ d.departmentName }} ({{ d.departmentCode }})</option>
-            </select>
+            <a-select v-model:value="newEmp.departmentId" :options="deptStore.departments.map((d:any)=>({label: `${d.departmentName} (${d.departmentCode})`, value: d.id}))" placeholder="Chọn phòng ban" style="width:100%" :disabled="isEditMode" />
             <p v-if="isEditMode" class="text-xs text-muted-foreground mt-1">Để thay đổi phòng ban hoặc chức vụ, hãy dùng chức năng Điều chuyển.</p>
           </div>
           <div>
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Chức vụ <span class="text-red-500">*</span></label>
-            <select v-model="newEmp.positionId" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" :disabled="isEditMode">
-              <option value="" disabled>Chọn chức vụ</option>
-              <option v-for="p in posStore.positions" :key="p.id" :value="p.id">{{ p.positionName }}</option>
-            </select>
+            <a-select v-model:value="newEmp.positionId" :options="posStore.positions.map((p:any)=>({label: p.positionName, value: p.id}))" placeholder="Chọn chức vụ" style="width:100%" :disabled="isEditMode" />
           </div>
           <div>
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Phòng ban kiêm nhiệm</label>
@@ -616,10 +611,7 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
           </div>
           <div class="pt-2">
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Loại hợp đồng</label>
-            <select v-model="newEmp.contractTypeId" class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-              <option value="">Chưa có hợp đồng (Chờ xử lý)</option>
-              <option v-for="c in contractStore.contracts" :key="c.id" :value="c.id">{{ c.contractTypeName }}</option>
-            </select>
+            <a-select v-model:value="newEmp.contractTypeId" :options="contractStore.contracts.map((c:any)=>({label: c.contractTypeName, value: c.id}))" placeholder="Chưa có hợp đồng (Chờ xử lý)" style="width:100%" allow-clear />
           </div>
           <div class="grid grid-cols-2 gap-4" v-if="newEmp.contractTypeId">
             <div>
@@ -655,15 +647,11 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
       </p>
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Phòng ban mới <span class="text-red-500">*</span></label>
-        <select v-model="transferData.newDepartmentId" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-blue-500 outline-none font-sans text-sm">
-          <option v-for="d in deptStore.departments" :key="d.id" :value="d.id">{{ d.departmentName }}</option>
-        </select>
+        <a-select v-model:value="transferData.newDepartmentId" :options="deptStore.departments.map((d:any)=>({label: d.departmentName, value: d.id}))" placeholder="Chọn phòng ban" style="width:100%" />
       </div>
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Chức vụ mới <span class="text-red-500">*</span></label>
-        <select v-model="transferData.newPositionId" required class="w-full h-10 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-blue-500 outline-none font-sans text-sm">
-          <option v-for="p in posStore.positions" :key="p.id" :value="p.id">{{ p.positionName }}</option>
-        </select>
+        <a-select v-model:value="transferData.newPositionId" :options="posStore.positions.map((p:any)=>({label: p.positionName, value: p.id}))" placeholder="Chọn chức vụ" style="width:100%" />
       </div>
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Ngày hiệu lực <span class="text-red-500">*</span></label>
@@ -671,7 +659,7 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
       </div>
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Lý do</label>
-        <textarea v-model="transferData.reason" rows="2" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-blue-500 outline-none font-sans text-sm" placeholder="Lý do điều chuyển..."></textarea>
+        <a-textarea v-model:value="transferData.reason" :rows="2" placeholder="Lý do điều chuyển..." />
       </div>
       <div v-if="store.error && isTransferModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans mt-4">
         {{ store.error }}
@@ -695,7 +683,7 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
       </div>
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Lý do</label>
-        <textarea v-model="resignReason" rows="3" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-warning outline-none font-sans text-sm" placeholder="Lý do (không bắt buộc)..."></textarea>
+        <a-textarea v-model:value="resignReason" :rows="3" placeholder="Lý do (không bắt buộc)..." />
       </div>
       <div v-if="store.error && isResignModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans mt-4">
         {{ store.error }}

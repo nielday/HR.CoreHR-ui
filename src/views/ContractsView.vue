@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
-import { Tag as ATag } from 'ant-design-vue'
+import { Tag as ATag, Input as AInput, InputNumber as AInputNumber } from 'ant-design-vue'
+const ATextarea = AInput.TextArea
 import { PlusIcon, PencilIcon, Trash2Icon, RotateCcwIcon } from 'lucide-vue-next'
 import { useContractStore } from '../stores/contract'
 import { useAuthStore } from '../stores/auth'
@@ -24,7 +25,7 @@ const search = ref('')
 const newContract = ref({
   contractTypeCode: '',
   contractTypeName: '',
-  defaultDurationMonths: null as number | null,
+  defaultDurationMonths: null as any,
   description: '',
   isActive: true
 })
@@ -195,20 +196,20 @@ async function executeRestore(item: any) {
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mã <span class="text-red-500">*</span></label>
-          <input v-model="newContract.contractTypeCode" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="VD: FULL" :disabled="isEditMode"/>
+          <a-input v-model:value="newContract.contractTypeCode" placeholder="VD: FULL" :disabled="isEditMode" style="width:100%" />
         </div>
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Thời hạn (tháng)</label>
-          <input v-model="newContract.defaultDurationMonths" type="number" min="1" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="12" />
+          <a-input-number v-model:value="newContract.defaultDurationMonths" :min="1" placeholder="12" style="width:100%" />
         </div>
       </div>
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Tên <span class="text-red-500">*</span></label>
-        <input v-model="newContract.contractTypeName" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Hợp đồng toàn thời gian"/>
+        <a-input v-model:value="newContract.contractTypeName" placeholder="Hợp đồng toàn thời gian" style="width:100%" />
       </div>
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mô tả</label>
-        <textarea v-model="newContract.description" rows="3" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm resize-none" placeholder="Hợp đồng tiêu chuẩn..."></textarea>
+        <a-textarea v-model:value="newContract.description" :rows="3" placeholder="Hợp đồng tiêu chuẩn..." />
       </div>
 
       <div v-if="isEditMode" class="flex items-center gap-3 pt-2">

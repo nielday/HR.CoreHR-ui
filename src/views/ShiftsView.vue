@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { PlusIcon, PencilIcon, PowerIcon } from 'lucide-vue-next'
-import { Tag as ATag, Popconfirm as APopconfirm, message } from 'ant-design-vue'
+import { Tag as ATag, Popconfirm as APopconfirm, Input as AInput, InputNumber as AInputNumber, Select as ASelect, message } from 'ant-design-vue'
 import { useAttendanceStore, type Shift } from '../stores/attendance'
 import Button from '../components/ui/Button.vue'
 import Modal from '../components/ui/Modal.vue'
@@ -144,11 +144,11 @@ onMounted(() => {
     </template>
 
     <template #filters>
-      <select v-model="statusFilter" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-        <option value="">Tất cả trạng thái</option>
-        <option value="active">Đang dùng</option>
-        <option value="inactive">Ngừng</option>
-      </select>
+      <a-select
+        v-model:value="statusFilter"
+        :options="[{ label: 'Tất cả trạng thái', value: '' }, { label: 'Đang dùng', value: 'active' }, { label: 'Ngừng', value: 'inactive' }]"
+        style="min-width: 180px"
+      />
     </template>
 
     <template #banner>
@@ -210,12 +210,12 @@ onMounted(() => {
     <form @submit.prevent="submit" class="space-y-5">
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mã ca <span class="text-red-500">*</span></label>
-        <input v-model="form.shiftCode" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="VD: CA1" :disabled="isEditMode" />
+        <a-input v-model:value="form.shiftCode" placeholder="VD: CA1" :disabled="isEditMode" style="width:100%" />
       </div>
 
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Tên ca <span class="text-red-500">*</span></label>
-        <input v-model="form.shiftName" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="VD: Ca hành chính" />
+        <a-input v-model:value="form.shiftName" placeholder="VD: Ca hành chính" style="width:100%" />
       </div>
 
       <div class="grid grid-cols-2 gap-4">
@@ -231,7 +231,7 @@ onMounted(() => {
 
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Giờ chuẩn <span class="text-red-500">*</span></label>
-        <input v-model="form.standardHours" type="number" step="0.5" min="0" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="VD: 8" />
+        <a-input-number v-model:value="form.standardHours" :step="0.5" :min="0" placeholder="VD: 8" style="width:100%" />
       </div>
 
       <div v-if="isEditMode" class="flex items-center gap-3 pt-2">

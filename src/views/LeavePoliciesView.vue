@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import { Tag as ATag, Popconfirm as APopconfirm, message } from 'ant-design-vue'
+import { Tag as ATag, Popconfirm as APopconfirm, Input as AInput, InputNumber as AInputNumber, Select as ASelect, message } from 'ant-design-vue'
+const ATextarea = AInput.TextArea
 import { PencilIcon, PlusIcon, TrashIcon } from 'lucide-vue-next'
 import { useAttendanceStore } from '../stores/attendance'
 import Button from '../components/ui/Button.vue'
@@ -20,7 +21,7 @@ const statusFilter = ref('')
 const form = ref({
   name: '',
   isPaid: true,
-  annualQuotaDays: null as number | null,
+  annualQuotaDays: null as any,
   description: '',
   isActive: true,
 })
@@ -122,16 +123,16 @@ onMounted(() => store.fetchLeavePolicies())
     </template>
 
     <template #filters>
-      <select v-model="paidFilter" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-        <option value="">Tất cả (lương)</option>
-        <option value="paid">Có lương</option>
-        <option value="unpaid">Không lương</option>
-      </select>
-      <select v-model="statusFilter" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-        <option value="">Tất cả trạng thái</option>
-        <option value="active">Đang áp dụng</option>
-        <option value="inactive">Tạm ngừng</option>
-      </select>
+      <a-select
+        v-model:value="paidFilter"
+        :options="[{ label: 'Tất cả (lương)', value: '' }, { label: 'Có lương', value: 'paid' }, { label: 'Không lương', value: 'unpaid' }]"
+        style="min-width: 160px"
+      />
+      <a-select
+        v-model:value="statusFilter"
+        :options="[{ label: 'Tất cả trạng thái', value: '' }, { label: 'Đang áp dụng', value: 'active' }, { label: 'Tạm ngừng', value: 'inactive' }]"
+        style="min-width: 180px"
+      />
     </template>
 
     <template #banner>
@@ -177,7 +178,7 @@ onMounted(() => store.fetchLeavePolicies())
     <form @submit.prevent="submit" class="space-y-5">
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Tên loại nghỉ <span class="text-red-500">*</span></label>
-        <input v-model="form.name" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="VD: Phép năm, Nghỉ cưới..." />
+        <a-input v-model:value="form.name" placeholder="VD: Phép năm, Nghỉ cưới..." style="width:100%" />
       </div>
 
       <div class="flex items-center gap-3">
@@ -187,13 +188,13 @@ onMounted(() => store.fetchLeavePolicies())
 
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Hạn mức ngày/năm</label>
-        <input v-model.number="form.annualQuotaDays" type="number" min="0" step="0.5" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="Để trống = không giới hạn" />
+        <a-input-number v-model:value="form.annualQuotaDays" :min="0" :step="0.5" placeholder="Để trống = không giới hạn" style="width:100%" />
         <p class="mt-2 text-xs text-muted-foreground font-sans">Để trống nếu không giới hạn (vd nghỉ không lương).</p>
       </div>
 
       <div>
         <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mô tả</label>
-        <textarea v-model="form.description" rows="2" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm resize-none" placeholder="Mô tả..."></textarea>
+        <a-textarea v-model:value="form.description" :rows="2" placeholder="Mô tả..." />
       </div>
 
       <div v-if="isEdit" class="flex items-center gap-3 pt-2">

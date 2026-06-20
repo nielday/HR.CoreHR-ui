@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
+import { ref, computed, onMounted } from 'vue'
+import { message, Input as AInput, Select as ASelect } from 'ant-design-vue'
 import { LockIcon, SaveIcon, UserIcon } from 'lucide-vue-next'
 import { useEmployeeStore } from '../stores/employee'
 import Button from '../components/ui/Button.vue'
+
+const ATextarea = AInput.TextArea
 
 const store = useEmployeeStore()
 
@@ -22,6 +24,7 @@ const STATUS: Record<string, string> = {
   Active: 'Đang làm việc', Probation: 'Thử việc', Suspended: 'Tạm ngưng', Resigned: 'Đã nghỉ việc',
 }
 const GENDER: Record<string, string> = { Male: 'Nam', Female: 'Nữ', Other: 'Khác' }
+const genderOptions = computed(() => Object.entries(GENDER).map(([value, label]) => ({ value, label })))
 
 function fmtDate(v?: string | null) {
   if (!v) return '—'
@@ -134,7 +137,7 @@ onMounted(load)
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Số điện thoại</label>
-              <input v-model="form.phoneNumber" type="text" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="0901234567" />
+              <a-input v-model:value="form.phoneNumber" placeholder="0901234567" style="width:100%" />
             </div>
             <div>
               <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Ngày sinh</label>
@@ -142,15 +145,12 @@ onMounted(load)
             </div>
             <div>
               <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Giới tính</label>
-              <select v-model="form.gender" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-                <option value="">-- Chọn --</option>
-                <option v-for="(label, val) in GENDER" :key="val" :value="val">{{ label }}</option>
-              </select>
+              <a-select v-model:value="form.gender" :options="genderOptions" placeholder="-- Chọn --" style="width:100%" />
             </div>
           </div>
           <div>
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Địa chỉ</label>
-            <textarea v-model="form.address" rows="2" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm resize-none" placeholder="Số nhà, đường, quận/huyện, tỉnh/thành..."></textarea>
+            <a-textarea v-model:value="form.address" :rows="2" placeholder="Số nhà, đường, quận/huyện, tỉnh/thành..." />
           </div>
 
           <div v-if="store.error && profile" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans">{{ store.error }}</div>

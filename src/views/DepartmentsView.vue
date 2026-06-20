@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed, nextTick, watch } from 'vue'
-import { Empty as AEmpty, Tag as ATag, Segmented as ASegmented, Table as ATable } from 'ant-design-vue'
+import { Empty as AEmpty, Tag as ATag, Segmented as ASegmented, Table as ATable, Input as AInput, Select as ASelect } from 'ant-design-vue'
+const ATextarea = AInput.TextArea
 import { PlusIcon, PencilIcon, Trash2Icon } from 'lucide-vue-next'
 import { OrgChart } from 'd3-org-chart'
 import { useDepartmentStore } from '../stores/department'
@@ -323,33 +324,23 @@ async function executeDelete() {
       <form @submit.prevent="submitCreateOrUpdate" class="space-y-5">
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mã phòng ban <span class="text-red-500">*</span></label>
-          <input v-model="newDept.departmentCode" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" placeholder="HR-01" :disabled="isEditMode"/>
+          <a-input v-model:value="newDept.departmentCode" placeholder="HR-01" :disabled="isEditMode" style="width:100%" />
         </div>
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Tên phòng ban <span class="text-red-500">*</span></label>
-          <input v-model="newDept.departmentName" type="text" required class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" placeholder="Phòng Nhân sự"/>
+          <a-input v-model:value="newDept.departmentName" placeholder="Phòng Nhân sự" style="width:100%" />
         </div>
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mô tả</label>
-          <textarea v-model="newDept.description" rows="2" class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm resize-none" placeholder="Mô tả (không bắt buộc)..."></textarea>
+          <a-textarea v-model:value="newDept.description" :rows="2" placeholder="Mô tả (không bắt buộc)..." />
         </div>
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Phòng ban cha</label>
-          <select v-model="newDept.parentDepartmentId" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-            <option value="">-- Không có phòng cha (Cấp gốc) --</option>
-            <option v-for="d in store.departments" :key="d.id" :value="d.id" :disabled="d.id === editingId">
-              {{ d.departmentName }}
-            </option>
-          </select>
+          <a-select v-model:value="newDept.parentDepartmentId" :options="store.departments.map((d:any)=>({label:d.departmentName, value:d.id, disabled:d.id === editingId}))" placeholder="-- Không có phòng cha (Cấp gốc) --" style="width:100%" allow-clear />
         </div>
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Trưởng phòng</label>
-          <select v-model="newDept.managerEmployeeId" class="w-full h-12 px-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm" :disabled="!isEditMode">
-            <option value="">-- Chưa phân công --</option>
-            <option v-for="e in availableManagers" :key="e.id" :value="e.id">
-              {{ e.fullName }} ({{ e.employeeCode }})
-            </option>
-          </select>
+          <a-select v-model:value="newDept.managerEmployeeId" :options="availableManagers.map((e:any)=>({label:`${e.fullName} (${e.employeeCode})`, value:e.id}))" placeholder="-- Chưa phân công --" style="width:100%" :disabled="!isEditMode" allow-clear />
           <p v-if="!isEditMode" class="text-[11px] text-muted-foreground mt-1">Vui lòng tạo phòng ban và thêm nhân sự vào phòng trước khi chỉ định trưởng phòng.</p>
         </div>
         <div v-if="isEditMode" class="flex items-center gap-3 pt-2">

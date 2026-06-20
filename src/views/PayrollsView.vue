@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
-import { Tag as ATag, Popconfirm as APopconfirm, Select as ASelect, Table as ATable, Segmented as ASegmented, message } from 'ant-design-vue'
+import { Tag as ATag, Popconfirm as APopconfirm, Input as AInput, Select as ASelect, Table as ATable, Segmented as ASegmented, message } from 'ant-design-vue'
 import { CalculatorIcon, RefreshCwIcon, CheckIcon, BanknoteIcon, XIcon, PrinterIcon } from 'lucide-vue-next'
 import { usePayrollStore } from '../stores/payroll'
 import { useEmployeeStore } from '../stores/employee'
@@ -269,19 +269,10 @@ watch([month, year], () => store.fetchPayrolls(month.value, year.value))
     <!-- Filters -->
     <template #filters>
       <div class="relative w-full sm:w-64">
-        <input
-          v-model="keyword"
-          type="text"
-          placeholder="Tìm theo tên, mã nhân viên..."
-          class="w-full h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm"
-        />
+        <a-input v-model:value="keyword" placeholder="Tìm theo tên, mã nhân viên..." style="width:100%" />
       </div>
-      <select v-model="month" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-        <option v-for="m in months" :key="m.value" :value="m.value">{{ m.label }}</option>
-      </select>
-      <select v-model="year" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-        <option v-for="y in years" :key="y.value" :value="y.value">{{ y.label }}</option>
-      </select>
+      <a-select v-model:value="month" :options="months" style="min-width: 120px" />
+      <a-select v-model:value="year" :options="years" style="min-width: 100px" />
       <ASelect
         v-model:value="fStatuses" mode="multiple" :options="statusOptions" allow-clear :max-tag-count="2"
         placeholder="Trạng thái" class="hr-multi" style="min-width: 180px"

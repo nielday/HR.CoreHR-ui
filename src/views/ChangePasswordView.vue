@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { Input as AInput } from 'ant-design-vue'
 import { useAuthStore } from '../stores/auth'
 import Button from '../components/ui/Button.vue'
+
+const AInputPassword = AInput.Password
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -57,15 +60,15 @@ function logout() {
         <form @submit.prevent="handleSubmit" class="space-y-4">
           <div>
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mật khẩu hiện tại</label>
-            <input v-model="currentPassword" type="password" required placeholder="Mật khẩu hiện tại" class="w-full h-12 px-4 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" />
+            <a-input-password v-model:value="currentPassword" placeholder="Mật khẩu hiện tại" />
           </div>
           <div>
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Mật khẩu mới</label>
-            <input v-model="newPassword" type="password" required placeholder="Tối thiểu 6 ký tự" class="w-full h-12 px-4 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" />
+            <a-input-password v-model:value="newPassword" placeholder="Tối thiểu 6 ký tự" />
           </div>
           <div>
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Xác nhận mật khẩu mới</label>
-            <input v-model="confirmPassword" type="password" required placeholder="Nhập lại mật khẩu mới" class="w-full h-12 px-4 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-mono text-sm" />
+            <a-input-password v-model:value="confirmPassword" placeholder="Nhập lại mật khẩu mới" />
           </div>
 
           <Button type="submit" class="w-full py-6 mt-4 text-base" :disabled="isLoading">

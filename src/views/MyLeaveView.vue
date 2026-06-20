@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Table as ATable, Tag as ATag, Select as ASelect, message } from 'ant-design-vue'
+import { Table as ATable, Tag as ATag, Select as ASelect, Input as AInput, message } from 'ant-design-vue'
 import { CalendarDaysIcon, PlusIcon } from 'lucide-vue-next'
 import { useAttendanceStore, LEAVE_STATUS } from '../stores/attendance'
 import Button from '../components/ui/Button.vue'
 import Modal from '../components/ui/Modal.vue'
+
+const ATextarea = AInput.TextArea
 
 const store = useAttendanceStore()
 
@@ -154,7 +156,7 @@ onMounted(() => {
       <form @submit.prevent="submitLeave" class="space-y-5">
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Loại nghỉ <span class="text-red-500">*</span></label>
-          <ASelect v-model:value="form.leaveType" :options="leaveTypeOptions" size="large" class="w-full" />
+          <a-select v-model:value="form.leaveType" :options="leaveTypeOptions" placeholder="-- Chọn loại nghỉ --" style="width:100%" />
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -168,7 +170,7 @@ onMounted(() => {
         </div>
         <div>
           <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Lý do <span class="text-red-500">*</span></label>
-          <textarea v-model="form.reason" rows="3" required class="w-full p-3 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm resize-none" placeholder="Lý do xin nghỉ..."></textarea>
+          <a-textarea v-model:value="form.reason" :rows="3" placeholder="Lý do xin nghỉ..." />
         </div>
 
         <div v-if="store.error && isModalOpen" class="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-sans">

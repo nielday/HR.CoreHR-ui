@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { Input as AInput } from 'ant-design-vue'
 import { useAuthStore } from '../stores/auth'
 import Button from '../components/ui/Button.vue'
+
+const AInputPassword = AInput.Password
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -50,11 +53,11 @@ async function handleLogin() {
         <form @submit.prevent="handleLogin" class="space-y-4">
           <div>
             <label for="username" class="sr-only">Tên đăng nhập</label>
-            <input id="username" v-model="username" type="text" placeholder="Tên đăng nhập (admin, hr, manager, employee)" required class="w-full h-12 px-4 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent focus:ring-offset-2 outline-none transition-all font-mono text-sm" />
+            <a-input v-model:value="username" placeholder="Tên đăng nhập (admin, hr, manager, employee)" style="width:100%" />
           </div>
           <div>
             <label for="password" class="sr-only">Mật khẩu</label>
-            <input id="password" v-model="password" type="password" placeholder="Mật khẩu" required class="w-full h-12 px-4 rounded-xl border border-border bg-transparent focus:ring-2 focus:ring-accent focus:ring-offset-2 outline-none transition-all font-mono text-sm" />
+            <a-input-password v-model:value="password" placeholder="Mật khẩu" />
           </div>
           
           <Button type="submit" class="w-full py-6 mt-4 text-base" :disabled="isLoading">

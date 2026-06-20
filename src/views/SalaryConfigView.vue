@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { InputNumber as AInputNumber, Tag as ATag, message } from 'ant-design-vue'
+import { InputNumber as AInputNumber, Select as ASelect, Tag as ATag, message } from 'ant-design-vue'
 import { SaveIcon, SettingsIcon } from 'lucide-vue-next'
 import { usePayrollStore } from '../stores/payroll'
 import { useEmployeeStore } from '../stores/employee'
@@ -134,10 +134,11 @@ onMounted(() => { if (!empStore.allEmployees.length) empStore.fetchAllEmployees(
   >
     <!-- Filters -->
     <template #filters>
-      <select v-model="deptFilter" class="h-9 px-3 rounded-lg border border-border bg-transparent focus:ring-2 focus:ring-accent outline-none font-sans text-sm">
-        <option value="">Tất cả phòng ban</option>
-        <option v-for="d in departments" :key="d" :value="d">{{ d }}</option>
-      </select>
+      <a-select
+        v-model:value="deptFilter"
+        :options="[{ label: 'Tất cả phòng ban', value: '' }, ...departments.map((d) => ({ label: d, value: d }))]"
+        style="min-width: 180px"
+      />
     </template>
 
     <!-- Body cells -->
