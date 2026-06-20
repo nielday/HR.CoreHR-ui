@@ -163,11 +163,12 @@ watch(
           <button
             type="button"
             @click="toggle(g.key)"
-            class="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-white/55 hover:text-white hover:bg-white/5 transition-all duration-200"
+            class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl hover:bg-white/5 transition-all duration-200"
+            :class="isOpen(g.key) ? 'text-white' : 'text-white/75 hover:text-white'"
           >
-            <span class="font-mono text-[11px] uppercase tracking-[0.15em]">{{ g.label }}</span>
+            <span class="font-sans font-medium text-sm">{{ g.label }}</span>
             <span v-if="!isOpen(g.key) && groupBadge(g) > 0" class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-semibold">{{ groupBadge(g) }}</span>
-            <ChevronDownIcon class="w-4 h-4 ml-auto transition-transform duration-200" :class="isOpen(g.key) ? 'rotate-180 text-white/80' : ''" />
+            <ChevronDownIcon class="w-4 h-4 ml-auto transition-transform duration-200" :class="isOpen(g.key) ? 'rotate-180 text-white/80' : 'text-white/45'" />
           </button>
 
           <transition name="submenu">
