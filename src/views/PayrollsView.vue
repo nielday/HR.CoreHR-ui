@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
-import { Tag as ATag, Popconfirm as APopconfirm, Select as ASelect, message } from 'ant-design-vue'
+import { Tag as ATag, Popconfirm as APopconfirm, Select as ASelect, Table as ATable, Segmented as ASegmented, message } from 'ant-design-vue'
 import { CalculatorIcon, RefreshCwIcon, CheckIcon, BanknoteIcon, XIcon, PrinterIcon } from 'lucide-vue-next'
 import { usePayrollStore } from '../stores/payroll'
 import { useEmployeeStore } from '../stores/employee'
@@ -107,6 +107,29 @@ const tablePagination = computed(() => ({
   showTotal: (t: number) => `${t} bảng lương`,
 }))
 
+// ===== Chế độ hiển thị: Danh sách hoặc Kanban =====
+const viewMode = ref<'list' | 'kanban'>('list')
+const KANBAN_COLS = [
+  { s: 0, label: 'Chờ duyệt', dot: 'bg-amber-400' },
+  { s: 1, label: 'Đã duyệt', dot: 'bg-blue-500' },
+  { s: 2, label: 'Đã chi trả', dot: 'bg-emerald-500' },
+]
+// Kanban: lọc theo tìm kiếm nhưng KHÔNG lọc trạng thái (để thấy đủ 3 cột)
+const boardPayrolls = computed<any[]>(() => {
+  const kw = keyword.value.trim().toLowerCase()
+  return (store.payrolls as any[]).filter((p) => {
+    if (!kw) return true
+    const info = empMap.value[p.employeeId]
+    return (info?.name || '').toLowerCase().includes(kw) || (info?.code || '').toLowerCase().includes(kw)
+  })
+})
+const groupedPayrolls = computed<Record<number, any[]>>(() => ({
+  0: boardPayrolls.value.filter((p) => p.status === 0),
+  1: boardPayrolls.value.filter((p) => p.status === 1),
+  2: boardPayrolls.value.filter((p) => p.status === 2),
+}))
+const payrollsIn = (s: number): any[] => groupedPayrolls.value[s] ?? []
+
 async function load() {
   await Promise.all([
     store.fetchPayrolls(month.value, year.value),
@@ -207,6 +230,10 @@ watch([month, year], () => store.fetchPayrolls(month.value, year.value))
   >
     <!-- Header actions -->
     <template #actions>
+      <ASegmented
+        v-model:value="viewMode"
+        :options="[{ label: 'Danh sách', value: 'list' }, { label: 'Kanban', value: 'kanban' }]"
+      />
       <Button @click="runCalculate" :disabled="store.isLoading" class="shadow-accent">
         <CalculatorIcon class="w-4 h-4 mr-2" />
         {{ store.isLoading ? 'Đang xử lý...' : 'Tính lương' }}
@@ -317,38 +344,79 @@ watch([month, year], () => store.fetchPayrolls(month.value, year.value))
       </div>
     </template>
 
-    <!-- Body cells -->
-    <template #bodyCell="{ column, record }">
-      <template v-if="column.key === 'employee'">
-        <div class="font-sans">
-          <div class="font-medium text-foreground">{{ empMap[record.employeeId]?.name || 'NV chưa đồng bộ' }}</div>
-          <div class="font-mono text-xs text-muted-foreground">{{ empMap[record.employeeId]?.code || record.employeeId.slice(0, 8) }}</div>
+    <!-- ===== DANH SÁCH (bảng) ===== -->
+    <div v-if="viewMode === 'list'" class="bg-card border border-border rounded-xl shadow-sm overflow-hidden hr-table-wrap">
+      <a-table :columns="columns" :data-source="filteredPayrolls" :loading="store.isLoading" row-key="id" :pagination="tablePagination" :row-selection="rowSelection" :scroll="{ x: 1260 }" size="middle">
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'employee'">
+            <div class="font-sans">
+              <div class="font-medium text-foreground">{{ empMap[record.employeeId]?.name || 'NV chưa đồng bộ' }}</div>
+              <div class="font-mono text-xs text-muted-foreground">{{ empMap[record.employeeId]?.code || record.employeeId.slice(0, 8) }}</div>
+            </div>
+          </template>
+          <template v-else-if="column.key === 'department'">
+            <span class="font-sans text-sm text-foreground">{{ empMap[record.employeeId]?.department || '—' }}</span>
+          </template>
+          <template v-else-if="column.key === 'period'"><span class="font-mono text-sm">{{ record.month }}/{{ record.year }}</span></template>
+          <template v-else-if="column.key === 'baseSalary'"><span class="font-mono text-sm">{{ vnd(record.baseSalary) }}</span></template>
+          <template v-else-if="column.key === 'totalAllowances'"><span class="font-mono text-sm text-emerald-600">{{ vnd(record.totalAllowances) }}</span></template>
+          <template v-else-if="column.key === 'totalDeductions'"><span class="font-mono text-sm text-red-600">{{ vnd(record.totalDeductions) }}</span></template>
+          <template v-else-if="column.key === 'netSalary'"><span class="font-mono text-sm font-semibold text-accent">{{ vnd(record.netSalary) }}</span></template>
+          <template v-else-if="column.key === 'status'">
+            <ATag :color="STATUS[record.status]?.color">{{ STATUS[record.status]?.label || record.status }}</ATag>
+          </template>
+          <template v-else-if="column.key === 'actions'">
+            <div class="flex items-center justify-end gap-1">
+              <APopconfirm v-if="record.status === 0" title="Duyệt bảng lương này?" ok-text="Duyệt" cancel-text="Hủy" @confirm="approve(record.id)">
+                <button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors"><CheckIcon class="w-3.5 h-3.5" /> Duyệt</button>
+              </APopconfirm>
+              <APopconfirm v-else-if="record.status === 1" title="Xác nhận chi trả?" ok-text="Chi trả" cancel-text="Hủy" @confirm="pay(record.id)">
+                <button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-600 hover:bg-emerald-50 transition-colors"><BanknoteIcon class="w-3.5 h-3.5" /> Chi trả</button>
+              </APopconfirm>
+              <span v-else class="text-xs text-muted-foreground italic mr-1">Hoàn tất</span>
+              <button @click="openPrint(record)" class="p-1.5 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-all" title="In phiếu lương"><PrinterIcon class="w-4 h-4" /></button>
+            </div>
+          </template>
+        </template>
+      </a-table>
+    </div>
+
+    <!-- ===== KANBAN ===== -->
+    <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div v-for="col in KANBAN_COLS" :key="col.s" class="bg-muted/30 border border-border rounded-xl p-3 flex flex-col">
+        <div class="flex items-center gap-2 px-1 pb-2 mb-1 border-b border-border/60">
+          <span class="w-2.5 h-2.5 rounded-full" :class="col.dot"></span>
+          <span class="font-semibold text-foreground text-sm">{{ col.label }}</span>
+          <span class="ml-auto text-xs font-mono text-muted-foreground">{{ payrollsIn(col.s).length }}</span>
         </div>
-      </template>
-      <template v-else-if="column.key === 'department'">
-        <span class="font-sans text-sm text-foreground">{{ empMap[record.employeeId]?.department || '—' }}</span>
-      </template>
-      <template v-else-if="column.key === 'period'"><span class="font-mono text-sm">{{ record.month }}/{{ record.year }}</span></template>
-      <template v-else-if="column.key === 'baseSalary'"><span class="font-mono text-sm">{{ vnd(record.baseSalary) }}</span></template>
-      <template v-else-if="column.key === 'totalAllowances'"><span class="font-mono text-sm text-emerald-600">{{ vnd(record.totalAllowances) }}</span></template>
-      <template v-else-if="column.key === 'totalDeductions'"><span class="font-mono text-sm text-red-600">{{ vnd(record.totalDeductions) }}</span></template>
-      <template v-else-if="column.key === 'netSalary'"><span class="font-mono text-sm font-semibold text-accent">{{ vnd(record.netSalary) }}</span></template>
-      <template v-else-if="column.key === 'status'">
-        <ATag :color="STATUS[record.status]?.color">{{ STATUS[record.status]?.label || record.status }}</ATag>
-      </template>
-      <template v-else-if="column.key === 'actions'">
-        <div class="flex items-center justify-end gap-1">
-          <APopconfirm v-if="record.status === 0" title="Duyệt bảng lương này?" ok-text="Duyệt" cancel-text="Hủy" @confirm="approve(record.id)">
-            <button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors"><CheckIcon class="w-3.5 h-3.5" /> Duyệt</button>
-          </APopconfirm>
-          <APopconfirm v-else-if="record.status === 1" title="Xác nhận chi trả?" ok-text="Chi trả" cancel-text="Hủy" @confirm="pay(record.id)">
-            <button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-600 hover:bg-emerald-50 transition-colors"><BanknoteIcon class="w-3.5 h-3.5" /> Chi trả</button>
-          </APopconfirm>
-          <span v-else class="text-xs text-muted-foreground italic mr-1">Hoàn tất</span>
-          <button @click="openPrint(record)" class="p-1.5 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-all" title="In phiếu lương"><PrinterIcon class="w-4 h-4" /></button>
+        <div class="space-y-2.5 overflow-y-auto" style="max-height: calc(100vh - 320px)">
+          <div v-for="p in payrollsIn(col.s)" :key="p.id" class="bg-card border border-border rounded-lg p-3 shadow-sm">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="font-medium text-foreground text-sm truncate">{{ empMap[p.employeeId]?.name || 'NV chưa đồng bộ' }}</div>
+                <div class="font-mono text-[11px] text-muted-foreground">{{ empMap[p.employeeId]?.code || p.employeeId.slice(0, 8) }} · {{ p.month }}/{{ p.year }}</div>
+              </div>
+              <button @click="openPrint(p)" class="shrink-0 p-1.5 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-all" title="In phiếu lương"><PrinterIcon class="w-4 h-4" /></button>
+            </div>
+            <div class="mt-2 flex items-baseline justify-between">
+              <span class="text-xs text-muted-foreground">Thực lãnh</span>
+              <span class="font-mono font-bold text-accent">{{ vnd(p.netSalary) }}</span>
+            </div>
+            <div v-if="p.status === 0" class="mt-2.5">
+              <APopconfirm title="Duyệt bảng lương này?" ok-text="Duyệt" cancel-text="Hủy" @confirm="approve(p.id)">
+                <button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-blue-600 border border-blue-200 hover:bg-blue-50 transition-colors"><CheckIcon class="w-3.5 h-3.5" /> Duyệt</button>
+              </APopconfirm>
+            </div>
+            <div v-else-if="p.status === 1" class="mt-2.5">
+              <APopconfirm title="Xác nhận chi trả?" ok-text="Chi trả" cancel-text="Hủy" @confirm="pay(p.id)">
+                <button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-600 border border-emerald-200 hover:bg-emerald-50 transition-colors"><BanknoteIcon class="w-3.5 h-3.5" /> Chi trả</button>
+              </APopconfirm>
+            </div>
+          </div>
+          <div v-if="payrollsIn(col.s).length === 0" class="text-center text-xs text-muted-foreground py-6">Trống</div>
         </div>
-      </template>
-    </template>
+      </div>
+    </div>
   </DataTableShell>
 
   <PayslipModal :open="printOpen" :payroll="printRecord" :employee="printEmp" @close="printOpen = false" />
@@ -358,5 +426,14 @@ watch([month, year], () => store.fetchPayrolls(month.value, year.value))
 .hr-multi :deep(.ant-select-selector) {
   border-radius: 0.5rem;
   min-height: 36px;
+}
+.hr-table-wrap :deep(.ant-table-thead > tr > th) {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  font-weight: 600;
+  background: rgba(241, 245, 249, 0.5);
 }
 </style>

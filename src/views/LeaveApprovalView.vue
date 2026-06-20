@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Popconfirm as APopconfirm, Tag as ATag, Select as ASelect, message } from 'ant-design-vue'
+import { Popconfirm as APopconfirm, Tag as ATag, Select as ASelect, Table as ATable, Segmented as ASegmented, message } from 'ant-design-vue'
 import { CheckIcon, XIcon, RefreshCwIcon } from 'lucide-vue-next'
 import { useAttendanceStore, LEAVE_STATUS, LEAVE_TYPE } from '../stores/attendance'
 import { useEmployeeStore } from '../stores/employee'
@@ -91,6 +91,39 @@ const pendingCount = computed<number>(
   () => (store.pendingLeaves as any[]).filter((r) => r.status === 0).length,
 )
 
+// ===== Chế độ hiển thị: Danh sách hoặc Kanban =====
+const viewMode = ref<'list' | 'kanban'>('list')
+const KANBAN_COLS = [
+  { s: 0, label: 'Chờ duyệt', dot: 'bg-amber-400' },
+  { s: 1, label: 'Đã duyệt', dot: 'bg-emerald-500' },
+  { s: 2, label: 'Từ chối', dot: 'bg-rose-500' },
+]
+// Kanban: lọc theo tìm kiếm/loại/nhân viên nhưng KHÔNG lọc trạng thái (để thấy đủ 3 cột)
+const boardLeaves = computed<any[]>(() => {
+  const kw = search.value.trim().toLowerCase()
+  return (store.pendingLeaves as any[]).filter((r) => {
+    if (fLeaveTypes.value.length && !fLeaveTypes.value.includes(r.leaveType)) return false
+    if (fEmployeeIds.value.length && !fEmployeeIds.value.includes(r.employeeId)) return false
+    if (kw) {
+      const name = empName(r.employeeId).toLowerCase()
+      const code = empCode(r.employeeId).toLowerCase()
+      if (!name.includes(kw) && !code.includes(kw)) return false
+    }
+    return true
+  })
+})
+const groupedLeaves = computed<Record<number, any[]>>(() => ({
+  0: boardLeaves.value.filter((r) => r.status === 0),
+  1: boardLeaves.value.filter((r) => r.status === 1),
+  2: boardLeaves.value.filter((r) => r.status === 2),
+}))
+const leavesIn = (s: number): any[] => groupedLeaves.value[s] ?? []
+// Cập nhật trạng thái tại chỗ (để thẻ Kanban chạy sang cột mới mà không phải tải lại)
+function setLocalStatus(id: string, s: number) {
+  const r = (store.pendingLeaves as any[]).find((x) => x.id === id)
+  if (r) r.status = s
+}
+
 // ===== Chọn nhiều (bulk) — chỉ cho chọn đơn đang Chờ duyệt (status 0) =====
 const selectedIds = ref<string[]>([])
 const rowSelection = computed(() => ({
@@ -142,7 +175,7 @@ async function reload() {
 
 async function approve(id: string) {
   const ok = await store.approveLeave(id)
-  if (ok) { message.success('Đã duyệt'); await reload() }
+  if (ok) { message.success('Đã duyệt'); setLocalStatus(id, 1) }
   else message.error(store.error || 'Duyệt thất bại')
 }
 
@@ -151,7 +184,7 @@ async function reject(id: string, reason: string) {
   if (ok) {
     message.success('Đã từ chối đơn')
     closeReject()
-    await reload()
+    setLocalStatus(id, 2)
   } else {
     message.error(store.error || 'Từ chối thất bại')
   }
@@ -173,11 +206,10 @@ async function bulkApprove() {
   let ok = 0, fail = 0
   for (const id of ids) {
     const r = await store.approveLeave(id)
-    if (r) ok++; else fail++
+    if (r) { ok++; setLocalStatus(id, 1) } else fail++
   }
   bulkLoading.value = false
   selectedIds.value = []
-  await reload()
   if (fail === 0) message.success(`Đã duyệt ${ok} đơn`)
   else message.warning(`Đã duyệt ${ok} đơn, ${fail} đơn thất bại`)
 }
@@ -198,12 +230,11 @@ async function bulkRejectConfirm() {
   let ok = 0, fail = 0
   for (const id of ids) {
     const r = await store.rejectLeave(id, reason)
-    if (r) ok++; else fail++
+    if (r) { ok++; setLocalStatus(id, 2) } else fail++
   }
   bulkLoading.value = false
   closeReject()
   selectedIds.value = []
-  await reload()
   if (fail === 0) message.success(`Đã từ chối ${ok} đơn`)
   else message.warning(`Đã từ chối ${ok} đơn, ${fail} đơn thất bại`)
 }
@@ -228,6 +259,10 @@ onMounted(async () => {
   >
     <!-- Header actions -->
     <template #actions>
+      <ASegmented
+        v-model:value="viewMode"
+        :options="[{ label: 'Danh sách', value: 'list' }, { label: 'Kanban', value: 'kanban' }]"
+      />
       <button @click="reload" class="p-2.5 rounded-lg border border-border text-muted-foreground hover:text-accent hover:bg-accent/10 transition-colors" title="Tải lại">
         <RefreshCwIcon class="w-4 h-4" />
       </button>
@@ -287,40 +322,78 @@ onMounted(async () => {
       </div>
     </template>
 
-    <!-- Body cells -->
-    <template #bodyCell="{ column, record }">
-      <template v-if="column.key === 'employee'">
-        <div class="font-sans">
-          <div class="font-medium text-foreground">{{ empName(record.employeeId) }}</div>
-          <div class="font-mono text-xs text-muted-foreground">{{ empCode(record.employeeId) }}</div>
+    <!-- ===== DANH SÁCH (bảng) ===== -->
+    <div v-if="viewMode === 'list'" class="bg-card border border-border rounded-xl shadow-sm overflow-hidden hr-table-wrap">
+      <a-table :columns="columns" :data-source="filteredLeaves" :loading="store.isLoading" row-key="id" :pagination="pagination" :row-selection="rowSelection" :scroll="{ x: 1100 }" size="middle">
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'employee'">
+            <div class="font-sans">
+              <div class="font-medium text-foreground">{{ empName(record.employeeId) }}</div>
+              <div class="font-mono text-xs text-muted-foreground">{{ empCode(record.employeeId) }}</div>
+            </div>
+          </template>
+          <template v-else-if="column.key === 'leaveType'">
+            <span class="font-sans text-sm">{{ record.leaveTypeName }}</span>
+          </template>
+          <template v-else-if="column.key === 'fromDate'"><span class="font-mono text-sm">{{ formatDate(record.fromDate) }}</span></template>
+          <template v-else-if="column.key === 'toDate'"><span class="font-mono text-sm">{{ formatDate(record.toDate) }}</span></template>
+          <template v-else-if="column.key === 'totalDays'"><span class="font-mono text-sm font-semibold text-accent">{{ record.totalDays }}</span></template>
+          <template v-else-if="column.key === 'reason'"><span class="font-sans text-sm text-muted-foreground">{{ record.reason || '-' }}</span></template>
+          <template v-else-if="column.key === 'status'">
+            <a-tag :color="LEAVE_STATUS[record.status]?.color || 'default'">
+              {{ LEAVE_STATUS[record.status]?.label || record.status }}
+            </a-tag>
+          </template>
+          <template v-else-if="column.key === 'actions'">
+            <div v-if="record.status === 0" class="inline-flex items-center gap-1 justify-end">
+              <APopconfirm title="Duyệt đơn này?" ok-text="Duyệt" cancel-text="Hủy" @confirm="approve(record.id)">
+                <a-button size="small" type="primary">
+                  <CheckIcon class="w-3.5 h-3.5 inline-block mr-1 align-text-bottom" /> Duyệt
+                </a-button>
+              </APopconfirm>
+              <a-button size="small" danger @click="openReject(record.id)">
+                <XIcon class="w-3.5 h-3.5 inline-block mr-1 align-text-bottom" /> Từ chối
+              </a-button>
+            </div>
+            <span v-else class="text-xs text-muted-foreground">—</span>
+          </template>
+        </template>
+      </a-table>
+    </div>
+
+    <!-- ===== KANBAN ===== -->
+    <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div v-for="col in KANBAN_COLS" :key="col.s" class="bg-muted/30 border border-border rounded-xl p-3 flex flex-col">
+        <div class="flex items-center gap-2 px-1 pb-2 mb-1 border-b border-border/60">
+          <span class="w-2.5 h-2.5 rounded-full" :class="col.dot"></span>
+          <span class="font-semibold text-foreground text-sm">{{ col.label }}</span>
+          <span class="ml-auto text-xs font-mono text-muted-foreground">{{ leavesIn(col.s).length }}</span>
         </div>
-      </template>
-      <template v-else-if="column.key === 'leaveType'">
-        <span class="font-sans text-sm">{{ record.leaveTypeName }}</span>
-      </template>
-      <template v-else-if="column.key === 'fromDate'"><span class="font-mono text-sm">{{ formatDate(record.fromDate) }}</span></template>
-      <template v-else-if="column.key === 'toDate'"><span class="font-mono text-sm">{{ formatDate(record.toDate) }}</span></template>
-      <template v-else-if="column.key === 'totalDays'"><span class="font-mono text-sm font-semibold text-accent">{{ record.totalDays }}</span></template>
-      <template v-else-if="column.key === 'reason'"><span class="font-sans text-sm text-muted-foreground">{{ record.reason || '-' }}</span></template>
-      <template v-else-if="column.key === 'status'">
-        <a-tag :color="LEAVE_STATUS[record.status]?.color || 'default'">
-          {{ LEAVE_STATUS[record.status]?.label || record.status }}
-        </a-tag>
-      </template>
-      <template v-else-if="column.key === 'actions'">
-        <div v-if="record.status === 0" class="inline-flex items-center gap-1 justify-end">
-          <APopconfirm title="Duyệt đơn này?" ok-text="Duyệt" cancel-text="Hủy" @confirm="approve(record.id)">
-            <a-button size="small" type="primary">
-              <CheckIcon class="w-3.5 h-3.5 inline-block mr-1 align-text-bottom" /> Duyệt
-            </a-button>
-          </APopconfirm>
-          <a-button size="small" danger @click="openReject(record.id)">
-            <XIcon class="w-3.5 h-3.5 inline-block mr-1 align-text-bottom" /> Từ chối
-          </a-button>
+        <div class="space-y-2.5 overflow-y-auto" style="max-height: calc(100vh - 320px)">
+          <div v-for="r in leavesIn(col.s)" :key="r.id" class="bg-card border border-border rounded-lg p-3 shadow-sm">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="font-medium text-foreground text-sm truncate">{{ empName(r.employeeId) }}</div>
+                <div class="font-mono text-[11px] text-muted-foreground">{{ empCode(r.employeeId) }}</div>
+              </div>
+              <a-tag class="shrink-0" :color="r.leaveType === 2 ? 'default' : (r.leaveType === 1 ? 'orange' : 'blue')">{{ r.leaveTypeName }}</a-tag>
+            </div>
+            <div class="mt-2 text-xs font-mono text-muted-foreground">
+              {{ formatDate(r.fromDate) }} → {{ formatDate(r.toDate) }} · <span class="text-accent font-semibold">{{ r.totalDays }} ngày</span>
+            </div>
+            <div v-if="r.reason" class="mt-1 text-xs text-muted-foreground line-clamp-2">{{ r.reason }}</div>
+            <div v-if="r.status === 0" class="mt-2.5 flex items-center gap-1.5">
+              <APopconfirm title="Duyệt đơn này?" ok-text="Duyệt" cancel-text="Hủy" @confirm="approve(r.id)">
+                <a-button size="small" type="primary"><CheckIcon class="w-3.5 h-3.5 inline-block mr-1 align-text-bottom" /> Duyệt</a-button>
+              </APopconfirm>
+              <a-button size="small" danger @click="openReject(r.id)"><XIcon class="w-3.5 h-3.5 inline-block mr-1 align-text-bottom" /> Từ chối</a-button>
+            </div>
+            <div v-else-if="r.status === 2 && r.rejectReason" class="mt-2 text-[11px] text-rose-600">Lý do từ chối: {{ r.rejectReason }}</div>
+          </div>
+          <div v-if="leavesIn(col.s).length === 0" class="text-center text-xs text-muted-foreground py-6">Trống</div>
         </div>
-        <span v-else class="text-xs text-muted-foreground">—</span>
-      </template>
-    </template>
+      </div>
+    </div>
   </DataTableShell>
 
   <Modal :is-open="rejectModalOpen" :title="rejectBulk ? `Từ chối ${selectedIds.length} đơn nghỉ phép` : 'Từ chối đơn nghỉ phép'" @close="closeReject">
@@ -351,5 +424,14 @@ onMounted(async () => {
 .hr-multi :deep(.ant-select-selector) {
   border-radius: 0.5rem;
   min-height: 36px;
+}
+.hr-table-wrap :deep(.ant-table-thead > tr > th) {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  font-weight: 600;
+  background: rgba(241, 245, 249, 0.5);
 }
 </style>
