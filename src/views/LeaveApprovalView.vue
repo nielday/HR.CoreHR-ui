@@ -118,6 +118,22 @@ const groupedLeaves = computed<Record<number, any[]>>(() => ({
   2: boardLeaves.value.filter((r) => r.status === 2),
 }))
 const leavesIn = (s: number): any[] => groupedLeaves.value[s] ?? []
+
+// ===== Kéo-thả (drag & drop) =====
+const dragId = ref<string | null>(null)
+function onDragStart(r: any) {
+  if (r.status !== 0) return // chỉ kéo được đơn Chờ duyệt
+  dragId.value = r.id
+}
+function onDrop(targetStatus: number) {
+  const id = dragId.value
+  dragId.value = null
+  if (!id) return
+  const r = (store.pendingLeaves as any[]).find((x) => x.id === id)
+  if (!r || r.status !== 0) return // chỉ chuyển từ Chờ duyệt
+  if (targetStatus === 1) approve(id) // → Đã duyệt
+  else if (targetStatus === 2) openReject(id) // → Từ chối (mở ô lý do)
+}
 // Cập nhật trạng thái tại chỗ (để thẻ Kanban chạy sang cột mới mà không phải tải lại)
 function setLocalStatus(id: string, s: number) {
   const r = (store.pendingLeaves as any[]).find((x) => x.id === id)
@@ -363,14 +379,26 @@ onMounted(async () => {
 
     <!-- ===== KANBAN ===== -->
     <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div v-for="col in KANBAN_COLS" :key="col.s" class="bg-muted/30 border border-border rounded-xl p-3 flex flex-col">
+      <div
+        v-for="col in KANBAN_COLS" :key="col.s"
+        class="bg-muted/30 border border-border rounded-xl p-3 flex flex-col transition-all"
+        :class="dragId && col.s !== 0 ? 'ring-2 ring-accent/40 bg-accent/5' : ''"
+        @dragover.prevent
+        @drop="onDrop(col.s)"
+      >
         <div class="flex items-center gap-2 px-1 pb-2 mb-1 border-b border-border/60">
           <span class="w-2.5 h-2.5 rounded-full" :class="col.dot"></span>
           <span class="font-semibold text-foreground text-sm">{{ col.label }}</span>
           <span class="ml-auto text-xs font-mono text-muted-foreground">{{ leavesIn(col.s).length }}</span>
         </div>
         <div class="space-y-2.5 overflow-y-auto" style="max-height: calc(100vh - 320px)">
-          <div v-for="r in leavesIn(col.s)" :key="r.id" class="bg-card border border-border rounded-lg p-3 shadow-sm">
+          <div
+            v-for="r in leavesIn(col.s)" :key="r.id"
+            class="bg-card border border-border rounded-lg p-3 shadow-sm"
+            :class="r.status === 0 ? 'cursor-grab active:cursor-grabbing hover:border-accent/40' : ''"
+            :draggable="r.status === 0"
+            @dragstart="onDragStart(r)"
+          >
             <div class="flex items-start justify-between gap-2">
               <div class="min-w-0">
                 <div class="font-medium text-foreground text-sm truncate">{{ empName(r.employeeId) }}</div>
