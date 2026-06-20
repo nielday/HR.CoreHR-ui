@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { Select as ASelect, Table as ATable, Tag as ATag } from 'ant-design-vue'
-import { BanknoteIcon, WalletIcon, TrendingUpIcon, TrendingDownIcon } from 'lucide-vue-next'
+import { BanknoteIcon, WalletIcon, TrendingUpIcon, TrendingDownIcon, PrinterIcon } from 'lucide-vue-next'
 import { usePayrollStore, type PayrollRecord } from '../stores/payroll'
 import { useEmployeeStore } from '../stores/employee'
+import PayslipModal from '../components/PayslipModal.vue'
 
 const store = usePayrollStore()
 const empStore = useEmployeeStore()
@@ -28,6 +29,15 @@ const STATUS: Record<number, { label: string; color: string }> = {
 
 // Bảng lương của kỳ đang chọn (thường chỉ 1 bản ghi)
 const current = ref<PayrollRecord | null>(null)
+const myProfile = ref<any | null>(null)
+
+// In phiếu lương
+const printOpen = ref(false)
+const printRecord = ref<any | null>(null)
+function openPrint(record: any) {
+  printRecord.value = record
+  printOpen.value = true
+}
 
 const columns = [
   { title: 'Lương tháng', key: 'period', align: 'center' as const, width: 110 },
@@ -36,6 +46,7 @@ const columns = [
   { title: 'Khấu trừ', key: 'totalDeductions', align: 'right' as const },
   { title: 'Thực lãnh', key: 'netSalary', align: 'right' as const },
   { title: 'Trạng thái', key: 'status', align: 'center' as const, width: 120 },
+  { title: '', key: 'actions', align: 'center' as const, width: 70 },
 ]
 
 async function load() {
@@ -48,6 +59,7 @@ onMounted(async () => {
   const me = await empStore.fetchMyProfile()
   if (me?.id) {
     myEmployeeId.value = me.id
+    myProfile.value = me
     await load()
   } else {
     notLinked.value = true
@@ -141,9 +153,16 @@ watch([month, year], load)
             <template v-else-if="column.key === 'status'">
               <ATag :color="STATUS[record.status]?.color">{{ STATUS[record.status]?.label || record.status }}</ATag>
             </template>
+            <template v-else-if="column.key === 'actions'">
+              <button @click="openPrint(record)" class="p-1.5 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-all" title="In phiếu lương">
+                <PrinterIcon class="w-4 h-4" />
+              </button>
+            </template>
           </template>
         </ATable>
       </div>
     </template>
+
+    <PayslipModal :open="printOpen" :payroll="printRecord" :employee="myProfile" @close="printOpen = false" />
   </div>
 </template>

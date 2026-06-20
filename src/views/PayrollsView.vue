@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
 import { Tag as ATag, Popconfirm as APopconfirm, Select as ASelect, message } from 'ant-design-vue'
-import { CalculatorIcon, RefreshCwIcon, CheckIcon, BanknoteIcon, XIcon } from 'lucide-vue-next'
+import { CalculatorIcon, RefreshCwIcon, CheckIcon, BanknoteIcon, XIcon, PrinterIcon } from 'lucide-vue-next'
 import { usePayrollStore } from '../stores/payroll'
 import { useEmployeeStore } from '../stores/employee'
 import Button from '../components/ui/Button.vue'
 import DataTableShell from '../components/ui/DataTableShell.vue'
+import PayslipModal from '../components/PayslipModal.vue'
 
 const store = usePayrollStore()
 const empStore = useEmployeeStore()
@@ -86,8 +87,18 @@ const columns = computed<any[]>(() => [
   { title: 'Khấu trừ', key: 'totalDeductions', dataIndex: 'totalDeductions', align: 'right', sorter: (a: any, b: any) => (a.totalDeductions ?? 0) - (b.totalDeductions ?? 0) },
   { title: 'Thực lãnh', key: 'netSalary', dataIndex: 'netSalary', align: 'right', sorter: (a: any, b: any) => (a.netSalary ?? 0) - (b.netSalary ?? 0) },
   { title: 'Trạng thái', key: 'status', dataIndex: 'status', align: 'center', width: 130 },
-  { title: '', key: 'actions', align: 'right', width: 140 },
+  { title: '', key: 'actions', align: 'right', width: 190 },
 ])
+
+// In phiếu lương
+const printOpen = ref(false)
+const printRecord = ref<any | null>(null)
+const printEmp = ref<any | null>(null)
+function openPrint(record: any) {
+  printRecord.value = record
+  printEmp.value = (empStore.allEmployees as any[]).find((e) => e.id === record.employeeId) || null
+  printOpen.value = true
+}
 
 const tablePagination = computed(() => ({
   pageSize: 20,
@@ -326,16 +337,21 @@ watch([month, year], () => store.fetchPayrolls(month.value, year.value))
         <ATag :color="STATUS[record.status]?.color">{{ STATUS[record.status]?.label || record.status }}</ATag>
       </template>
       <template v-else-if="column.key === 'actions'">
-        <APopconfirm v-if="record.status === 0" title="Duyệt bảng lương này?" ok-text="Duyệt" cancel-text="Hủy" @confirm="approve(record.id)">
-          <button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors"><CheckIcon class="w-3.5 h-3.5" /> Duyệt</button>
-        </APopconfirm>
-        <APopconfirm v-else-if="record.status === 1" title="Xác nhận chi trả?" ok-text="Chi trả" cancel-text="Hủy" @confirm="pay(record.id)">
-          <button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-600 hover:bg-emerald-50 transition-colors"><BanknoteIcon class="w-3.5 h-3.5" /> Chi trả</button>
-        </APopconfirm>
-        <span v-else class="text-xs text-muted-foreground italic">Hoàn tất</span>
+        <div class="flex items-center justify-end gap-1">
+          <APopconfirm v-if="record.status === 0" title="Duyệt bảng lương này?" ok-text="Duyệt" cancel-text="Hủy" @confirm="approve(record.id)">
+            <button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors"><CheckIcon class="w-3.5 h-3.5" /> Duyệt</button>
+          </APopconfirm>
+          <APopconfirm v-else-if="record.status === 1" title="Xác nhận chi trả?" ok-text="Chi trả" cancel-text="Hủy" @confirm="pay(record.id)">
+            <button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-600 hover:bg-emerald-50 transition-colors"><BanknoteIcon class="w-3.5 h-3.5" /> Chi trả</button>
+          </APopconfirm>
+          <span v-else class="text-xs text-muted-foreground italic mr-1">Hoàn tất</span>
+          <button @click="openPrint(record)" class="p-1.5 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-all" title="In phiếu lương"><PrinterIcon class="w-4 h-4" /></button>
+        </div>
       </template>
     </template>
   </DataTableShell>
+
+  <PayslipModal :open="printOpen" :payroll="printRecord" :employee="printEmp" @close="printOpen = false" />
 </template>
 
 <style scoped>
