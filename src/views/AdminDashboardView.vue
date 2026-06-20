@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import {
+  Row as ARow, Col as ACol, Card as ACard, Statistic as AStatistic,
+  Progress as AProgress, Tag as ATag, Spin as ASpin, Empty as AEmpty,
+} from 'ant-design-vue'
 import {
   UsersIcon, UserCheckIcon, UserPlusIcon, UserMinusIcon, BriefcaseIcon, WalletIcon,
   CalendarClockIcon, FileWarningIcon, AlertTriangleIcon, ClipboardCheckIcon, BanknoteIcon,
-  PlusIcon, CalendarCheckIcon, CalculatorIcon, CheckCheckIcon, ChevronRightIcon,
+  PlusIcon, CalendarCheckIcon, CalculatorIcon, CheckCheckIcon,
 } from 'lucide-vue-next'
 import { useEmployeeStore } from '../stores/employee'
 import { useDepartmentStore } from '../stores/department'
@@ -11,6 +16,7 @@ import { useAttendanceStore } from '../stores/attendance'
 import { usePayrollStore } from '../stores/payroll'
 import { useEmployeeContractStore } from '../stores/employee-contract'
 
+const router = useRouter()
 const empStore = useEmployeeStore()
 const deptStore = useDepartmentStore()
 const attStore = useAttendanceStore()
@@ -24,7 +30,6 @@ const curYear = now.getFullYear()
 const todayDay = now.getDate()
 
 // ===== Helpers =====
-const vnd = (n: number) => (n ?? 0).toLocaleString('vi-VN') + ' ₫'
 const compactVnd = (n: number) => {
   if (!n) return '0 ₫'
   if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2).replace(/\.00$/, '') + ' tỷ'
@@ -60,7 +65,6 @@ const kpi = computed(() => {
     total: list.length,
     active: list.filter((e) => e.workingStatus === 'Active').length,
     probation: list.filter((e) => e.workingStatus === 'Probation').length,
-    suspended: list.filter((e) => e.workingStatus === 'Suspended').length,
     resigned: list.filter((e) => e.workingStatus === 'Resigned').length,
     newThisMonth: list.filter((e) => {
       const d = new Date(e.hireDate)
@@ -82,9 +86,7 @@ const expiringContracts = computed(() =>
     .filter((c) => c._days !== null && c._days >= 0 && c._days <= 30)
     .sort((a, b) => (a._days ?? 0) - (b._days ?? 0)),
 )
-const noContract = computed(() =>
-  emps.value.filter((e) => isWorking(e) && !e.currentContractTypeId),
-)
+const noContract = computed(() => emps.value.filter((e) => isWorking(e) && !e.currentContractTypeId))
 
 // ===== Chấm công hôm nay =====
 const todayRecs = computed<any[]>(() =>
@@ -96,7 +98,6 @@ const todayStats = computed(() => {
     present: recs.filter((r) => r.status === 0).length,
     late: recs.filter((r) => (r.lateMinutes || 0) > 0).length,
     onLeave: recs.filter((r) => r.status === 2).length,
-    absent: recs.filter((r) => r.status === 1).length,
     notChecked: Math.max(0, kpi.value.active + kpi.value.probation - recs.length),
   }
 })
@@ -138,179 +139,215 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="space-y-6 motion-safe:animate-in motion-safe:fade-in duration-500 pb-12">
-    <!-- Header -->
-    <div>
-      <h1 class="font-display text-2xl text-foreground leading-tight">Tổng quan nhân sự</h1>
-      <p class="text-muted-foreground font-sans text-sm mt-0.5">Bức tranh nhân sự & việc cần xử lý — tháng {{ curMonth }}/{{ curYear }}.</p>
-    </div>
-
-    <!-- HÀNG KPI -->
-    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-      <div class="bg-card border border-border rounded-xl p-4">
-        <div class="flex items-center gap-2 text-muted-foreground text-xs mb-1"><UsersIcon class="w-4 h-4" /> Tổng nhân viên</div>
-        <div class="font-display text-2xl text-foreground">{{ kpi.total }}</div>
-      </div>
-      <div class="bg-card border border-border rounded-xl p-4">
-        <div class="flex items-center gap-2 text-muted-foreground text-xs mb-1"><UserCheckIcon class="w-4 h-4" /> Đang làm</div>
-        <div class="font-display text-2xl text-green-600">{{ kpi.active }}</div>
-      </div>
-      <div class="bg-card border border-border rounded-xl p-4">
-        <div class="flex items-center gap-2 text-muted-foreground text-xs mb-1"><BriefcaseIcon class="w-4 h-4" /> Thử việc</div>
-        <div class="font-display text-2xl text-amber-600">{{ kpi.probation }}</div>
-      </div>
-      <div class="bg-card border border-border rounded-xl p-4">
-        <div class="flex items-center gap-2 text-muted-foreground text-xs mb-1"><UserPlusIcon class="w-4 h-4" /> Tuyển mới tháng</div>
-        <div class="font-display text-2xl text-blue-600">{{ kpi.newThisMonth }}</div>
-      </div>
-      <div class="bg-card border border-border rounded-xl p-4">
-        <div class="flex items-center gap-2 text-muted-foreground text-xs mb-1"><UserMinusIcon class="w-4 h-4" /> Đã nghỉ việc</div>
-        <div class="font-display text-2xl text-foreground/60">{{ kpi.resigned }}</div>
-      </div>
-      <RouterLink to="/payroll/dashboard" class="bg-card border border-border rounded-xl p-4 hover:border-accent/40 transition-colors">
-        <div class="flex items-center gap-2 text-muted-foreground text-xs mb-1"><WalletIcon class="w-4 h-4" /> Quỹ lương tháng</div>
-        <div class="font-display text-xl text-accent">{{ compactVnd(salaryFund) }}</div>
-      </RouterLink>
-    </div>
-
-    <!-- CẦN XỬ LÝ -->
-    <div>
-      <h2 class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5"><AlertTriangleIcon class="w-3.5 h-3.5 text-amber-500" /> Cần xử lý</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-        <RouterLink to="/attendance/leave-approval" class="bg-card border border-border rounded-xl p-4 flex items-center justify-between hover:border-amber-300 hover:bg-amber-50/40 transition-all">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center"><ClipboardCheckIcon class="w-5 h-5" /></div>
-            <div><div class="text-sm text-foreground font-medium">Đơn phép chờ duyệt</div><div class="text-xs text-muted-foreground">Cần duyệt sớm</div></div>
-          </div>
-          <div class="font-display text-2xl" :class="pendingLeaves ? 'text-amber-600' : 'text-foreground/30'">{{ pendingLeaves }}</div>
-        </RouterLink>
-
-        <RouterLink to="/payroll/records" class="bg-card border border-border rounded-xl p-4 flex items-center justify-between hover:border-blue-300 hover:bg-blue-50/40 transition-all">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><BanknoteIcon class="w-5 h-5" /></div>
-            <div><div class="text-sm text-foreground font-medium">Lương chờ duyệt / chi trả</div><div class="text-xs text-muted-foreground">{{ pendingPayroll }} chờ duyệt · {{ toPayPayroll }} chờ chi trả</div></div>
-          </div>
-          <div class="font-display text-2xl" :class="(pendingPayroll + toPayPayroll) ? 'text-blue-600' : 'text-foreground/30'">{{ pendingPayroll + toPayPayroll }}</div>
-        </RouterLink>
-
-        <RouterLink to="/employees" class="bg-card border border-border rounded-xl p-4 flex items-center justify-between hover:border-rose-300 hover:bg-rose-50/40 transition-all">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center"><CalendarClockIcon class="w-5 h-5" /></div>
-            <div><div class="text-sm text-foreground font-medium">HĐ sắp hết hạn (≤30 ngày)</div><div class="text-xs text-muted-foreground">Cần gia hạn</div></div>
-          </div>
-          <div class="font-display text-2xl" :class="expiringContracts.length ? 'text-rose-600' : 'text-foreground/30'">{{ expiringContracts.length }}</div>
-        </RouterLink>
-
-        <RouterLink to="/employees" class="bg-card border border-border rounded-xl p-4 flex items-center justify-between hover:border-orange-300 hover:bg-orange-50/40 transition-all">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center"><FileWarningIcon class="w-5 h-5" /></div>
-            <div><div class="text-sm text-foreground font-medium">NV chưa có hợp đồng</div><div class="text-xs text-muted-foreground">Đang làm nhưng thiếu HĐ</div></div>
-          </div>
-          <div class="font-display text-2xl" :class="noContract.length ? 'text-orange-600' : 'text-foreground/30'">{{ noContract.length }}</div>
-        </RouterLink>
-      </div>
-    </div>
-
-    <!-- HÀNG: Chấm công hôm nay + Cơ cấu phòng ban -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <!-- Chấm công hôm nay -->
-      <div class="bg-card border border-border rounded-xl p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="font-semibold text-foreground">Chấm công hôm nay</h3>
-          <span class="font-mono text-xs text-muted-foreground">{{ pad2(todayDay) }}/{{ pad2(curMonth) }}</span>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div class="rounded-lg bg-green-50 border border-green-100 p-3"><div class="text-xs text-green-700">Có mặt</div><div class="font-display text-xl text-green-600">{{ todayStats.present }}</div></div>
-          <div class="rounded-lg bg-red-50 border border-red-100 p-3"><div class="text-xs text-red-700">Đi muộn</div><div class="font-display text-xl text-red-600">{{ todayStats.late }}</div></div>
-          <div class="rounded-lg bg-blue-50 border border-blue-100 p-3"><div class="text-xs text-blue-700">Đang nghỉ phép</div><div class="font-display text-xl text-blue-600">{{ todayStats.onLeave }}</div></div>
-          <div class="rounded-lg bg-muted/40 border border-border p-3"><div class="text-xs text-muted-foreground">Chưa chấm</div><div class="font-display text-xl text-foreground/60">{{ todayStats.notChecked }}</div></div>
-        </div>
-        <RouterLink to="/attendance/records" class="mt-4 inline-flex items-center gap-1 text-sm text-accent hover:underline">Xem bảng chấm công <ChevronRightIcon class="w-4 h-4" /></RouterLink>
+  <ASpin :spinning="loading">
+    <div class="space-y-6 pb-12">
+      <!-- Header -->
+      <div>
+        <h1 class="font-display text-2xl text-foreground leading-tight">Tổng quan nhân sự</h1>
+        <p class="text-muted-foreground font-sans text-sm mt-0.5">Bức tranh nhân sự & việc cần xử lý — tháng {{ curMonth }}/{{ curYear }}.</p>
       </div>
 
-      <!-- Cơ cấu theo phòng ban -->
-      <div class="bg-card border border-border rounded-xl p-5 lg:col-span-2">
-        <h3 class="font-semibold text-foreground mb-4">Nhân sự theo phòng ban</h3>
-        <div v-if="byDepartment.length" class="space-y-2.5">
-          <div v-for="d in byDepartment.slice(0, 8)" :key="d.label" class="flex items-center gap-3">
-            <div class="w-36 shrink-0 text-sm text-foreground truncate" :title="d.label">{{ d.label }}</div>
-            <div class="flex-1 h-5 bg-muted/40 rounded-md overflow-hidden">
-              <div class="h-full bg-gradient-to-r from-accent to-accent-secondary rounded-md transition-all" :style="{ width: Math.round((d.value / maxDept) * 100) + '%' }"></div>
+      <!-- HÀNG KPI -->
+      <ARow :gutter="[12, 12]">
+        <ACol :xs="12" :md="8" :xl="4">
+          <ACard :bordered="false" class="shadow-sm rounded-2xl">
+            <AStatistic :value="kpi.total" :value-style="{ color: '#0f172a' }">
+              <template #title><span class="inline-flex items-center gap-1.5 text-muted-foreground"><UsersIcon class="w-4 h-4" /> Tổng nhân viên</span></template>
+            </AStatistic>
+          </ACard>
+        </ACol>
+        <ACol :xs="12" :md="8" :xl="4">
+          <ACard :bordered="false" class="shadow-sm rounded-2xl">
+            <AStatistic :value="kpi.active" :value-style="{ color: '#16a34a' }">
+              <template #title><span class="inline-flex items-center gap-1.5 text-muted-foreground"><UserCheckIcon class="w-4 h-4" /> Đang làm</span></template>
+            </AStatistic>
+          </ACard>
+        </ACol>
+        <ACol :xs="12" :md="8" :xl="4">
+          <ACard :bordered="false" class="shadow-sm rounded-2xl">
+            <AStatistic :value="kpi.probation" :value-style="{ color: '#d97706' }">
+              <template #title><span class="inline-flex items-center gap-1.5 text-muted-foreground"><BriefcaseIcon class="w-4 h-4" /> Thử việc</span></template>
+            </AStatistic>
+          </ACard>
+        </ACol>
+        <ACol :xs="12" :md="8" :xl="4">
+          <ACard :bordered="false" class="shadow-sm rounded-2xl">
+            <AStatistic :value="kpi.newThisMonth" :value-style="{ color: '#2563eb' }">
+              <template #title><span class="inline-flex items-center gap-1.5 text-muted-foreground"><UserPlusIcon class="w-4 h-4" /> Tuyển mới tháng</span></template>
+            </AStatistic>
+          </ACard>
+        </ACol>
+        <ACol :xs="12" :md="8" :xl="4">
+          <ACard :bordered="false" class="shadow-sm rounded-2xl">
+            <AStatistic :value="kpi.resigned" :value-style="{ color: '#94a3b8' }">
+              <template #title><span class="inline-flex items-center gap-1.5 text-muted-foreground"><UserMinusIcon class="w-4 h-4" /> Đã nghỉ việc</span></template>
+            </AStatistic>
+          </ACard>
+        </ACol>
+        <ACol :xs="12" :md="8" :xl="4">
+          <ACard hoverable :bordered="false" class="shadow-sm rounded-2xl cursor-pointer" @click="router.push('/payroll/dashboard')">
+            <AStatistic :value="compactVnd(salaryFund)" :value-style="{ color: '#0052FF', fontSize: '20px' }">
+              <template #title><span class="inline-flex items-center gap-1.5 text-muted-foreground"><WalletIcon class="w-4 h-4" /> Quỹ lương tháng</span></template>
+            </AStatistic>
+          </ACard>
+        </ACol>
+      </ARow>
+
+      <!-- CẦN XỬ LÝ -->
+      <div>
+        <h2 class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5"><AlertTriangleIcon class="w-3.5 h-3.5 text-amber-500" /> Cần xử lý</h2>
+        <ARow :gutter="[12, 12]">
+          <ACol :xs="24" :sm="12" :xl="6">
+            <ACard hoverable :bordered="false" class="shadow-sm rounded-2xl cursor-pointer" @click="router.push('/attendance/leave-approval')">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center"><ClipboardCheckIcon class="w-5 h-5" /></div>
+                  <div><div class="text-sm font-medium text-foreground">Đơn phép chờ duyệt</div><div class="text-xs text-muted-foreground">Cần duyệt sớm</div></div>
+                </div>
+                <span class="font-display text-2xl" :class="pendingLeaves ? 'text-amber-600' : 'text-foreground/30'">{{ pendingLeaves }}</span>
+              </div>
+            </ACard>
+          </ACol>
+          <ACol :xs="24" :sm="12" :xl="6">
+            <ACard hoverable :bordered="false" class="shadow-sm rounded-2xl cursor-pointer" @click="router.push('/payroll/records')">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center"><BanknoteIcon class="w-5 h-5" /></div>
+                  <div><div class="text-sm font-medium text-foreground">Lương chờ xử lý</div><div class="text-xs text-muted-foreground">{{ pendingPayroll }} chờ duyệt · {{ toPayPayroll }} chờ chi trả</div></div>
+                </div>
+                <span class="font-display text-2xl" :class="(pendingPayroll + toPayPayroll) ? 'text-blue-600' : 'text-foreground/30'">{{ pendingPayroll + toPayPayroll }}</span>
+              </div>
+            </ACard>
+          </ACol>
+          <ACol :xs="24" :sm="12" :xl="6">
+            <ACard hoverable :bordered="false" class="shadow-sm rounded-2xl cursor-pointer" @click="router.push('/employees')">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center"><CalendarClockIcon class="w-5 h-5" /></div>
+                  <div><div class="text-sm font-medium text-foreground">HĐ sắp hết hạn</div><div class="text-xs text-muted-foreground">Trong 30 ngày</div></div>
+                </div>
+                <span class="font-display text-2xl" :class="expiringContracts.length ? 'text-rose-600' : 'text-foreground/30'">{{ expiringContracts.length }}</span>
+              </div>
+            </ACard>
+          </ACol>
+          <ACol :xs="24" :sm="12" :xl="6">
+            <ACard hoverable :bordered="false" class="shadow-sm rounded-2xl cursor-pointer" @click="router.push('/employees')">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center"><FileWarningIcon class="w-5 h-5" /></div>
+                  <div><div class="text-sm font-medium text-foreground">NV chưa có hợp đồng</div><div class="text-xs text-muted-foreground">Đang làm, thiếu HĐ</div></div>
+                </div>
+                <span class="font-display text-2xl" :class="noContract.length ? 'text-orange-600' : 'text-foreground/30'">{{ noContract.length }}</span>
+              </div>
+            </ACard>
+          </ACol>
+        </ARow>
+      </div>
+
+      <!-- HÀNG: Chấm công hôm nay + Cơ cấu phòng ban -->
+      <ARow :gutter="[16, 16]">
+        <ACol :xs="24" :lg="8">
+          <ACard :bordered="false" class="shadow-sm rounded-2xl h-full">
+            <template #title><span class="flex items-center justify-between">Chấm công hôm nay <span class="font-mono text-xs text-muted-foreground">{{ pad2(todayDay) }}/{{ pad2(curMonth) }}</span></span></template>
+            <ARow :gutter="[12, 12]">
+              <ACol :span="12"><AStatistic title="Có mặt" :value="todayStats.present" :value-style="{ color: '#16a34a' }" /></ACol>
+              <ACol :span="12"><AStatistic title="Đi muộn" :value="todayStats.late" :value-style="{ color: '#dc2626' }" /></ACol>
+              <ACol :span="12"><AStatistic title="Đang nghỉ phép" :value="todayStats.onLeave" :value-style="{ color: '#2563eb' }" /></ACol>
+              <ACol :span="12"><AStatistic title="Chưa chấm" :value="todayStats.notChecked" :value-style="{ color: '#94a3b8' }" /></ACol>
+            </ARow>
+          </ACard>
+        </ACol>
+        <ACol :xs="24" :lg="16">
+          <ACard :bordered="false" class="shadow-sm rounded-2xl h-full" title="Nhân sự theo phòng ban">
+            <div v-if="byDepartment.length" class="space-y-3">
+              <div v-for="d in byDepartment.slice(0, 8)" :key="d.label">
+                <div class="flex items-center justify-between text-sm mb-1">
+                  <span class="text-foreground truncate">{{ d.label }}</span>
+                  <span class="font-mono text-muted-foreground">{{ d.value }} · {{ pct(d.value) }}%</span>
+                </div>
+                <AProgress :percent="Math.round((d.value / maxDept) * 100)" :show-info="false" :stroke-color="{ '0%': '#0052FF', '100%': '#4D7CFF' }" size="small" />
+              </div>
             </div>
-            <div class="w-10 text-right font-mono text-sm text-foreground">{{ d.value }}</div>
-          </div>
-        </div>
-        <div v-else class="text-sm text-muted-foreground py-8 text-center">Chưa có dữ liệu</div>
-      </div>
-    </div>
+            <AEmpty v-else :image="undefined" description="Chưa có dữ liệu" />
+          </ACard>
+        </ACol>
+      </ARow>
 
-    <!-- HÀNG: Loại HĐ + Giới tính + HĐ sắp hết hạn -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <!-- Loại hợp đồng -->
-      <div class="bg-card border border-border rounded-xl p-5">
-        <h3 class="font-semibold text-foreground mb-4">Theo loại hợp đồng</h3>
-        <div class="space-y-2.5">
-          <div v-for="(c, i) in byContractType" :key="c.label" class="flex items-center justify-between text-sm">
-            <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: CONTRACT_COLORS[i % CONTRACT_COLORS.length] }"></span>
-              <span class="text-foreground">{{ c.label }}</span>
+      <!-- HÀNG: Loại HĐ + Giới tính + HĐ sắp hết hạn -->
+      <ARow :gutter="[16, 16]">
+        <ACol :xs="24" :lg="8">
+          <ACard :bordered="false" class="shadow-sm rounded-2xl h-full" title="Theo loại hợp đồng">
+            <div class="space-y-3">
+              <div v-for="(c, i) in byContractType" :key="c.label">
+                <div class="flex items-center justify-between text-sm mb-1">
+                  <span class="inline-flex items-center gap-2 text-foreground">
+                    <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: CONTRACT_COLORS[i % CONTRACT_COLORS.length] }"></span>{{ c.label }}
+                  </span>
+                  <span class="font-mono text-muted-foreground">{{ c.value }} · {{ pct(c.value) }}%</span>
+                </div>
+                <AProgress :percent="pct(c.value)" :show-info="false" :stroke-color="CONTRACT_COLORS[i % CONTRACT_COLORS.length]" size="small" />
+              </div>
             </div>
-            <span class="font-mono text-muted-foreground">{{ c.value }} · {{ pct(c.value) }}%</span>
-          </div>
-        </div>
-      </div>
+          </ACard>
+        </ACol>
 
-      <!-- Giới tính -->
-      <div class="bg-card border border-border rounded-xl p-5">
-        <h3 class="font-semibold text-foreground mb-4">Theo giới tính</h3>
-        <div class="space-y-2.5">
-          <div v-for="g in byGender" :key="g.label" class="flex items-center justify-between text-sm">
-            <span class="text-foreground">{{ g.label }}</span>
-            <span class="font-mono text-muted-foreground">{{ g.value }} · {{ pct(g.value) }}%</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- HĐ sắp hết hạn (danh sách) -->
-      <div class="bg-card border border-border rounded-xl p-5">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="font-semibold text-foreground">HĐ sắp hết hạn</h3>
-          <span v-if="expiringContracts.length" class="text-xs px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 font-medium">{{ expiringContracts.length }}</span>
-        </div>
-        <div v-if="expiringContracts.length" class="space-y-2">
-          <div v-for="c in expiringContracts.slice(0, 5)" :key="c.id" class="flex items-center justify-between text-sm py-1 border-b border-border/50 last:border-0">
-            <div class="min-w-0">
-              <div class="text-foreground truncate">{{ c._name || 'NV ' + (c._code || '') }}</div>
-              <div class="text-xs text-muted-foreground">{{ c.contractTypeName }} · {{ fmtDate(c.endDate) }}</div>
+        <ACol :xs="24" :lg="8">
+          <ACard :bordered="false" class="shadow-sm rounded-2xl h-full" title="Theo giới tính">
+            <div class="space-y-3">
+              <div v-for="g in byGender" :key="g.label">
+                <div class="flex items-center justify-between text-sm mb-1">
+                  <span class="text-foreground">{{ g.label }}</span>
+                  <span class="font-mono text-muted-foreground">{{ g.value }} · {{ pct(g.value) }}%</span>
+                </div>
+                <AProgress :percent="pct(g.value)" :show-info="false" stroke-color="#0052FF" size="small" />
+              </div>
             </div>
-            <span class="shrink-0 ml-2 text-xs font-medium px-2 py-0.5 rounded-full" :class="(c._days ?? 0) <= 7 ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'">còn {{ c._days }}d</span>
-          </div>
-        </div>
-        <div v-else class="text-sm text-muted-foreground py-6 text-center">Không có HĐ nào sắp hết hạn</div>
-      </div>
-    </div>
+          </ACard>
+        </ACol>
 
-    <!-- LỐI TẮT -->
-    <div>
-      <h2 class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Lối tắt</h2>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <RouterLink to="/employees" class="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:border-accent/40 hover:shadow-sm transition-all">
-          <div class="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><PlusIcon class="w-5 h-5" /></div>
-          <span class="text-sm font-medium text-foreground">Thêm nhân viên</span>
-        </RouterLink>
-        <RouterLink to="/attendance/closing" class="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:border-accent/40 hover:shadow-sm transition-all">
-          <div class="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><CalendarCheckIcon class="w-5 h-5" /></div>
-          <span class="text-sm font-medium text-foreground">Chốt công</span>
-        </RouterLink>
-        <RouterLink to="/payroll/records" class="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:border-accent/40 hover:shadow-sm transition-all">
-          <div class="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><CalculatorIcon class="w-5 h-5" /></div>
-          <span class="text-sm font-medium text-foreground">Chạy lương</span>
-        </RouterLink>
-        <RouterLink to="/attendance/leave-approval" class="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:border-accent/40 hover:shadow-sm transition-all">
-          <div class="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><CheckCheckIcon class="w-5 h-5" /></div>
-          <span class="text-sm font-medium text-foreground">Duyệt phép</span>
-        </RouterLink>
+        <ACol :xs="24" :lg="8">
+          <ACard :bordered="false" class="shadow-sm rounded-2xl h-full">
+            <template #title><span class="flex items-center justify-between">HĐ sắp hết hạn <ATag v-if="expiringContracts.length" color="red">{{ expiringContracts.length }}</ATag></span></template>
+            <div v-if="expiringContracts.length" class="divide-y divide-border/50">
+              <div v-for="c in expiringContracts.slice(0, 6)" :key="c.id" class="flex items-center justify-between py-2 first:pt-0">
+                <div class="min-w-0">
+                  <div class="text-sm text-foreground truncate">{{ c._name || ('NV ' + (c._code || '')) }}</div>
+                  <div class="text-xs text-muted-foreground">{{ c.contractTypeName }} · {{ fmtDate(c.endDate) }}</div>
+                </div>
+                <ATag :color="(c._days ?? 0) <= 7 ? 'red' : 'orange'" class="shrink-0">còn {{ c._days }}d</ATag>
+              </div>
+            </div>
+            <AEmpty v-else :image="undefined" description="Không có HĐ sắp hết hạn" />
+          </ACard>
+        </ACol>
+      </ARow>
+
+      <!-- LỐI TẮT -->
+      <div>
+        <h2 class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Lối tắt</h2>
+        <ARow :gutter="[12, 12]">
+          <ACol :xs="12" :md="6">
+            <ACard hoverable :bordered="false" class="shadow-sm rounded-2xl cursor-pointer" @click="router.push('/employees')">
+              <div class="flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><PlusIcon class="w-5 h-5" /></div><span class="text-sm font-medium text-foreground">Thêm nhân viên</span></div>
+            </ACard>
+          </ACol>
+          <ACol :xs="12" :md="6">
+            <ACard hoverable :bordered="false" class="shadow-sm rounded-2xl cursor-pointer" @click="router.push('/attendance/closing')">
+              <div class="flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><CalendarCheckIcon class="w-5 h-5" /></div><span class="text-sm font-medium text-foreground">Chốt công</span></div>
+            </ACard>
+          </ACol>
+          <ACol :xs="12" :md="6">
+            <ACard hoverable :bordered="false" class="shadow-sm rounded-2xl cursor-pointer" @click="router.push('/payroll/records')">
+              <div class="flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><CalculatorIcon class="w-5 h-5" /></div><span class="text-sm font-medium text-foreground">Chạy lương</span></div>
+            </ACard>
+          </ACol>
+          <ACol :xs="12" :md="6">
+            <ACard hoverable :bordered="false" class="shadow-sm rounded-2xl cursor-pointer" @click="router.push('/attendance/leave-approval')">
+              <div class="flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><CheckCheckIcon class="w-5 h-5" /></div><span class="text-sm font-medium text-foreground">Duyệt phép</span></div>
+            </ACard>
+          </ACol>
+        </ARow>
       </div>
     </div>
-  </div>
+  </ASpin>
 </template>
