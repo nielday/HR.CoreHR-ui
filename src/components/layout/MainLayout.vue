@@ -1,18 +1,13 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref } from 'vue'
 import Sidebar from './Sidebar.vue'
 import Header from './Header.vue'
 
 // Manage drawer state here to pass to Header and Sidebar
 // Default to open on large screens, closed on mobile
 const drawer = ref(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true)
-const route = useRoute()
-const contentClass = computed(() =>
-  route.meta.fullWidth
-    ? 'w-full max-w-none p-4 md:p-8'
-    : 'max-w-7xl mx-auto w-full p-4 md:p-8'
-)
+// Dùng full chiều rộng (bỏ giới hạn max-w-7xl) để bảng dữ liệu rộng hơn
+const contentClass = 'w-full max-w-none p-4 md:p-8'
 </script>
 
 <template>
