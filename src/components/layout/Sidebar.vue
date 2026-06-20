@@ -52,6 +52,7 @@ interface MenuGroup { key: string; label: string; children: MenuChild[] }
 const menu = computed<MenuGroup[]>(() => {
   const sys = canManageSystem.value
   const viewAll = canViewAll.value
+  const adm = userRole.value === 'Admin' // quản trị hệ thống: chỉ Admin
 
   const groups: MenuGroup[] = [
     {
@@ -72,7 +73,7 @@ const menu = computed<MenuGroup[]>(() => {
         { label: 'Chấm công của tôi', to: '/attendance/me', show: true },
         { label: 'Bảng chấm công', to: '/attendance/records', show: viewAll },
         { label: 'Ca làm việc', to: '/attendance/shifts', show: sys },
-        { label: 'Quản lý Kiosk', to: '/attendance/kiosk', show: sys },
+        { label: 'Quản lý Kiosk', to: '/attendance/kiosk', show: adm },
         { label: 'Chốt công', to: '/attendance/closing', show: sys },
       ],
     },
@@ -99,7 +100,7 @@ const menu = computed<MenuGroup[]>(() => {
       key: 'admin',
       label: 'Quản trị',
       children: [
-        { label: 'Tài khoản & Phân quyền', to: '/users', show: sys },
+        { label: 'Tài khoản & Phân quyền', to: '/users', show: adm },
       ],
     },
   ]

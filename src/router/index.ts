@@ -137,7 +137,7 @@ const router = createRouter({
           path: 'attendance/kiosk',
           name: 'attendance-kiosk',
           component: () => import('../views/KioskView.vue'),
-          meta: { roles: ['Admin', 'HR'] }
+          meta: { roles: ['Admin'] }
         },
         {
           path: 'attendance/leave-policies',
@@ -155,7 +155,7 @@ const router = createRouter({
           path: 'users',
           name: 'users',
           component: () => import('../views/UsersView.vue'),
-          meta: { roles: ['Admin', 'HR'] }
+          meta: { roles: ['Admin'] }
         },
         {
           path: 'permissions',
