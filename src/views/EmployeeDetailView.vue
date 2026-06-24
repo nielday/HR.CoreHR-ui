@@ -230,7 +230,13 @@ async function executeTerminate() {
             {{ employee.workingStatus }}
           </span>
         </h1>
-        <p class="text-muted-foreground font-mono text-sm mt-1">Mã: {{ employee?.employeeCode }} | Phòng ban: {{ employee?.departmentName }} | Chức vụ: {{ employee?.positionName }}</p>
+        <p class="text-muted-foreground font-mono text-sm mt-1">
+          Mã: {{ employee?.employeeCode }} | Phòng ban: {{ employee?.departmentName }}<span
+            v-for="(n, i) in (employee?.additionalDepartmentNames || [])"
+            :key="i"
+            class="ml-1.5 inline-block bg-purple-100 text-purple-700 rounded px-1.5 py-0.5 text-[11px] align-middle"
+          >+ {{ n }}</span> | Chức vụ: {{ employee?.positionName }}
+        </p>
       </div>
     </div>
 
