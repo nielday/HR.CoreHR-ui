@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
+import { RouterLink } from 'vue-router'
 import { Select as ASelect, Table as ATable, Tag as ATag, Popconfirm as APopconfirm, message } from 'ant-design-vue'
-import { LockIcon, RefreshCwIcon } from 'lucide-vue-next'
+import { LockIcon, RefreshCwIcon, TriangleAlertIcon } from 'lucide-vue-next'
 import { useAttendanceStore } from '../stores/attendance'
 import { useEmployeeStore } from '../stores/employee'
 import Button from '../components/ui/Button.vue'
@@ -37,19 +38,42 @@ const columns = [
   { title: 'Đã chốt', key: 'isClosed', align: 'center' as const, width: 120 },
 ]
 
+// Ca treo (quên check-out) trong tháng
+const openShifts = computed<any[]>(() => store.openShifts as any[])
+const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`)
+function fmtDate(v?: string | null) {
+  if (!v) return '—'
+  const d = new Date(v); return isNaN(d.getTime()) ? '—' : `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`
+}
+function fmtTime(v?: string | null) {
+  if (!v) return '—'
+  const d = new Date(v); return isNaN(d.getTime()) ? '—' : `${pad2(d.getHours())}:${pad2(d.getMinutes())}`
+}
+
 async function reload() {
-  await store.fetchSummary(month.value, year.value)
+  await Promise.all([
+    store.fetchSummary(month.value, year.value),
+    store.fetchOpenShifts(month.value, year.value),
+  ])
 }
 
 async function closeMonth() {
-  const ok = await store.closeMonth(month.value, year.value)
+  // Còn ca treo → người dùng đã được cảnh báo ở banner + Popconfirm, xác nhận = chốt bỏ qua (force)
+  const force = openShifts.value.length > 0
+  const ok = await store.closeMonth(month.value, year.value, force)
   if (ok) {
     message.success(`Đã chốt công tháng ${month.value}/${year.value}`)
-    await store.fetchSummary(month.value, year.value)
+    await reload()
   } else {
     message.error(store.error || 'Chốt công thất bại')
   }
 }
+
+const closeConfirmTitle = computed(() =>
+  openShifts.value.length > 0
+    ? `Còn ${openShifts.value.length} bản ghi quên check-out (sẽ tính 0 giờ làm cho ngày đó). Vẫn chốt công tháng ${month.value}/${year.value}?`
+    : `Chốt công tháng ${month.value}/${year.value}? Thao tác này khóa sổ chấm công của tháng.`,
+)
 
 onMounted(async () => {
   if (!empStore.employees.length) empStore.fetchEmployees({ pageSize: 1000 })
@@ -69,8 +93,8 @@ watch([month, year], reload)
         <ASelect v-model:value="month" :options="months" style="width: 120px" size="large" />
         <ASelect v-model:value="year" :options="years" style="width: 110px" size="large" />
         <APopconfirm
-          :title="`Chốt công tháng ${month}/${year}? Thao tác này khóa sổ chấm công của tháng.`"
-          ok-text="Chốt công"
+          :title="closeConfirmTitle"
+          :ok-text="openShifts.length > 0 ? 'Vẫn chốt' : 'Chốt công'"
           cancel-text="Hủy"
           @confirm="closeMonth"
         >
@@ -86,6 +110,48 @@ watch([month, year], reload)
     </div>
 
     <div v-if="store.error" class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-sans">{{ store.error }}</div>
+
+    <!-- Cảnh báo ca treo (quên check-out) -->
+    <div v-if="openShifts.length > 0" class="bg-amber-50 border border-amber-200 rounded-2xl p-5 font-sans">
+      <div class="flex items-start gap-3">
+        <TriangleAlertIcon class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="font-semibold text-amber-800">
+              Còn {{ openShifts.length }} bản ghi quên check-out trong tháng {{ month }}/{{ year }}
+            </h3>
+            <RouterLink to="/attendance/records" class="text-sm font-medium text-amber-700 hover:text-amber-900 underline">
+              Mở bảng chấm công để xử lý →
+            </RouterLink>
+          </div>
+          <p class="text-sm text-amber-700 mt-1">
+            Nếu chốt công ngay, các ngày này vẫn tính là <strong>có mặt</strong> nhưng <strong>0 giờ làm</strong> (không có tăng ca).
+            Nên nhập giờ ra trước khi chốt.
+          </p>
+          <div class="mt-3 max-h-48 overflow-auto rounded-lg border border-amber-200 bg-white/60">
+            <table class="w-full text-sm">
+              <thead class="text-[11px] uppercase tracking-wider text-amber-700/80">
+                <tr class="text-left">
+                  <th class="px-3 py-1.5 font-semibold">Nhân viên</th>
+                  <th class="px-3 py-1.5 font-semibold">Ngày</th>
+                  <th class="px-3 py-1.5 font-semibold">Giờ vào</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="s in openShifts" :key="s.id" class="border-t border-amber-100">
+                  <td class="px-3 py-1.5">
+                    <span class="font-medium text-foreground">{{ s.fullName || 'NV chưa đồng bộ' }}</span>
+                    <span class="font-mono text-xs text-muted-foreground ml-1">{{ s.employeeCode }}</span>
+                  </td>
+                  <td class="px-3 py-1.5 font-mono">{{ fmtDate(s.workDate) }}</td>
+                  <td class="px-3 py-1.5 font-mono">{{ fmtTime(s.checkInTime) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="bg-card border border-border rounded-2xl shadow-md p-6">
       <ATable :columns="columns" :data-source="store.summaries" :loading="store.isLoading" row-key="id" :pagination="{ pageSize: 10 }">

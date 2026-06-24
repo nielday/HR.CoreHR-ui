@@ -101,6 +101,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
   const myAttendance = ref<AttendanceRecord[]>([])
   const attendanceList = ref<AttendanceRecord[]>([])
   const summaries = ref<MonthlyAttendanceSummary[]>([])
+  const openShifts = ref<any[]>([])
   const myLeaves = ref<LeaveRequest[]>([])
   const pendingLeaves = ref<LeaveRequest[]>([])
   const leavePolicies = ref<LeavePolicy[]>([])
@@ -148,11 +149,15 @@ export const useAttendanceStore = defineStore('attendance', () => {
   async function upsertManual(payload: any) {
     return wrap(async () => { const r = await attendanceApi.post('/attendance', payload); return r.data }, 'Lưu chấm công thất bại')
   }
-  async function closeMonth(month: number, year: number) {
-    return wrap(async () => { const r = await attendanceApi.post('/attendance/close', null, { params: { month, year } }); return r.data }, 'Chốt công thất bại')
+  async function closeMonth(month: number, year: number, force = false) {
+    return wrap(async () => { const r = await attendanceApi.post('/attendance/close', null, { params: { month, year, force } }); return r.data }, 'Chốt công thất bại')
   }
   async function fetchSummary(month: number, year: number) {
     await wrap(async () => { const r = await attendanceApi.get('/attendance/summary', { params: { month, year } }); summaries.value = r.data }, 'Không tải được bảng chốt công')
+  }
+  // Ca treo (quên check-out) trong tháng — rà trước khi chốt công
+  async function fetchOpenShifts(month: number, year: number) {
+    await wrap(async () => { const r = await attendanceApi.get('/attendance/open-shifts', { params: { month, year } }); openShifts.value = r.data }, 'Không tải được danh sách ca treo')
   }
 
   // ===== Nghỉ phép =====
@@ -206,8 +211,8 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
   return {
     isLoading, error,
-    myAttendance, attendanceList, summaries, myLeaves, pendingLeaves, leavePolicies, myLeaveBalance, selectedLeaveBalance, shifts,
-    checkIn, checkOut, kioskCheckIn, kioskCheckOut, kioskStatus, kioskToggle, fetchMine, fetchAttendance, upsertManual, closeMonth, fetchSummary,
+    myAttendance, attendanceList, summaries, openShifts, myLeaves, pendingLeaves, leavePolicies, myLeaveBalance, selectedLeaveBalance, shifts,
+    checkIn, checkOut, kioskCheckIn, kioskCheckOut, kioskStatus, kioskToggle, fetchMine, fetchAttendance, upsertManual, closeMonth, fetchSummary, fetchOpenShifts,
     createLeave, fetchMyLeaves, fetchPendingLeaves, approveLeave, rejectLeave,
     fetchMyLeaveBalance, fetchLeaveBalance, fetchLeavePolicies, updateLeavePolicy, createLeavePolicy, deleteLeavePolicy,
     fetchShifts, createShift, updateShift, deactivateShift,
