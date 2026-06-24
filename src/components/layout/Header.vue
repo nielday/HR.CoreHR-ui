@@ -2,6 +2,7 @@
 
 import { useAuthStore } from '../../stores/auth'
 import { MenuIcon, LogOutIcon } from 'lucide-vue-next'
+import GlobalSearch from './GlobalSearch.vue'
 
 const authStore = useAuthStore()
 
@@ -25,6 +26,11 @@ function logout() {
         <!-- Title removed to prevent hierarchy redundancy with page headers -->
       </div>
     </template>
+
+    <!-- Tìm kiếm tổng -->
+    <div class="flex-1 flex justify-center px-2 md:px-4">
+      <GlobalSearch />
+    </div>
 
     <template v-slot:append>
       <div class="flex items-center gap-2 md:gap-4">

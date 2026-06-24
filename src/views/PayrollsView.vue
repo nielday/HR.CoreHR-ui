@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { Tag as ATag, Popconfirm as APopconfirm, Input as AInput, Select as ASelect, Table as ATable, Segmented as ASegmented, message } from 'ant-design-vue'
 import { CalculatorIcon, RefreshCwIcon, CheckIcon, BanknoteIcon, XIcon, PrinterIcon, DownloadIcon } from 'lucide-vue-next'
 import { usePayrollStore } from '../stores/payroll'
@@ -10,6 +11,16 @@ import PayslipModal from '../components/PayslipModal.vue'
 
 const store = usePayrollStore()
 const empStore = useEmployeeStore()
+const route = useRoute()
+
+// Deep-link từ tìm kiếm tổng: ?employeeId= → lọc theo mã NV (keyword đã có sẵn cơ chế lọc)
+function applyEmployeeIdFromQuery() {
+  const id = route.query.employeeId
+  if (typeof id === 'string' && id) {
+    const emp = (empStore.allEmployees as any[]).find((e) => e.id === id)
+    keyword.value = emp?.employeeCode || id
+  }
+}
 
 const now = new Date()
 const month = ref<number>(now.getMonth() + 1)
@@ -279,8 +290,12 @@ async function batchPay() {
   }
 }
 
-onMounted(load)
+onMounted(async () => {
+  await load()
+  applyEmployeeIdFromQuery()
+})
 watch([month, year], () => store.fetchPayrolls(month.value, year.value))
+watch(() => route.query.employeeId, applyEmployeeIdFromQuery)
 </script>
 
 <template>

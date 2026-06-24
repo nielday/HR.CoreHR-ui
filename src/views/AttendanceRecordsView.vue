@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { Input as AInput, Select as ASelect, Tag as ATag, Segmented as ASegmented, message } from 'ant-design-vue'
 const ATextarea = AInput.TextArea
 import { PlusIcon, PencilIcon, XIcon, TriangleAlertIcon, DownloadIcon } from 'lucide-vue-next'
@@ -11,6 +12,16 @@ import DataTableShell from '../components/ui/DataTableShell.vue'
 
 const store = useAttendanceStore()
 const empStore = useEmployeeStore()
+const route = useRoute()
+
+// Deep-link từ tìm kiếm tổng: ?employeeId= → lọc sẵn theo nhân viên đó
+function applyEmployeeIdFromQuery() {
+  const id = route.query.employeeId
+  if (typeof id === 'string' && id) {
+    viewMode.value = 'detail'
+    fEmpIds.value = [id]
+  }
+}
 
 const now = new Date()
 const month = ref<number>(now.getMonth() + 1)
@@ -243,9 +254,12 @@ async function submitManual() {
 onMounted(async () => {
   if (!empStore.allEmployees.length) await empStore.fetchAllEmployees()
   if (!store.shifts.length) await store.fetchShifts()
+  applyEmployeeIdFromQuery()
   await reload()
 })
 watch([month, year], reload)
+// Deep-link mới khi đang ở sẵn trang này (đổi ?employeeId=)
+watch(() => route.query.employeeId, applyEmployeeIdFromQuery)
 </script>
 
 <template>
