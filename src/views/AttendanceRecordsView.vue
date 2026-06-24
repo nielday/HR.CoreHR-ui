@@ -9,6 +9,7 @@ import { useEmployeeStore } from '../stores/employee'
 import Button from '../components/ui/Button.vue'
 import Modal from '../components/ui/Modal.vue'
 import DataTableShell from '../components/ui/DataTableShell.vue'
+import { exportToExcel } from '../utils/exportExcel'
 
 const store = useAttendanceStore()
 const empStore = useEmployeeStore()
@@ -172,28 +173,9 @@ async function reload() {
   await store.fetchAttendance(undefined, month.value, year.value)
 }
 
-// ===== Xuất file (CSV mở bằng Excel) — theo đúng bộ lọc & chế độ đang xem =====
-function csvCell(v: unknown) {
-  const s = v == null ? '' : String(v)
-  return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
-}
-function downloadCsv(filename: string, headers: string[], rows: (string | number)[][]) {
-  const lines = [headers, ...rows].map((r) => r.map(csvCell).join(','))
-  // BOM ﻿ để Excel đọc đúng tiếng Việt (UTF-8)
-  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
-}
-function exportCsv() {
+// ===== Xuất Excel (.xlsx, bảng đẹp) — theo đúng bộ lọc & chế độ đang xem =====
+async function exportCsv() {
   if (viewMode.value === 'detail') {
-    const headers = [
-      'Ngày', 'Mã NV', 'Họ tên', 'Phòng ban', 'Ca', 'Giờ vào', 'Giờ ra',
-      'Giờ làm', 'Tăng ca', 'Đi muộn (phút)', 'Về sớm (phút)', 'Trạng thái', 'Ghi chú',
-    ]
     const rows = detailFiltered.value.map((r: any) => [
       formatDate(r.workDate), r._code, r._name, r._dept, r._shift,
       formatTime(r.checkInTime), formatTime(r.checkOutTime),
@@ -201,14 +183,49 @@ function exportCsv() {
       ATTENDANCE_STATUS[r.status]?.label || r.status, r.note || '',
     ])
     if (!rows.length) { message.info('Không có dữ liệu để xuất'); return }
-    downloadCsv(`cham-cong-chi-tiet-${pad2(month.value)}-${year.value}.csv`, headers, rows)
+    await exportToExcel({
+      filename: `cham-cong-chi-tiet-${pad2(month.value)}-${year.value}.xlsx`,
+      sheetName: 'Chấm công chi tiết',
+      title: `BẢNG CHẤM CÔNG CHI TIẾT THÁNG ${pad2(month.value)}/${year.value}`,
+      columns: [
+        { header: 'Ngày', width: 12, align: 'center' },
+        { header: 'Mã NV', width: 12 },
+        { header: 'Họ tên', width: 22 },
+        { header: 'Phòng ban', width: 18 },
+        { header: 'Ca', width: 12 },
+        { header: 'Giờ vào', width: 10, align: 'center' },
+        { header: 'Giờ ra', width: 10, align: 'center' },
+        { header: 'Giờ làm', width: 10, align: 'center' },
+        { header: 'Tăng ca', width: 10, align: 'center' },
+        { header: 'Đi muộn (phút)', width: 14, align: 'center' },
+        { header: 'Về sớm (phút)', width: 14, align: 'center' },
+        { header: 'Trạng thái', width: 14, align: 'center' },
+        { header: 'Ghi chú', width: 24 },
+      ],
+      rows,
+    })
   } else {
-    const headers = ['Mã NV', 'Họ tên', 'Phòng ban', 'Ngày công', 'Tổng giờ', 'Tăng ca', 'Nghỉ phép', 'Vắng', 'Đi muộn (lần)']
     const rows = summaryRows.value.map((r: any) => [
       r._code, r._name, r._dept, r.present, r.worked, r.ot, r.leave, r.absent, r.late,
     ])
     if (!rows.length) { message.info('Không có dữ liệu để xuất'); return }
-    downloadCsv(`cham-cong-tong-hop-${pad2(month.value)}-${year.value}.csv`, headers, rows)
+    await exportToExcel({
+      filename: `cham-cong-tong-hop-${pad2(month.value)}-${year.value}.xlsx`,
+      sheetName: 'Chấm công tổng hợp',
+      title: `BẢNG CHẤM CÔNG TỔNG HỢP THÁNG ${pad2(month.value)}/${year.value}`,
+      columns: [
+        { header: 'Mã NV', width: 12 },
+        { header: 'Họ tên', width: 22 },
+        { header: 'Phòng ban', width: 18 },
+        { header: 'Ngày công', width: 11, align: 'center' },
+        { header: 'Tổng giờ', width: 11, align: 'center' },
+        { header: 'Tăng ca', width: 10, align: 'center' },
+        { header: 'Nghỉ phép', width: 11, align: 'center' },
+        { header: 'Vắng', width: 9, align: 'center' },
+        { header: 'Đi muộn (lần)', width: 13, align: 'center' },
+      ],
+      rows,
+    })
   }
 }
 

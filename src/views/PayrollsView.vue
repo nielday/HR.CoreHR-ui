@@ -8,6 +8,7 @@ import { useEmployeeStore } from '../stores/employee'
 import Button from '../components/ui/Button.vue'
 import DataTableShell from '../components/ui/DataTableShell.vue'
 import PayslipModal from '../components/PayslipModal.vue'
+import { exportToExcel } from '../utils/exportExcel'
 
 const store = usePayrollStore()
 const empStore = useEmployeeStore()
@@ -89,18 +90,8 @@ const totals = computed(() => {
   return t
 })
 
-// ===== Xuất file (CSV mở bằng Excel) — đầy đủ trường, theo bộ lọc đang xem =====
-function csvCell(v: unknown) {
-  const s = v == null ? '' : String(v)
-  return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
-}
-function exportCsv() {
-  const headers = [
-    'Mã NV', 'Họ tên', 'Phòng ban', 'Tháng', 'Năm',
-    'Lương cơ bản', 'Phụ cấp', 'Khấu trừ', 'Thực lãnh',
-    'Công chuẩn', 'Công thực tế', 'Giờ tăng ca', 'Nghỉ có lương', 'Nghỉ không lương',
-    'Trạng thái', 'Ngày tính',
-  ]
+// ===== Xuất Excel (.xlsx, bảng đẹp) — đầy đủ trường, theo bộ lọc đang xem =====
+async function exportCsv() {
   const rows = filteredPayrolls.value.map((p: any) => {
     const e = empMap.value[p.employeeId]
     return [
@@ -113,15 +104,30 @@ function exportCsv() {
     ]
   })
   if (!rows.length) { message.info('Không có dữ liệu để xuất'); return }
-  const lines = [headers, ...rows].map((r) => r.map(csvCell).join(','))
-  // BOM ﻿ để Excel đọc đúng tiếng Việt (UTF-8)
-  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `bang-luong-${String(month.value).padStart(2, '0')}-${year.value}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
+  await exportToExcel({
+    filename: `bang-luong-${String(month.value).padStart(2, '0')}-${year.value}.xlsx`,
+    sheetName: 'Bảng lương',
+    title: `BẢNG LƯƠNG THÁNG ${String(month.value).padStart(2, '0')}/${year.value}`,
+    columns: [
+      { header: 'Mã NV', width: 12 },
+      { header: 'Họ tên', width: 22 },
+      { header: 'Phòng ban', width: 18 },
+      { header: 'Tháng', width: 8, align: 'center' },
+      { header: 'Năm', width: 8, align: 'center' },
+      { header: 'Lương cơ bản', width: 15, align: 'right' },
+      { header: 'Phụ cấp', width: 13, align: 'right' },
+      { header: 'Khấu trừ', width: 13, align: 'right' },
+      { header: 'Thực lãnh', width: 15, align: 'right' },
+      { header: 'Công chuẩn', width: 11, align: 'center' },
+      { header: 'Công thực tế', width: 11, align: 'center' },
+      { header: 'Giờ tăng ca', width: 11, align: 'center' },
+      { header: 'Nghỉ có lương', width: 13, align: 'center' },
+      { header: 'Nghỉ không lương', width: 15, align: 'center' },
+      { header: 'Trạng thái', width: 14, align: 'center' },
+      { header: 'Ngày tính', width: 20 },
+    ],
+    rows,
+  })
 }
 
 const columns = computed<any[]>(() => [

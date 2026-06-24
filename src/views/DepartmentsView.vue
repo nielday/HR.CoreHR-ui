@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed, nextTick, watch } from 'vue'
-import { Empty as AEmpty, Tag as ATag, Segmented as ASegmented, Table as ATable, Input as AInput, Select as ASelect } from 'ant-design-vue'
+import { Empty as AEmpty, Tag as ATag, Segmented as ASegmented, Table as ATable, Input as AInput, Select as ASelect, message } from 'ant-design-vue'
 const ATextarea = AInput.TextArea
-import { PlusIcon, PencilIcon, Trash2Icon } from 'lucide-vue-next'
+import { PlusIcon, PencilIcon, Trash2Icon, DownloadIcon } from 'lucide-vue-next'
+import { exportToExcel } from '../utils/exportExcel'
 import { OrgChart } from 'd3-org-chart'
 import { useDepartmentStore } from '../stores/department'
 import { useEmployeeStore } from '../stores/employee'
@@ -60,6 +61,40 @@ const managerName = (id?: string | null) => {
   if (!id) return null
   const e = (employeeStore.allEmployees as any[]).find((x) => x.id === id)
   return e ? `${e.fullName}` : null
+}
+
+// map id phòng ban -> tên (dùng cho cột "Phòng ban cha" khi xuất Excel)
+const departmentName = (id?: string | null) => {
+  if (!id) return ''
+  const d = (store.departments as any[]).find((x) => x.id === id)
+  return d ? d.departmentName : ''
+}
+
+// Xuất Excel (.xlsx) danh sách phòng ban
+async function exportExcel() {
+  const rows = (store.departments as any[]).map((d) => [
+    d.departmentCode,
+    d.departmentName,
+    departmentName(d.parentDepartmentId) || '— (Cấp gốc)',
+    managerName(d.managerEmployeeId) || '',
+    d.description || '',
+    d.isActive === false ? 'Ngừng hoạt động' : 'Hoạt động',
+  ])
+  if (!rows.length) { message.info('Không có dữ liệu để xuất'); return }
+  await exportToExcel({
+    filename: 'phong-ban.xlsx',
+    sheetName: 'Phòng ban',
+    title: 'DANH SÁCH PHÒNG BAN',
+    columns: [
+      { header: 'Mã phòng ban', width: 16 },
+      { header: 'Tên phòng ban', width: 28 },
+      { header: 'Phòng ban cha', width: 24 },
+      { header: 'Trưởng phòng', width: 24 },
+      { header: 'Mô tả', width: 36 },
+      { header: 'Trạng thái', width: 16, align: 'center' },
+    ],
+    rows,
+  })
 }
 
 const availableManagers = computed(() => {
@@ -269,6 +304,9 @@ async function executeDelete() {
   >
     <template #actions>
       <ASegmented v-model:value="viewMode" :options="[{ label: 'Sơ đồ', value: 'chart' }, { label: 'Bảng', value: 'table' }]" />
+      <Button variant="secondary" @click="exportExcel">
+        <DownloadIcon class="w-4 h-4 mr-2" /> Xuất Excel
+      </Button>
       <Button v-if="canManageSystem" @click="openCreateModal">
         <PlusIcon class="w-4 h-4 mr-2" /> Thêm phòng ban
       </Button>

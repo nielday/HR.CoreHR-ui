@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
-import { Tag as ATag, Input as AInput, InputNumber as AInputNumber } from 'ant-design-vue'
+import { Tag as ATag, Input as AInput, InputNumber as AInputNumber, message } from 'ant-design-vue'
 const ATextarea = AInput.TextArea
-import { PlusIcon, PencilIcon, Trash2Icon, RotateCcwIcon } from 'lucide-vue-next'
+import { PlusIcon, PencilIcon, Trash2Icon, RotateCcwIcon, DownloadIcon } from 'lucide-vue-next'
 import { useContractStore } from '../stores/contract'
 import { useAuthStore } from '../stores/auth'
 import Button from '../components/ui/Button.vue'
 import Modal from '../components/ui/Modal.vue'
 import DataTableShell from '../components/ui/DataTableShell.vue'
+import { exportToExcel } from '../utils/exportExcel'
 
 const authStore = useAuthStore()
 const canManageSystem = computed(() => ['Admin', 'HR'].includes(authStore.userRole || ''))
@@ -50,6 +51,31 @@ const filtered = computed(() => {
       (c.description || '').toLowerCase().includes(kw),
   )
 })
+
+// Xuất Excel (.xlsx) danh sách loại hợp đồng đang hiển thị
+async function exportExcel() {
+  const rows = (filtered.value as any[]).map((c) => [
+    c.contractTypeCode,
+    c.contractTypeName,
+    c.defaultDurationMonths ?? '',
+    c.description || '',
+    c.isActive === false ? 'Đã ẩn' : 'Hoạt động',
+  ])
+  if (!rows.length) { message.info('Không có dữ liệu để xuất'); return }
+  await exportToExcel({
+    filename: 'loai-hop-dong.xlsx',
+    sheetName: 'Loại hợp đồng',
+    title: 'DANH SÁCH LOẠI HỢP ĐỒNG',
+    columns: [
+      { header: 'Mã', width: 16 },
+      { header: 'Tên', width: 32 },
+      { header: 'Thời hạn (tháng)', width: 16, align: 'center' },
+      { header: 'Mô tả', width: 40 },
+      { header: 'Trạng thái', width: 14, align: 'center' },
+    ],
+    rows,
+  })
+}
 
 onMounted(() => {
   store.fetchContracts(showInactive.value)
@@ -142,6 +168,9 @@ async function executeRestore(item: any) {
         <input type="checkbox" v-model="showInactive" class="w-4 h-4 rounded border-border text-accent focus:ring-accent" />
         Hiện loại đã ẩn
       </label>
+      <Button variant="secondary" @click="exportExcel">
+        <DownloadIcon class="w-4 h-4 mr-2" /> Xuất Excel
+      </Button>
       <Button v-if="canManageSystem" @click="openCreateModal">
         <PlusIcon class="w-4 h-4 mr-2" /> Thêm loại hợp đồng
       </Button>
