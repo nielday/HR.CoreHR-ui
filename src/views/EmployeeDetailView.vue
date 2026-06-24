@@ -234,8 +234,9 @@ async function executeTerminate() {
           Mã: {{ employee?.employeeCode }} | Phòng ban: {{ employee?.departmentName }}<span
             v-for="(n, i) in (employee?.additionalDepartmentNames || [])"
             :key="i"
-            class="ml-1.5 inline-block bg-purple-100 text-purple-700 rounded px-1.5 py-0.5 text-[11px] align-middle"
-          >+ {{ n }}</span> | Chức vụ: {{ employee?.positionName }}
+            title="Phòng ban kiêm nhiệm — mang tính tham chiếu. Chấm công, nghỉ phép và lương tính theo phòng ban chính."
+            class="ml-1.5 inline-block bg-purple-100 text-purple-700 rounded px-1.5 py-0.5 text-[11px] align-middle cursor-help"
+          >Kiêm: {{ n }}</span> | Chức vụ: {{ employee?.positionName }}
         </p>
       </div>
     </div>

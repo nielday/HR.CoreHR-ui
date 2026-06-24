@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { PlusIcon, PencilIcon, UserMinusIcon, ArrowRightLeftIcon, EyeIcon, BriefcaseIcon, MailIcon, PhoneIcon, DownloadIcon, UploadIcon, XIcon } from 'lucide-vue-next'
-import { Row as ARow, Col as ACol, Card as ACard, Tag as ATag, Segmented as ASegmented, Spin as ASpin, Select as ASelect, Input as AInput } from 'ant-design-vue'
+import { Row as ARow, Col as ACol, Card as ACard, Tag as ATag, Segmented as ASegmented, Spin as ASpin, Select as ASelect, Input as AInput, Tooltip as ATooltip } from 'ant-design-vue'
 const ATextarea = AInput.TextArea
 import { useEmployeeStore } from '../stores/employee'
 import { useDepartmentStore } from '../stores/department'
@@ -449,9 +449,11 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
       <template v-else-if="column.key === 'departmentName'">
         <div>
           <div>{{ record.departmentName || '—' }}</div>
-          <div v-if="record.additionalDepartmentNames && record.additionalDepartmentNames.length" class="mt-0.5 flex flex-wrap gap-1">
-            <a-tag v-for="(n, i) in record.additionalDepartmentNames" :key="i" color="purple" class="!text-[10px] !leading-4 !px-1.5 !mr-0">+ {{ n }}</a-tag>
-          </div>
+          <a-tooltip title="Phòng ban kiêm nhiệm — mang tính tham chiếu. Chấm công, nghỉ phép và lương tính theo phòng ban chính.">
+            <div v-if="record.additionalDepartmentNames && record.additionalDepartmentNames.length" class="mt-0.5 flex flex-wrap gap-1 w-max cursor-help">
+              <a-tag v-for="(n, i) in record.additionalDepartmentNames" :key="i" color="purple" class="!text-[10px] !leading-4 !px-1.5 !mr-0">Kiêm: {{ n }}</a-tag>
+            </div>
+          </a-tooltip>
         </div>
       </template>
       <template v-else-if="column.key === 'hireDate'">{{ fmtDate(record.hireDate) }}</template>
@@ -610,7 +612,7 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
               placeholder="Không kiêm nhiệm"
               style="width: 100%"
             />
-            <p class="text-[11px] text-muted-foreground mt-1">Phòng ban phụ ngoài phòng ban chính (nếu nhân viên kiêm nhiệm).</p>
+            <p class="text-[11px] text-muted-foreground mt-1">Mang tính tham chiếu/cộng tác. Chấm công, nghỉ phép và lương vẫn tính theo <strong>phòng ban chính</strong>.</p>
           </div>
           <div class="pt-2">
             <label class="block font-mono text-xs uppercase tracking-widest text-muted-foreground mb-2">Loại hợp đồng</label>
