@@ -14,12 +14,23 @@ const store = useAttendanceStore()
 const empStore = useEmployeeStore()
 const route = useRoute()
 
-// Deep-link từ tìm kiếm tổng: ?employeeId= → lọc sẵn theo nhân viên đó
-function applyEmployeeIdFromQuery() {
+// Deep-link qua URL:
+//  ?employeeId= → lọc theo nhân viên (từ tìm kiếm tổng)
+//  ?issue=missing-checkout → chỉ hiện bản ghi quên check-out (từ màn Chốt công)
+//  ?month=&year= → mở đúng kỳ
+function applyQueryFilters() {
   const id = route.query.employeeId
   if (typeof id === 'string' && id) {
     viewMode.value = 'detail'
     fEmpIds.value = [id]
+  }
+  const m = Number(route.query.month)
+  const y = Number(route.query.year)
+  if (m >= 1 && m <= 12) month.value = m
+  if (y > 2000) year.value = y
+  if (route.query.issue === 'missing-checkout') {
+    viewMode.value = 'detail'
+    onlyMissingCheckout.value = true
   }
 }
 
@@ -56,6 +67,7 @@ const fDeptNames = ref<string[]>([])
 const fEmpIds = ref<string[]>([])
 const fDays = ref<number[]>([])
 const onlyExceptions = ref(false)
+const onlyMissingCheckout = ref(false) // chỉ hiện bản ghi quên check-out (có giờ vào, thiếu giờ ra)
 
 // Bản ghi "cần xử lý": vắng, đi muộn, về sớm, hoặc quên check-out
 function isException(r: any) {
@@ -72,9 +84,9 @@ const departmentOptions = computed<any[]>(() => {
   return [...set].sort().map((d) => ({ value: d, label: d }))
 })
 const hasFilter = computed(() =>
-  !!searchText.value.trim() || fDeptNames.value.length > 0 || fEmpIds.value.length > 0 || fDays.value.length > 0 || onlyExceptions.value,
+  !!searchText.value.trim() || fDeptNames.value.length > 0 || fEmpIds.value.length > 0 || fDays.value.length > 0 || onlyExceptions.value || onlyMissingCheckout.value,
 )
-function clearFilters() { searchText.value = ''; fDeptNames.value = []; fEmpIds.value = []; fDays.value = []; onlyExceptions.value = false }
+function clearFilters() { searchText.value = ''; fDeptNames.value = []; fEmpIds.value = []; fDays.value = []; onlyExceptions.value = false; onlyMissingCheckout.value = false }
 
 // reset ngày đã chọn nếu vượt quá số ngày của tháng mới
 watch(daysInMonth, (n) => { fDays.value = fDays.value.filter((d) => d <= n) })
@@ -121,6 +133,7 @@ const detailFiltered = computed(() => {
     if (fEmpIds.value.length && !fEmpIds.value.includes(r.employeeId)) return false
     if (fDays.value.length && !fDays.value.includes(dayOf(r.workDate))) return false
     if (onlyExceptions.value && !isException(r)) return false
+    if (onlyMissingCheckout.value && !(!!r.checkInTime && !r.checkOutTime)) return false
     if (q && !`${r._name} ${r._code}`.toLowerCase().includes(q)) return false
     return true
   })
@@ -254,12 +267,12 @@ async function submitManual() {
 onMounted(async () => {
   if (!empStore.allEmployees.length) await empStore.fetchAllEmployees()
   if (!store.shifts.length) await store.fetchShifts()
-  applyEmployeeIdFromQuery()
+  applyQueryFilters()
   await reload()
 })
 watch([month, year], reload)
-// Deep-link mới khi đang ở sẵn trang này (đổi ?employeeId=)
-watch(() => route.query.employeeId, applyEmployeeIdFromQuery)
+// Deep-link mới khi đang ở sẵn trang này (đổi query)
+watch(() => route.query, applyQueryFilters)
 </script>
 
 <template>
@@ -312,6 +325,16 @@ watch(() => route.query.employeeId, applyEmployeeIdFromQuery)
         title="Chỉ hiện bản ghi cần xử lý: vắng, đi muộn, về sớm, quên check-out"
       >
         <TriangleAlertIcon class="w-4 h-4" /> Chỉ cần xử lý
+      </button>
+      <button
+        v-if="viewMode === 'detail'"
+        type="button"
+        @click="onlyMissingCheckout = !onlyMissingCheckout"
+        class="h-9 px-3 inline-flex items-center gap-1 rounded-lg border text-sm transition-all"
+        :class="onlyMissingCheckout ? 'border-red-400 bg-red-50 text-red-700' : 'border-border text-muted-foreground hover:text-foreground hover:bg-muted'"
+        title="Chỉ hiện bản ghi quên check-out: có giờ vào nhưng thiếu giờ ra"
+      >
+        <TriangleAlertIcon class="w-4 h-4" /> Thiếu check-out
       </button>
       <button
         v-if="hasFilter"

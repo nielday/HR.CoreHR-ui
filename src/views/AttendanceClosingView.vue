@@ -120,7 +120,10 @@ watch([month, year], reload)
             <h3 class="font-semibold text-amber-800">
               Còn {{ openShifts.length }} bản ghi quên check-out trong tháng {{ month }}/{{ year }}
             </h3>
-            <RouterLink to="/attendance/records" class="text-sm font-medium text-amber-700 hover:text-amber-900 underline">
+            <RouterLink
+              :to="{ path: '/attendance/records', query: { month, year, issue: 'missing-checkout' } }"
+              class="text-sm font-medium text-amber-700 hover:text-amber-900 underline"
+            >
               Mở bảng chấm công để xử lý →
             </RouterLink>
           </div>
