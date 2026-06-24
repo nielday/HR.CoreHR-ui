@@ -152,12 +152,16 @@ async function reload() {
 const modalOpen = ref(false)
 const isEditMode = ref(false)
 const submitting = ref(false)
-const form = reactive<{ employeeId: string | undefined; workDate: string; status: number; checkInTime: string; checkOutTime: string; note: string }>({
-  employeeId: undefined, workDate: '', status: 0, checkInTime: '', checkOutTime: '', note: '',
+const form = reactive<{ employeeId: string | undefined; workDate: string; shiftId: string | undefined; status: number; checkInTime: string; checkOutTime: string; note: string }>({
+  employeeId: undefined, workDate: '', shiftId: undefined, status: 0, checkInTime: '', checkOutTime: '', note: '',
 })
+// Tùy chọn ca trong form (để trống = tự nhận ca theo giờ check-in).
+const shiftOptions = computed(() =>
+  (store.shifts as any[]).map((s) => ({ value: s.id, label: s.shiftName || s.shiftCode })),
+)
 function openCreate() {
   isEditMode.value = false
-  form.employeeId = undefined; form.workDate = ''; form.status = 0; form.checkInTime = ''; form.checkOutTime = ''; form.note = ''
+  form.employeeId = undefined; form.workDate = ''; form.shiftId = undefined; form.status = 0; form.checkInTime = ''; form.checkOutTime = ''; form.note = ''
   modalOpen.value = true
 }
 function toLocalInput(v?: string | null) {
@@ -166,10 +170,17 @@ function toLocalInput(v?: string | null) {
   if (isNaN(d.getTime())) return ''
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`
 }
+// datetime-local là giờ local của trình duyệt → đổi sang ISO UTC để khớp với chấm công tự động.
+function toUtcIso(v?: string | null) {
+  if (!v) return null
+  const d = new Date(v)
+  return isNaN(d.getTime()) ? null : d.toISOString()
+}
 function openEdit(record: any) {
   isEditMode.value = true
   form.employeeId = record.employeeId
   form.workDate = record.workDate ? String(record.workDate).slice(0, 10) : ''
+  form.shiftId = record.shiftId || undefined
   form.status = record.status
   form.checkInTime = toLocalInput(record.checkInTime)
   form.checkOutTime = toLocalInput(record.checkOutTime)
@@ -181,8 +192,8 @@ async function submitManual() {
   if (!form.workDate) { message.error('Vui lòng chọn ngày'); return }
   submitting.value = true
   const ok = await store.upsertManual({
-    employeeId: form.employeeId, workDate: form.workDate, status: form.status,
-    checkInTime: form.checkInTime || null, checkOutTime: form.checkOutTime || null, note: form.note || null,
+    employeeId: form.employeeId, workDate: form.workDate, shiftId: form.shiftId || null, status: form.status,
+    checkInTime: toUtcIso(form.checkInTime), checkOutTime: toUtcIso(form.checkOutTime), note: form.note || null,
   })
   submitting.value = false
   if (ok) { message.success('Đã lưu chấm công'); modalOpen.value = false; await reload() }
@@ -381,6 +392,17 @@ watch([month, year], reload)
           <label class="block text-sm font-medium text-foreground mb-1.5">Giờ ra</label>
           <input v-model="form.checkOutTime" type="datetime-local" class="w-full h-11 px-3 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent" />
         </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-foreground mb-1.5">Ca làm việc</label>
+        <ASelect
+          v-model:value="form.shiftId"
+          :options="shiftOptions"
+          allow-clear
+          placeholder="Tự động theo giờ check-in"
+          style="width: 100%"
+          size="large"
+        />
       </div>
       <div>
         <label class="block text-sm font-medium text-foreground mb-1.5">Ghi chú</label>
