@@ -492,8 +492,8 @@ const isActive = (s: string) => s === 'Active' || s === 'Probation'
               <div class="absolute top-3 right-3 z-10">
                 <a-tag :color="STATUS_META[item.workingStatus || '']?.color || 'default'">{{ STATUS_META[item.workingStatus || '']?.label || item.workingStatus }}</a-tag>
               </div>
-              <div class="p-5 flex flex-col items-center text-center">
-                <h3 class="font-semibold text-foreground text-lg leading-tight mt-1">{{ item.fullName }}</h3>
+              <div class="px-5 pb-5 pt-12 flex flex-col items-center text-center">
+                <h3 class="font-semibold text-foreground text-lg leading-tight">{{ item.fullName }}</h3>
                 <span class="font-mono text-xs text-muted-foreground mt-1">{{ item.employeeCode }}</span>
               </div>
               <div class="px-5 pb-5 space-y-2.5">
