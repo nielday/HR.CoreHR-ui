@@ -129,6 +129,34 @@ export const usePayrollStore = defineStore('payroll', () => {
     }
   }
 
+  // Thu hồi duyệt: Approved -> Pending
+  async function revertApproval(id: string) {
+    error.value = null
+    try {
+      const res = await payrollApi.post(`/Payrolls/${id}/revert-approval`)
+      const idx = payrolls.value.findIndex(p => p.id === id)
+      if (idx !== -1) payrolls.value[idx] = res.data
+      return true
+    } catch (err: any) {
+      error.value = pickError(err, 'Thu hồi duyệt thất bại')
+      return false
+    }
+  }
+
+  // Thu hồi chi trả: Paid -> Approved
+  async function revertPayment(id: string) {
+    error.value = null
+    try {
+      const res = await payrollApi.post(`/Payrolls/${id}/revert-payment`)
+      const idx = payrolls.value.findIndex(p => p.id === id)
+      if (idx !== -1) payrolls.value[idx] = res.data
+      return true
+    } catch (err: any) {
+      error.value = pickError(err, 'Thu hồi chi trả thất bại')
+      return false
+    }
+  }
+
   async function fetchSalaryConfig(employeeId: string): Promise<SalaryConfig | null> {
     error.value = null
     try {
@@ -158,6 +186,6 @@ export const usePayrollStore = defineStore('payroll', () => {
   return {
     payrolls, dashboard, isLoading, error,
     fetchDashboard, fetchPayrolls, calculatePayroll,
-    approvePayroll, payPayroll, fetchSalaryConfig, saveSalaryConfig,
+    approvePayroll, payPayroll, revertApproval, revertPayment, fetchSalaryConfig, saveSalaryConfig,
   }
 })

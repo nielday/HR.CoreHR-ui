@@ -165,10 +165,9 @@ const groupedPayrolls = computed<Record<number, any[]>>(() => ({
 }))
 const payrollsIn = (s: number): any[] => groupedPayrolls.value[s] ?? []
 
-// ===== Kéo-thả (drag & drop) =====
+// ===== Kéo-thả (drag & drop) — tiến và lùi 1 bước =====
 const dragId = ref<string | null>(null)
 function onDragStart(p: any) {
-  if (p.status === 2) return // đã chi trả thì không kéo
   dragId.value = p.id
 }
 function onDrop(targetStatus: number) {
@@ -177,15 +176,17 @@ function onDrop(targetStatus: number) {
   if (!id) return
   const p = (store.payrolls as any[]).find((x) => x.id === id)
   if (!p) return
-  if (p.status === 0 && targetStatus === 1) approve(id) // Chờ duyệt → Đã duyệt
-  else if (p.status === 1 && targetStatus === 2) pay(id) // Đã duyệt → Đã chi trả
+  if (p.status === 0 && targetStatus === 1) approve(id)          // Chờ duyệt → Đã duyệt
+  else if (p.status === 1 && targetStatus === 2) pay(id)         // Đã duyệt → Đã chi trả
+  else if (p.status === 1 && targetStatus === 0) revertApprove(id) // Đã duyệt → Chờ duyệt (lùi)
+  else if (p.status === 2 && targetStatus === 1) revertPay(id)   // Đã chi trả → Đã duyệt (lùi)
 }
-// Cột có phải đích hợp lệ cho thẻ đang kéo không (để tô sáng)
+// Cột có phải đích hợp lệ cho thẻ đang kéo không (chỉ cho 1 bước tiến/lùi liền kề)
 function validTarget(targetStatus: number): boolean {
   if (!dragId.value) return false
   const p = (store.payrolls as any[]).find((x) => x.id === dragId.value)
   if (!p) return false
-  return (p.status === 0 && targetStatus === 1) || (p.status === 1 && targetStatus === 2)
+  return Math.abs(p.status - targetStatus) === 1
 }
 
 async function load() {
@@ -208,6 +209,14 @@ async function approve(id: string) {
 async function pay(id: string) {
   const ok = await store.payPayroll(id)
   ok ? message.success('Đã chi trả') : message.error(store.error || 'Chi trả thất bại')
+}
+async function revertApprove(id: string) {
+  const ok = await store.revertApproval(id)
+  ok ? message.success('Đã thu hồi duyệt') : message.error(store.error || 'Thu hồi duyệt thất bại')
+}
+async function revertPay(id: string) {
+  const ok = await store.revertPayment(id)
+  ok ? message.success('Đã thu hồi chi trả') : message.error(store.error || 'Thu hồi chi trả thất bại')
 }
 
 // ===== CHỌN NHIỀU + THAO TÁC HÀNG LOẠT =====
@@ -450,9 +459,8 @@ watch([month, year], () => store.fetchPayrolls(month.value, year.value))
         <div class="space-y-2.5 overflow-y-auto" style="max-height: calc(100vh - 320px)">
           <div
             v-for="p in payrollsIn(col.s)" :key="p.id"
-            class="bg-card border border-border rounded-lg p-3 shadow-sm"
-            :class="p.status !== 2 ? 'cursor-grab active:cursor-grabbing hover:border-accent/40' : ''"
-            :draggable="p.status !== 2"
+            class="bg-card border border-border rounded-lg p-3 shadow-sm cursor-grab active:cursor-grabbing hover:border-accent/40"
+            :draggable="true"
             @dragstart="onDragStart(p)"
           >
             <div class="flex items-start justify-between gap-2">
