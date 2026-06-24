@@ -16,7 +16,9 @@ export const usePositionStore = defineStore('position', () => {
   const isLoading = ref<boolean>(false)
   const error = ref<string | null>(null)
 
-  async function fetchPositions() {
+  // force=false: dùng cache khi vào lại trang; force=true: gọi API mới.
+  async function fetchPositions(force = false) {
+    if (!force && positions.value.length > 0) return
     isLoading.value = true
     error.value = null
     try {
@@ -108,7 +110,7 @@ export const usePositionStore = defineStore('position', () => {
           'Content-Type': 'multipart/form-data'
         }
       })
-      await fetchPositions()
+      await fetchPositions(true)
       return response.data
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Lỗi khi import dữ liệu'

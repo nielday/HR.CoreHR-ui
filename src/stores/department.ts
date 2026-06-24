@@ -19,7 +19,10 @@ export const useDepartmentStore = defineStore('department', () => {
   const isLoading = ref<boolean>(false)
   const error = ref<string | null>(null)
 
-  async function fetchDepartments() {
+  // force=false: dùng lại dữ liệu đã tải (cache) khi vào lại trang.
+  // force=true: bắt buộc gọi API mới (dùng sau khi thêm/sửa/xóa).
+  async function fetchDepartments(force = false) {
+    if (!force && departments.value.length > 0) return
     isLoading.value = true
     error.value = null
     try {
@@ -32,7 +35,8 @@ export const useDepartmentStore = defineStore('department', () => {
     }
   }
 
-  async function fetchDepartmentTree() {
+  async function fetchDepartmentTree(force = false) {
+    if (!force && departmentTree.value.length > 0) return
     isLoading.value = true
     error.value = null
     try {
@@ -50,8 +54,8 @@ export const useDepartmentStore = defineStore('department', () => {
     error.value = null
     try {
       await api.post('/Departments', data)
-      await fetchDepartmentTree()
-      await fetchDepartments()
+      await fetchDepartmentTree(true)
+      await fetchDepartments(true)
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message || err.response?.data || err.message || 'Failed to create department'
@@ -66,8 +70,8 @@ export const useDepartmentStore = defineStore('department', () => {
     error.value = null
     try {
       await api.put(`/Departments/${id}`, data)
-      await fetchDepartmentTree()
-      await fetchDepartments()
+      await fetchDepartmentTree(true)
+      await fetchDepartments(true)
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message || err.response?.data || err.message || 'Failed to update department'
@@ -82,8 +86,8 @@ export const useDepartmentStore = defineStore('department', () => {
     error.value = null
     try {
       await api.delete(`/Departments/${id}`)
-      await fetchDepartmentTree()
-      await fetchDepartments()
+      await fetchDepartmentTree(true)
+      await fetchDepartments(true)
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message || err.message || 'Failed to delete department'

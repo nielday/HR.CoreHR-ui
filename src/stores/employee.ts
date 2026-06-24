@@ -55,7 +55,10 @@ export const useEmployeeStore = defineStore('employee', () => {
     }
   }
 
-  async function fetchAllEmployees() {
+  // Cache danh sách đầy đủ (dùng cho map tên trưởng phòng ở trang Phòng ban).
+  // force=true để tải lại sau khi thay đổi nhân sự.
+  async function fetchAllEmployees(force = false) {
+    if (!force && allEmployees.value.length > 0) return
     try {
       const response = await api.get('/Employees', { params: { page: 1, pageSize: 10000 } })
       if (response.data.items) {
@@ -74,6 +77,7 @@ export const useEmployeeStore = defineStore('employee', () => {
     try {
       const response = await api.post('/Employees', data)
       employees.value.unshift(response.data)
+      allEmployees.value = [] // hủy cache để trang Phòng ban tải lại danh sách mới
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message || err.response?.data || err.message || 'Failed to create employee'
@@ -92,6 +96,7 @@ export const useEmployeeStore = defineStore('employee', () => {
       if (idx !== -1) {
         employees.value[idx] = response.data
       }
+      allEmployees.value = [] // hủy cache để dữ liệu trưởng phòng được làm mới
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Failed to update employee'
@@ -122,6 +127,7 @@ export const useEmployeeStore = defineStore('employee', () => {
     error.value = null
     try {
       await api.post(`/Employees/${id}/transfer`, data)
+      allEmployees.value = [] // hủy cache: nhân viên đổi phòng → map trưởng phòng cần cập nhật
       return true
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Failed to transfer employee'
