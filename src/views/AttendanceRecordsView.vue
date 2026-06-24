@@ -2,7 +2,7 @@
 import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { Input as AInput, Select as ASelect, Tag as ATag, Segmented as ASegmented, message } from 'ant-design-vue'
 const ATextarea = AInput.TextArea
-import { PlusIcon, PencilIcon, XIcon, TriangleAlertIcon } from 'lucide-vue-next'
+import { PlusIcon, PencilIcon, XIcon, TriangleAlertIcon, DownloadIcon } from 'lucide-vue-next'
 import { useAttendanceStore, ATTENDANCE_STATUS } from '../stores/attendance'
 import { useEmployeeStore } from '../stores/employee'
 import Button from '../components/ui/Button.vue'
@@ -148,6 +148,46 @@ async function reload() {
   await store.fetchAttendance(undefined, month.value, year.value)
 }
 
+// ===== Xuất file (CSV mở bằng Excel) — theo đúng bộ lọc & chế độ đang xem =====
+function csvCell(v: unknown) {
+  const s = v == null ? '' : String(v)
+  return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+function downloadCsv(filename: string, headers: string[], rows: (string | number)[][]) {
+  const lines = [headers, ...rows].map((r) => r.map(csvCell).join(','))
+  // BOM ﻿ để Excel đọc đúng tiếng Việt (UTF-8)
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+function exportCsv() {
+  if (viewMode.value === 'detail') {
+    const headers = [
+      'Ngày', 'Mã NV', 'Họ tên', 'Phòng ban', 'Ca', 'Giờ vào', 'Giờ ra',
+      'Giờ làm', 'Tăng ca', 'Đi muộn (phút)', 'Về sớm (phút)', 'Trạng thái', 'Ghi chú',
+    ]
+    const rows = detailFiltered.value.map((r: any) => [
+      formatDate(r.workDate), r._code, r._name, r._dept, r._shift,
+      formatTime(r.checkInTime), formatTime(r.checkOutTime),
+      r.workedHours ?? 0, r.overtimeHours ?? 0, r.lateMinutes ?? 0, r.earlyLeaveMinutes ?? 0,
+      ATTENDANCE_STATUS[r.status]?.label || r.status, r.note || '',
+    ])
+    if (!rows.length) { message.info('Không có dữ liệu để xuất'); return }
+    downloadCsv(`cham-cong-chi-tiet-${pad2(month.value)}-${year.value}.csv`, headers, rows)
+  } else {
+    const headers = ['Mã NV', 'Họ tên', 'Phòng ban', 'Ngày công', 'Tổng giờ', 'Tăng ca', 'Nghỉ phép', 'Vắng', 'Đi muộn (lần)']
+    const rows = summaryRows.value.map((r: any) => [
+      r._code, r._name, r._dept, r.present, r.worked, r.ot, r.leave, r.absent, r.late,
+    ])
+    if (!rows.length) { message.info('Không có dữ liệu để xuất'); return }
+    downloadCsv(`cham-cong-tong-hop-${pad2(month.value)}-${year.value}.csv`, headers, rows)
+  }
+}
+
 // ===== Modal nhập/sửa tay =====
 const modalOpen = ref(false)
 const isEditMode = ref(false)
@@ -219,6 +259,9 @@ watch([month, year], reload)
         v-model:value="viewMode"
         :options="[{ label: 'Chi tiết', value: 'detail' }, { label: 'Tổng hợp', value: 'summary' }]"
       />
+      <Button variant="secondary" @click="exportCsv()">
+        <DownloadIcon class="w-4 h-4 mr-2" /> Xuất Excel
+      </Button>
       <Button @click="openCreate()">
         <PlusIcon class="w-4 h-4 mr-2" /> Nhập tay
       </Button>
