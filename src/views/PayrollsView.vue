@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
 import { Tag as ATag, Popconfirm as APopconfirm, Input as AInput, Select as ASelect, Table as ATable, Segmented as ASegmented, message } from 'ant-design-vue'
-import { CalculatorIcon, RefreshCwIcon, CheckIcon, BanknoteIcon, XIcon, PrinterIcon } from 'lucide-vue-next'
+import { CalculatorIcon, RefreshCwIcon, CheckIcon, BanknoteIcon, XIcon, PrinterIcon, DownloadIcon } from 'lucide-vue-next'
 import { usePayrollStore } from '../stores/payroll'
 import { useEmployeeStore } from '../stores/employee'
 import Button from '../components/ui/Button.vue'
@@ -77,6 +77,41 @@ const totals = computed(() => {
   }
   return t
 })
+
+// ===== Xuất file (CSV mở bằng Excel) — đầy đủ trường, theo bộ lọc đang xem =====
+function csvCell(v: unknown) {
+  const s = v == null ? '' : String(v)
+  return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+function exportCsv() {
+  const headers = [
+    'Mã NV', 'Họ tên', 'Phòng ban', 'Tháng', 'Năm',
+    'Lương cơ bản', 'Phụ cấp', 'Khấu trừ', 'Thực lãnh',
+    'Công chuẩn', 'Công thực tế', 'Giờ tăng ca', 'Nghỉ có lương', 'Nghỉ không lương',
+    'Trạng thái', 'Ngày tính',
+  ]
+  const rows = filteredPayrolls.value.map((p: any) => {
+    const e = empMap.value[p.employeeId]
+    return [
+      e?.code || p.employeeId, e?.name || 'NV chưa đồng bộ', e?.department || '',
+      p.month, p.year,
+      p.baseSalary ?? 0, p.totalAllowances ?? 0, p.totalDeductions ?? 0, p.netSalary ?? 0,
+      p.standardWorkdays ?? 0, p.actualWorkdays ?? 0, p.overtimeHours ?? 0, p.paidLeaveDays ?? 0, p.unpaidLeaveDays ?? 0,
+      STATUS[p.status]?.label || p.status,
+      p.calculatedAt ? new Date(p.calculatedAt).toLocaleString('vi-VN') : '',
+    ]
+  })
+  if (!rows.length) { message.info('Không có dữ liệu để xuất'); return }
+  const lines = [headers, ...rows].map((r) => r.map(csvCell).join(','))
+  // BOM ﻿ để Excel đọc đúng tiếng Việt (UTF-8)
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `bang-luong-${String(month.value).padStart(2, '0')}-${year.value}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 const columns = computed<any[]>(() => [
   { title: 'Nhân viên', key: 'employee', dataIndex: 'employeeId' },
@@ -257,6 +292,9 @@ watch([month, year], () => store.fetchPayrolls(month.value, year.value))
         v-model:value="viewMode"
         :options="[{ label: 'Danh sách', value: 'list' }, { label: 'Kanban', value: 'kanban' }]"
       />
+      <Button variant="secondary" @click="exportCsv()">
+        <DownloadIcon class="w-4 h-4 mr-2" /> Xuất Excel
+      </Button>
       <Button @click="runCalculate" :disabled="store.isLoading" class="shadow-accent">
         <CalculatorIcon class="w-4 h-4 mr-2" />
         {{ store.isLoading ? 'Đang xử lý...' : 'Tính lương' }}
