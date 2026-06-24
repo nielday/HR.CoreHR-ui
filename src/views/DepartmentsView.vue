@@ -282,8 +282,12 @@ async function executeDelete() {
 
     <!-- Sơ đồ tổ chức (giữ DOM bằng v-show để không phải dựng lại chart) + Bảng -->
     <div v-show="viewMode === 'chart'" class="bg-card border border-border rounded-xl shadow-sm p-4 sm:p-6 dept-org-wrap overflow-hidden h-[calc(100vh-220px)] min-h-[560px] flex flex-col">
-      <div v-if="store.departments.length" ref="chartContainer" class="w-full flex-1 bg-[#f8fafc] rounded-xl overflow-hidden border border-slate-100"></div>
-      <AEmpty v-else :image="undefined" description="Chưa có phòng ban" class="m-auto" />
+      <div v-show="store.departments.length" ref="chartContainer" class="w-full flex-1 bg-[#f8fafc] rounded-xl overflow-hidden border border-slate-100"></div>
+      <div v-if="!store.departments.length && store.isLoading" class="m-auto flex flex-col items-center gap-4 text-muted-foreground">
+        <div class="w-10 h-10 rounded-full border-4 border-slate-200 border-t-accent animate-spin"></div>
+        <p class="font-sans text-sm">Đang tải sơ đồ phòng ban...</p>
+      </div>
+      <AEmpty v-if="!store.departments.length && !store.isLoading" :image="undefined" description="Chưa có phòng ban" class="m-auto" />
     </div>
 
     <div v-if="viewMode === 'table'" class="bg-card border border-border rounded-xl shadow-sm overflow-hidden dept-table-wrap">
