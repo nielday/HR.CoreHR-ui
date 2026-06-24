@@ -2,10 +2,11 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { Select as ASelect, Table as ATable, Tag as ATag, Popconfirm as APopconfirm, message } from 'ant-design-vue'
-import { LockIcon, RefreshCwIcon, TriangleAlertIcon } from 'lucide-vue-next'
+import { LockIcon, RefreshCwIcon, TriangleAlertIcon, DownloadIcon } from 'lucide-vue-next'
 import { useAttendanceStore } from '../stores/attendance'
 import { useEmployeeStore } from '../stores/employee'
 import Button from '../components/ui/Button.vue'
+import { exportToExcel } from '../utils/exportExcel'
 
 const store = useAttendanceStore()
 const empStore = useEmployeeStore()
@@ -69,6 +70,41 @@ async function closeMonth() {
   }
 }
 
+// Xuất Excel (.xlsx) bảng tổng hợp công đã chốt
+async function exportExcel() {
+  const rows = (store.summaries as any[]).map((s) => [
+    empMap.value[s.employeeId]?.code || s.employeeId,
+    empMap.value[s.employeeId]?.name || 'NV chưa đồng bộ',
+    s.standardWorkdays,
+    s.actualWorkdays,
+    s.totalWorkedHours,
+    s.overtimeHours,
+    s.paidLeaveDays,
+    s.unpaidLeaveDays,
+    s.absentDays,
+    s.isClosed ? 'Đã chốt' : 'Chưa chốt',
+  ])
+  if (!rows.length) { message.info('Không có dữ liệu để xuất'); return }
+  await exportToExcel({
+    filename: `tong-hop-cong-${pad2(month.value)}-${year.value}.xlsx`,
+    sheetName: 'Tổng hợp công',
+    title: `BẢNG TỔNG HỢP CÔNG THÁNG ${pad2(month.value)}/${year.value}`,
+    columns: [
+      { header: 'Mã NV', width: 12 },
+      { header: 'Họ tên', width: 22 },
+      { header: 'Công chuẩn', width: 11, align: 'center' },
+      { header: 'Ngày công', width: 11, align: 'center' },
+      { header: 'Tổng giờ', width: 11, align: 'right' },
+      { header: 'Tăng ca', width: 10, align: 'right' },
+      { header: 'Phép có lương', width: 13, align: 'center' },
+      { header: 'Phép không lương', width: 15, align: 'center' },
+      { header: 'Vắng', width: 9, align: 'center' },
+      { header: 'Trạng thái', width: 12, align: 'center' },
+    ],
+    rows,
+  })
+}
+
 const closeConfirmTitle = computed(() =>
   openShifts.value.length > 0
     ? `Còn ${openShifts.value.length} bản ghi quên check-out (sẽ tính 0 giờ làm cho ngày đó). Vẫn chốt công tháng ${month.value}/${year.value}?`
@@ -92,6 +128,9 @@ watch([month, year], reload)
       <div class="flex items-center gap-3">
         <ASelect v-model:value="month" :options="months" style="width: 120px" size="large" />
         <ASelect v-model:value="year" :options="years" style="width: 110px" size="large" />
+        <Button variant="secondary" @click="exportExcel">
+          <DownloadIcon class="w-4 h-4 mr-2" /> Xuất Excel
+        </Button>
         <APopconfirm
           :title="closeConfirmTitle"
           :ok-text="openShifts.length > 0 ? 'Vẫn chốt' : 'Chốt công'"
