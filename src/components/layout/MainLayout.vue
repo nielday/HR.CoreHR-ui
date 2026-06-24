@@ -17,10 +17,10 @@ const contentClass = 'w-full max-w-none p-4 md:p-8'
 
     <v-main class="bg-background min-h-screen">
       <div :class="contentClass">
-        <router-view v-slot="{ Component }">
-          <transition name="fade" mode="out-in">
+        <router-view v-slot="{ Component, route }">
+          <div :key="route.path" class="route-fade">
             <component :is="Component" />
-          </transition>
+          </div>
         </router-view>
       </div>
     </v-main>
@@ -28,14 +28,20 @@ const contentClass = 'w-full max-w-none p-4 md:p-8'
 </template>
 
 <style>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+/* Hiệu ứng fade khi đổi route — chạy bằng CSS animation lúc div mount,
+   không dùng <transition> để tránh lỗi trắng trang với component async/nhiều node gốc. */
+.route-fade {
+  animation: route-fade-in 0.3s ease;
 }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
+@keyframes route-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
