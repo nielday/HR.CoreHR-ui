@@ -132,7 +132,10 @@ const filtered = computed(() => {
   const kw = fKeyword.value.trim().toLowerCase()
   return (store.allEmployees as any[]).filter((e) => {
     if (kw && !`${e.fullName || ''} ${e.employeeCode || ''} ${e.email || ''}`.toLowerCase().includes(kw)) return false
-    if (fDeptIds.value.length && !fDeptIds.value.includes(e.departmentId)) return false
+    // Lọc phòng ban: khớp cả phòng chính lẫn phòng kiêm nhiệm
+    if (fDeptIds.value.length
+      && !fDeptIds.value.includes(e.departmentId)
+      && !((e.additionalDepartmentIds || []) as string[]).some((id) => fDeptIds.value.includes(id))) return false
     if (fPosIds.value.length && !fPosIds.value.includes(e.positionId)) return false
     if (fContractIds.value.length && !fContractIds.value.includes(e.currentContractTypeId || e.contractTypeId)) return false
     if (fStatuses.value.length && !fStatuses.value.includes(e.workingStatus)) return false
